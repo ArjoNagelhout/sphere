@@ -3,4 +3,13 @@ project(sphere)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(sphere src/main.cpp)
+FILE(GLOB SOURCE_FILES src/*.cpp)
+
+add_executable(
+        sphere
+        ${SOURCE_FILES}
+)
+
+add_subdirectory(external/glfw)
+include_directories(external/glfw/include)
+target_link_libraries(sphere glfw)
