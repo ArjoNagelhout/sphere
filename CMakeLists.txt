@@ -3,4 +3,4 @@ project(sphere)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(sphere main.cpp)
+add_executable(sphere src/main.cpp)
