@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Clion files and folders
+cmake-build-debug
+.idea
