@@ -22,10 +22,15 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    std::cout << "Wee";
+    std::cout << "Wee \n";
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = glfwCreateWindow(640, 480, "Sphere Wee", nullptr, nullptr);
+
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    std::cout << extensionCount << " extensions supported weeee\n";
 
     if (!window)
     {
