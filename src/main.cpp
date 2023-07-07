@@ -1,4 +1,6 @@
 #include <iostream>
+
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 // We use Vulkan, as it's more performant on iOS and macOS devices, and a more modern API.
@@ -10,8 +12,8 @@ static void glfwError(int id, const char* description)
     std::cout << description << std::endl;
 }
 
-int main() {
-
+int main()
+{
     GLFWwindow* window;
 
     glfwSetErrorCallback(&glfwError);
@@ -22,7 +24,8 @@ int main() {
 
     std::cout << "Wee";
 
-    window = glfwCreateWindow(640, 480, "Sphere Wee", NULL, NULL);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    window = glfwCreateWindow(640, 480, "Sphere Wee", nullptr, nullptr);
 
     if (!window)
     {

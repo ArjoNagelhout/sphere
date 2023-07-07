@@ -22,3 +22,6 @@ target_link_libraries(sphere glfw)
 #add_subdirectory(/Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS cmake-build-debug)
 #target_include_directories(sphere PRIVATE )
 #target_link_libraries(sphere vulkan)
+
+target_include_directories(sphere PRIVATE /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS/include)
+target_link_libraries(sphere /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS/lib/libvulkan.dylib)
