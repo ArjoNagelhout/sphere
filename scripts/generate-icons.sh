@@ -20,4 +20,4 @@ sips -z 512 512 $icon_path --out $target_directory/icon_256x256@2x.png
 sips -z 512 512 $icon_path --out $target_directory/icon_512x512.png
 cp $icon_path $target_directory/icon_512x512@2x.png
 iconutil -c icns --output $2 $target_directory
-rm -R $target_directory
+rm -r $target_directory
