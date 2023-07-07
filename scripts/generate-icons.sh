@@ -6,7 +6,6 @@ icon_directory=${icon_path%/*}
 temp_directory_name="/temp.iconset"
 target_directory=$icon_directory$temp_directory_name
 
-echo $target_directory
 mkdir $target_directory
 
 sips -z 16 16 $icon_path --out $target_directory/icon_16x16.png
