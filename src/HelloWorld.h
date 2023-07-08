@@ -21,10 +21,20 @@ private:
     GLFWwindow *window;
     VkInstance instance;
 
+    const char *NAME = "Sphere";
+
     const uint32_t WIDTH = 600;
     const uint32_t HEIGHT = 400;
 
-    const char *NAME = "Sphere";
+    const std::vector<const char *> validationLayers = {
+            "VK_LAYER_KHRONOS_validation"
+    };
+
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+    const bool enableValidationLayers = true;
+#endif
 
     void initVulkan() {
         glfwInit();
@@ -38,6 +48,12 @@ private:
 
     // creates a VkInstance
     void createInstance() {
+        // check for validation layers
+        if (enableValidationLayers && !checkValidationLayerSupport())
+        {
+            throw std::runtime_error("validation layers requested, but not available");
+        }
+
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = NAME;
@@ -65,22 +81,56 @@ private:
 
         createInfo.enabledExtensionCount = (uint32_t) requiredExtensions.size();
         createInfo.ppEnabledExtensionNames = requiredExtensions.data();
-        createInfo.enabledLayerCount = 0;
 
+        if (enableValidationLayers){
+            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            createInfo.ppEnabledLayerNames = validationLayers.data();
+        }
+        else{
+            createInfo.enabledLayerCount = 0;
+        }
+
+        // Create the instance
         VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
         if (result != VK_SUCCESS) {
             throw std::runtime_error(string_VkResult(result));
         }
 
+        // List all extensions
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-        for (const auto& extension : extensions)
-        {
+        for (const auto &extension: extensions) {
             std::cout << extension.extensionName << '\n';
         }
+    }
+
+    // loops over the set validationLayers list and checks if the layer exists.
+    bool checkValidationLayerSupport() {
+        uint32_t layerCount;
+        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+        std::vector<VkLayerProperties> availableLayers(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+        for (const char *layerName: validationLayers) {
+            bool layerFound = false;
+
+            for (const auto &layerProperties: availableLayers) {
+                if (strcmp(layerName, layerProperties.layerName) == 0){
+                    layerFound = true;
+                    break;
+                }
+            }
+
+            if (!layerFound){
+                return false;
+            }
+        }
+
+        return true;
     }
 
     void mainLoop() {
