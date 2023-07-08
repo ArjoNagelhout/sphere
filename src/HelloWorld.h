@@ -71,17 +71,27 @@ private:
         if (result != VK_SUCCESS) {
             throw std::runtime_error(string_VkResult(result));
         }
+
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+        for (const auto& extension : extensions)
+        {
+            std::cout << extension.extensionName << '\n';
+        }
     }
 
     void mainLoop() {
-
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
         }
-
     }
 
     void cleanup() {
+        vkDestroyInstance(instance, nullptr);
+
         glfwDestroyWindow(window);
         glfwTerminate();
     }
