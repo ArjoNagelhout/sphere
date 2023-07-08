@@ -1,14 +1,15 @@
-#define GLFW_INCLUDE_VULKAN
+#undef GLFW_INCLUDE_VULKAN
 
 #include <GLFW/glfw3.h>
 
 #include <string>
 #include <map>
+#include <optional>
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
 
-#include <vulkan/vk_enum_string_helper.h>
+#include <vulkan/vulkan.hpp>
 
 class HelloWorld {
 public:
@@ -23,6 +24,7 @@ private:
     VkInstance instance;
 
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkDevice device;
 
     const char *NAME = "Sphere";
 
@@ -52,6 +54,7 @@ private:
         createInstance();
         setupDebugMessenger();
         pickPhysicalDevice();
+        createLogicalDevice();
     }
 
     // creates a VkInstance
@@ -209,7 +212,7 @@ private:
 
     void pickPhysicalDevice() {
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-        uint32_t  deviceCount = 0;
+        uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
         if (deviceCount == 0) {
@@ -219,38 +222,70 @@ private:
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-        std::multimap<int, VkPhysicalDevice> candidates;
-
-        for (const auto& device : devices){
-            int score = getDeviceSuitabilityScore(device);
-            candidates.insert(std::make_pair(score, device));
+        for (const auto& device : devices) {
+            if (isDeviceSuitable(device)) {
+                physicalDevice = device;
+                break;
+            }
         }
 
-        if (candidates.rbegin()->first > 0){
-            physicalDevice = candidates.rbegin()->second;
-        }
-        else{
-            throw std::runtime_error("failed to find physical device with Vulkan support");
+        if (physicalDevice == VK_NULL_HANDLE) {
+            throw std::runtime_error("failed to find a suitable physical device");
         }
     }
 
-    // Ranks physical devices (GPUs) so that discrete GPu gets priority
-    int getDeviceSuitabilityScore(VkPhysicalDevice device){
+    bool isDeviceSuitable(VkPhysicalDevice device) {
+
+        QueueFamilyIndices indices = findQueueFamilies(device);
+        return indices.isComplete();
+    }
+
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphicsFamily;
+
+        bool isComplete() {
+            return graphicsFamily.has_value();
+        }
+    };
+
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+
         VkPhysicalDeviceProperties deviceProperties;
         VkPhysicalDeviceFeatures deviceFeatures;
-
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-        int score = 0;
+        QueueFamilyIndices indices;
 
-        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
-            score += 1000;
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+        int i = 0;
+        for (const auto& queueFamily : queueFamilies){
+            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                indices.graphicsFamily = i;
+            }
+
+            if (indices.isComplete()){
+                break;
+            }
+
+            i++;
         }
 
-        score += deviceProperties.limits.maxImageDimension2D;
+        return indices;
+    }
 
-        return score;
+    void createLogicalDevice() {
+
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice)
+
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex =
     }
 
     void mainLoop() {
