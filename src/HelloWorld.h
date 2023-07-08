@@ -24,7 +24,7 @@ private:
     const uint32_t WIDTH = 600;
     const uint32_t HEIGHT = 400;
 
-    const char* NAME = "Sphere";
+    const char *NAME = "Sphere";
 
     void initVulkan() {
         glfwInit();
@@ -52,16 +52,23 @@ private:
 
         // Get the extension count using glfw
         uint32_t glfwExtensionsCount = 0;
-        const char** glfwExtensions;
+        const char **glfwExtensions;
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
 
-        createInfo.enabledExtensionCount = glfwExtensionsCount;
-        createInfo.ppEnabledExtensionNames = glfwExtensions;
+        // Fix for VK_ERROR_INCOMPATIBLE_DRIVER
+        std::vector<const char *> requiredExtensions;
+        for (uint32_t i = 0; i < glfwExtensionsCount; i++) {
+            requiredExtensions.emplace_back(glfwExtensions[i]);
+        }
+        requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+
+        createInfo.enabledExtensionCount = (uint32_t) requiredExtensions.size();
+        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
         createInfo.enabledLayerCount = 0;
 
         VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
-        if (result != VK_SUCCESS)
-        {
+        if (result != VK_SUCCESS) {
             throw std::runtime_error(string_VkResult(result));
         }
     }
