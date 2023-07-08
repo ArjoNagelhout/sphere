@@ -1,4 +1,9 @@
-#undef GLFW_INCLUDE_VULKAN
+// https://forum.unity.com/threads/geometry-shader-on-mac.1056659/
+// https://www.jeremyong.com/c++/vulkan/graphics/rendering/2018/03/26/how-to-learn-vulkan/
+// https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+// https://github.com/ConfettiFX/The-Forge
+
+#define GLFW_INCLUDE_VULKAN
 
 #include <GLFW/glfw3.h>
 
@@ -9,7 +14,7 @@
 #include <stdexcept>
 #include <cstdlib>
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vk_enum_string_helper.h>
 
 class HelloWorld {
 public:
@@ -22,12 +27,11 @@ public:
 private:
     GLFWwindow *window;
     VkInstance instance;
-
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkPhysicalDevice physicalDevice;
     VkDevice device;
 
     const char *NAME = "Sphere";
-
     const uint32_t WIDTH = 600;
     const uint32_t HEIGHT = 400;
     const uint32_t MIN_WIDTH = 200;
@@ -211,7 +215,7 @@ private:
     }
 
     void pickPhysicalDevice() {
-        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        physicalDevice = VK_NULL_HANDLE;
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -281,11 +285,36 @@ private:
 
     void createLogicalDevice() {
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice)
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex =
+        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+        queueCreateInfo.queueCount = 1;
+        float queuePriority = 1.0f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+
+        VkDeviceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+        createInfo.pEnabledFeatures = &deviceFeatures;
+
+        createInfo.enabledExtensionCount = 0;
+        if (enableValidationLayers){
+            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            createInfo.ppEnabledLayerNames = validationLayers.data();
+        } else {
+            createInfo.enabledLayerCount = 0;
+        }
+
+        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create logical device");
+        }
+
+
     }
 
     void mainLoop() {
@@ -295,6 +324,9 @@ private:
     }
 
     void cleanup() {
+
+        vkDestroyDevice(device, nullptr);
+
         if (enableValidationLayers) {
             destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
