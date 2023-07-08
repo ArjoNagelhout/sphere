@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include <string>
+#include <map>
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
@@ -50,6 +51,7 @@ private:
 
         createInstance();
         setupDebugMessenger();
+        pickPhysicalDevice();
     }
 
     // creates a VkInstance
@@ -146,7 +148,7 @@ private:
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
 
-        if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+        if (createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up the debug messenger");
         }
     }
@@ -167,7 +169,7 @@ private:
     }
 
     // Proxy function that looks up the address of the function, because it's part of an extension
-    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+    VkResult createDebugUtilsMessengerEXT(VkInstance instance,
                                           const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
                                           const VkAllocationCallbacks *pAllocator,
                                           VkDebugUtilsMessengerEXT *pDebugMessenger) {
@@ -186,19 +188,69 @@ private:
             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
             void *pUserData) {
 
-        std::cerr << "validation layer output: " << pCallbackData->pMessage << std::endl;
+        std::cerr << "validation layer output: "
+                  << pCallbackData->pMessage
+                  << ", severity:" << string_VkDebugUtilsMessageSeverityFlagBitsEXT(messageSeverity)
+                  << ", type: " << string_VkDebugUtilsMessageTypeFlagsEXT(messageType)
+                  << std::endl;
 
         return VK_FALSE;
     }
 
     // Again, a proxy function because it's part of an extension and can't be directly called
-    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+    void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                        const VkAllocationCallbacks *pAllocator) {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
                                                                                 "vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr) {
             func(instance, debugMessenger, pAllocator);
         }
+    }
+
+    void pickPhysicalDevice() {
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        uint32_t  deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            throw std::runtime_error("failed to find physical device with Vulkan support");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        std::multimap<int, VkPhysicalDevice> candidates;
+
+        for (const auto& device : devices){
+            int score = getDeviceSuitabilityScore(device);
+            candidates.insert(std::make_pair(score, device));
+        }
+
+        if (candidates.rbegin()->first > 0){
+            physicalDevice = candidates.rbegin()->second;
+        }
+        else{
+            throw std::runtime_error("failed to find physical device with Vulkan support");
+        }
+    }
+
+    // Ranks physical devices (GPUs) so that discrete GPu gets priority
+    int getDeviceSuitabilityScore(VkPhysicalDevice device){
+        VkPhysicalDeviceProperties deviceProperties;
+        VkPhysicalDeviceFeatures deviceFeatures;
+
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        int score = 0;
+
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
+            score += 1000;
+        }
+
+        score += deviceProperties.limits.maxImageDimension2D;
+
+        return score;
     }
 
     void mainLoop() {
@@ -209,7 +261,7 @@ private:
 
     void cleanup() {
         if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+            destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
 
         vkDestroyInstance(instance, nullptr);
