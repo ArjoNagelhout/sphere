@@ -25,6 +25,8 @@ private:
 
     const uint32_t WIDTH = 600;
     const uint32_t HEIGHT = 400;
+    const uint32_t MIN_WIDTH = 200;
+    const uint32_t MIN_HEIGHT = 100;
 
     const std::vector<const char *> validationLayers = {
             "VK_LAYER_KHRONOS_validation"
@@ -42,6 +44,7 @@ private:
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         window = glfwCreateWindow(WIDTH, HEIGHT, NAME, nullptr, nullptr);
+        glfwSetWindowSizeLimits(window, MIN_WIDTH, MIN_HEIGHT, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
         createInstance();
     }
@@ -49,8 +52,7 @@ private:
     // creates a VkInstance
     void createInstance() {
         // check for validation layers
-        if (enableValidationLayers && !checkValidationLayerSupport())
-        {
+        if (enableValidationLayers && !checkValidationLayerSupport()) {
             throw std::runtime_error("validation layers requested, but not available");
         }
 
@@ -67,26 +69,19 @@ private:
         createInfo.pApplicationInfo = &appInfo;
 
         // Get the extension count using glfw
-        uint32_t glfwExtensionsCount = 0;
-        const char **glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
+        std::vector<const char *> extensions = getRequiredExtensions();
 
         // Fix for VK_ERROR_INCOMPATIBLE_DRIVER
-        std::vector<const char *> requiredExtensions;
-        for (uint32_t i = 0; i < glfwExtensionsCount; i++) {
-            requiredExtensions.emplace_back(glfwExtensions[i]);
-        }
-        requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
         createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
-        createInfo.enabledExtensionCount = (uint32_t) requiredExtensions.size();
-        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+        createInfo.ppEnabledExtensionNames = extensions.data();
 
-        if (enableValidationLayers){
+        if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
-        }
-        else{
+        } else {
             createInfo.enabledLayerCount = 0;
         }
 
@@ -95,16 +90,18 @@ private:
         if (result != VK_SUCCESS) {
             throw std::runtime_error(string_VkResult(result));
         }
+    }
 
-        // List all extensions
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> extensions(extensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+    std::vector<const char *> getRequiredExtensions() {
+        uint32_t glfwExtensionsCount = 0;
+        const char **glfwExtensions;
+        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
+        std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionsCount);
 
-        for (const auto &extension: extensions) {
-            std::cout << extension.extensionName << '\n';
+        if (enableValidationLayers){
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
+        return extensions;
     }
 
     // loops over the set validationLayers list and checks if the layer exists.
@@ -119,13 +116,13 @@ private:
             bool layerFound = false;
 
             for (const auto &layerProperties: availableLayers) {
-                if (strcmp(layerName, layerProperties.layerName) == 0){
+                if (strcmp(layerName, layerProperties.layerName) == 0) {
                     layerFound = true;
                     break;
                 }
             }
 
-            if (!layerFound){
+            if (!layerFound) {
                 return false;
             }
         }
