@@ -21,16 +21,20 @@ add_executable(
         sphere
         MACOSX_BUNDLE
         ${SPHERE_ICON_TARGET}
-        src/main.cpp)
+        src/main.cpp src/HelloWorld.h)
 
-# Add GLFW dependency
+# Add GLFW and GLM dependency
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(external/glfw)
-target_include_directories(sphere PRIVATE external/glfw/include)
-target_link_libraries(sphere glfw)
+add_subdirectory(external/glm)
+
+target_include_directories(sphere
+        PRIVATE external/glfw/include
+        PRIVATE external/glm)
+target_link_libraries(sphere glfw glm)
 
 # Add Vulkan dependency
 set(SPHERE_VULKAN_SDK_PATH /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS/)
