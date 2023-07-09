@@ -12,6 +12,9 @@ execute_process(
         ${SPHERE_ICON_SOURCE} # source
         ${SPHERE_ICON_TARGET} #target
 )
+# add_custom_command() should be used instead of execute_process as execute_process is
+# executed at configure time, instead of at build time. cmake is hard...
+
 set(MACOSX_BUNDLE_ICON_FILE ${SPHERE_ICON_NAME})
 set_source_files_properties(${SPHERE_ICON_TARGET} PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources")

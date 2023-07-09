@@ -4,7 +4,7 @@ int main()
 {
     HelloWorld app;
 
-    try{
+    try {
         app.run();
     } catch (const std::exception& e){
         std::cerr << e.what() << std::endl;

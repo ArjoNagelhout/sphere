@@ -27,7 +27,7 @@ struct QueueFamilyIndices {
     }
 };
 
-struct SwapChainSupportDetails {
+struct SwapchainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
@@ -51,6 +51,11 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkSurfaceKHR surface;
+    VkSwapchainKHR swapchain;
+    std::vector<VkImage> swapchainImages;
+    VkFormat swapchainImageFormat;
+    VkExtent2D swapchainExtent;
+    std::vector<VkImageView> swapchainImageViews;
 
     const char *NAME = "Sphere";
     const uint32_t WIDTH = 600;
@@ -86,6 +91,9 @@ private:
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
+        createSwapchain();
+        createImageViews();
+        createGraphicsPipeline();
     }
 
     // creates a VkInstance
@@ -255,7 +263,7 @@ private:
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-        for (const auto& device : devices) {
+        for (const auto &device: devices) {
             if (isDeviceSuitable(device)) {
                 physicalDevice = device;
                 break;
@@ -275,7 +283,7 @@ private:
         // swap chain is adequate
         bool swapChainAdequate = false;
         if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+            SwapchainSupportDetails swapChainSupport = querySwapchainSupport(device);
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
         }
 
@@ -292,7 +300,7 @@ private:
 
         std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-        for (const auto &extension : availableExtensions) {
+        for (const auto &extension: availableExtensions) {
             requiredExtensions.erase(extension.extensionName);
         }
 
@@ -315,7 +323,7 @@ private:
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
         int i = 0;
-        for (const auto& queueFamily : queueFamilies){
+        for (const auto &queueFamily: queueFamilies) {
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphicsFamily = i;
             }
@@ -328,7 +336,7 @@ private:
                 indices.presentFamily = i;
             }
 
-            if (indices.isComplete()){
+            if (indices.isComplete()) {
                 break;
             }
 
@@ -345,7 +353,7 @@ private:
         std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         float queuePriority = 1.0f;
-        for (uint32_t queueFamily : uniqueQueueFamilies) {
+        for (uint32_t queueFamily: uniqueQueueFamilies) {
             VkDeviceQueueCreateInfo queueCreateInfo{};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -370,10 +378,10 @@ private:
         std::vector<VkExtensionProperties> properties(propertiesCount);
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &propertiesCount, properties.data());
 
-        const char* VK_KHR_PORTABILITY_SUBSET = "VK_KHR_portability_subset";
+        const char *VK_KHR_PORTABILITY_SUBSET = "VK_KHR_portability_subset";
 
         // we should add the portability subset to the enabled extensions if it is supported
-        for (auto const &property : properties) {
+        for (auto const &property: properties) {
             if (strcmp(property.extensionName, VK_KHR_PORTABILITY_SUBSET) == 0) {
                 extensions.push_back(VK_KHR_PORTABILITY_SUBSET);
                 break;
@@ -381,7 +389,7 @@ private:
         }
 
         // add all listed device extensions
-        for (auto const &deviceExtension : deviceExtensions){
+        for (auto const &deviceExtension: deviceExtensions) {
             extensions.push_back(deviceExtension);
         }
 
@@ -405,8 +413,8 @@ private:
         }
     }
 
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
-        SwapChainSupportDetails details;
+    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device) {
+        SwapchainSupportDetails details;
 
         // first get surface capabilities
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -430,6 +438,158 @@ private:
         return details;
     }
 
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats) {
+        for (const auto &availableFormat: availableFormats) {
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
+                && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                return availableFormat;
+            }
+        }
+
+        return availableFormats[0];
+    }
+
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes) {
+        return VK_PRESENT_MODE_FIFO_KHR; // high performance, default
+    }
+
+    // resolution of the swap chain images
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
+
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            // vulkan says: extent should match window extent. but for some window managers
+            // this is not required, this is indicated with setting the width and height extent
+            // to the max value of uint32_t
+            return capabilities.currentExtent;
+        } else {
+            int width, height;
+            glfwGetFramebufferSize(window, &width, &height);
+
+            VkExtent2D actualExtent = {
+                    static_cast<uint32_t>(width),
+                    static_cast<uint32_t>(height)
+            };
+
+            actualExtent.width = std::clamp(actualExtent.width,
+                                            capabilities.minImageExtent.width,
+                                            capabilities.maxImageExtent.width);
+            actualExtent.height = std::clamp(actualExtent.height,
+                                             capabilities.minImageExtent.height,
+                                             capabilities.maxImageExtent.height);
+            return actualExtent;
+        }
+    }
+
+    void createSwapchain() {
+        SwapchainSupportDetails swapchainSupport = querySwapchainSupport(physicalDevice);
+        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
+        VkPresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupport.presentModes);
+        VkExtent2D extent = chooseSwapExtent(swapchainSupport.capabilities);
+
+        uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
+
+        // limit to the max amount of images
+        if (swapchainSupport.capabilities.maxImageCount > 0 && imageCount > swapchainSupport.capabilities.maxImageCount) {
+            imageCount = swapchainSupport.capabilities.maxImageCount;
+        }
+
+        VkSwapchainCreateInfoKHR createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        createInfo.surface = surface;
+        createInfo.minImageCount = imageCount;
+        createInfo.imageFormat = surfaceFormat.format;
+        createInfo.imageColorSpace = surfaceFormat.colorSpace;
+        createInfo.imageExtent = extent;
+        createInfo.imageArrayLayers = 1; // for stereoscopic rendering should be more than 1
+        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // use something like VK_IMAGE_USAGE_TRANSFER_DST_BIT to render offscreen and then transfer to this one.
+
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+        uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+
+        // handle swap chain images being used across multiple queue families.
+        if (indices.graphicsFamily != indices.presentFamily) {
+            createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+            createInfo.queueFamilyIndexCount = 2;
+            createInfo.pQueueFamilyIndices = queueFamilyIndices;
+        } else {
+            // An image is owned by one queue family at a time and ownership must be explicitly transferred before
+            // using it in another queue family. This option offers the best performance.
+            createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            createInfo.queueFamilyIndexCount = 0; // optional
+            createInfo.pQueueFamilyIndices = nullptr; // optional
+        }
+
+        createInfo.preTransform = swapchainSupport.capabilities.currentTransform;
+        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // ignores the alpha channel
+
+        createInfo.presentMode = presentMode;
+        createInfo.clipped = VK_TRUE;
+
+        // if the window gets resized, we should throw away the old swap chain and recreate it.
+        createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+        if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create swap chain");
+        }
+
+        // we only specified minimum swap chain images, so there can always be more, so query actual amount
+        vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+        swapchainImages.resize(imageCount);
+        vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
+
+        swapchainImageFormat = surfaceFormat.format;
+        swapchainExtent = extent;
+    }
+
+    void createImageViews() {
+        swapchainImageViews.resize(swapchainImages.size());
+        for (size_t i = 0; i < swapchainImages.size(); i++) {
+
+            VkImageViewCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            createInfo.image = swapchainImages[i];
+            createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            createInfo.format = swapchainImageFormat;
+
+            createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            createInfo.subresourceRange.baseMipLevel = 0;
+            createInfo.subresourceRange.levelCount = 1;
+            createInfo.subresourceRange.baseArrayLayer = 0;
+            createInfo.subresourceRange.layerCount = 1;
+
+            // If you were working on a stereographic 3D application, then you would create a swap chain
+            // with multiple layers. You could then create multiple image views for each image representing
+            // the views for the left and right eyes by accessing different layers.
+
+            if (vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create image view");
+            }
+        }
+    }
+
+    // order:
+    // vertex / index buffer
+    // 1. FIXED input assembler (collects raw vertex data from (index) buffers)
+    // 2. PROGRAMMABLE vertex shader (applies transformations, e.g. from model space to screen space)
+    // 3. PROGRAMMABLE tesselation (subdivide geometry based on rules to increase mesh quality)
+    // 4. PROGRAMMABLE geometry shader (not used, inefficient)
+    // 5. FIXED rasterization (transforms primitives into fragments (pixels), discard fragments using depth testing)
+    // 6. PROGRAMMABLE fragment shader (does things per pixel)
+    // 7. FIXED color blending (applies operations for overlapping fragments (same pixel coordinates))
+    // framebuffer
+    // note: graphics pipeline is completely immutable
+
+    // frame buffer coordinates is in pixels (e.g. between 0 - 1080 for a resolution of 1920x1080)
+    // NDC, normalized device coordinates is between (-1, -1) and (1, 1)
+    void createGraphicsPipeline() {
+
+    }
+
     void mainLoop() {
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
@@ -438,6 +598,13 @@ private:
 
     void cleanup() {
 
+        // image views were manually created, so should be destroyed manually
+        for (auto imageView : swapchainImageViews) {
+            vkDestroyImageView(device, imageView, nullptr);
+        }
+
+        // destroy swap chain before device
+        vkDestroySwapchainKHR(device, swapchain, nullptr);
         vkDestroyDevice(device, nullptr);
 
         if (enableValidationLayers) {
