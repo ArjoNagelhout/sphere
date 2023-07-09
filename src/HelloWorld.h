@@ -27,6 +27,12 @@ struct QueueFamilyIndices {
     }
 };
 
+struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
+
 class HelloWorld {
 public:
     void run() {
@@ -54,6 +60,11 @@ private:
 
     const std::vector<const char *> validationLayers = {
             "VK_LAYER_KHRONOS_validation"
+    };
+
+    // device extensions we want
+    const std::vector<const char *> deviceExtensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
 #ifdef NDEBUG
@@ -258,10 +269,35 @@ private:
 
     bool isDeviceSuitable(VkPhysicalDevice device) {
         QueueFamilyIndices indices = findQueueFamilies(device);
-        return indices.isComplete();
+        bool extensionsSupported = checkDeviceExtensionSupport(device);
+
+        //  if there is at least one supported image format and one supported presentation mode given the window surface we have,
+        // swap chain is adequate
+        bool swapChainAdequate = false;
+        if (extensionsSupported) {
+            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        }
+
+        return indices.isComplete() && extensionsSupported && swapChainAdequate;
     }
 
+    // determines whether all extensions present in deviceExtensions list are present in device
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+        std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+        for (const auto &extension : availableExtensions) {
+            requiredExtensions.erase(extension.extensionName);
+        }
+
+        return requiredExtensions.empty();
+    }
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 
@@ -336,12 +372,17 @@ private:
 
         const char* VK_KHR_PORTABILITY_SUBSET = "VK_KHR_portability_subset";
 
+        // we should add the portability subset to the enabled extensions if it is supported
         for (auto const &property : properties) {
             if (strcmp(property.extensionName, VK_KHR_PORTABILITY_SUBSET) == 0) {
-                // we should add the portability subset to the enabled extensions
                 extensions.push_back(VK_KHR_PORTABILITY_SUBSET);
                 break;
             }
+        }
+
+        // add all listed device extensions
+        for (auto const &deviceExtension : deviceExtensions){
+            extensions.push_back(deviceExtension);
         }
 
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -362,6 +403,31 @@ private:
         if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create window surface");
         }
+    }
+
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
+        SwapChainSupportDetails details;
+
+        // first get surface capabilities
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+        // then query supported formats
+        uint32_t formatCount;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+        if (formatCount != 0) {
+            details.formats.resize(formatCount);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+        }
+
+        // then query supported present modes
+        uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+        if (presentModeCount != 0) {
+            details.presentModes.resize(presentModeCount);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+        }
+
+        return details;
     }
 
     void mainLoop() {
