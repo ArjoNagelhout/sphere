@@ -11,8 +11,6 @@ mkdir $shaders_output_directory
 spv_extension="spv"
 directory_length=${#shaders_input_directory}
 
-
-
 IFS=$'\n'; set -f
 for file in $(find $shaders_input_directory -name "*.vert" -or -name "*.frag"); do
   file_name_with_extension="${file:$directory_length+1}" # trim the start of the file path
