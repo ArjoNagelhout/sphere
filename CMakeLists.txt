@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(SPHERE_BUNDLE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents)
 set(SPHERE_RESOURCES_DIR ${SPHERE_BUNDLE_DIR}/Resources)
-set(SPHERE_FRAMEWORKS_DIR ${SPHERE_FRAMEWORKS_DIR}/Frameworks)
+set(SPHERE_FRAMEWORKS_DIR ${SPHERE_BUNDLE_DIR}/Frameworks)
 
 # Generate macOS icons file
 set(SPHERE_ICON_NAME icon.icns)
@@ -56,11 +56,24 @@ target_include_directories(sphere
         PRIVATE external/glm)
 target_link_libraries(sphere glfw glm)
 
-# Add Vulkan dependency
-#set(SPHERE_VULKAN_SDK_PATH /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS/)
-#set(ENV{VK_ICD_FILENAMES} ${SPHERE_VULKAN_SDK_PATH}share/vulkan/icd.d/MoltenVK_icd.json)
-#set(ENV{VULKAN_SDK} SPHERE_VULKAN_SDK_PATH)
+# Copy the molten VK and Vulkan .dylib dynamic libraries to the Frameworks directory
+set(SPHERE_VULKAN_SDK_PATH /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS)
+set(SPHERE_VULKAN_ICD ${SPHERE_VULKAN_SDK_PATH}/share/vulkan/icd.d/MoltenVK_icd.json)
 
+add_custom_command(TARGET sphere POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${SPHERE_VULKAN_SDK_PATH}/lib/libvulkan.dylib
+        ${SPHERE_FRAMEWORKS_DIR}/libvulkan.dylib)
+
+add_custom_command(TARGET sphere POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${SPHERE_VULKAN_SDK_PATH}/lib/libMoltenVK.dylib
+        ${SPHERE_FRAMEWORKS_DIR}/libMoltenVK.dylib)
+
+# Add Vulkan dependency
 find_package(Vulkan REQUIRED)
 target_link_libraries(sphere Vulkan::Vulkan)
 
+# set rpath
+
+# set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};@executable_path/../Frameworks/)
