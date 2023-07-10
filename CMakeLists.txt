@@ -7,23 +7,36 @@ set(SPHERE_ICON_NAME icon.icns)
 set(SPHERE_ICON_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/data/icons/icon.png)
 set(SPHERE_ICON_TARGET ${CMAKE_CURRENT_BINARY_DIR}/${SPHERE_ICON_NAME})
 file(REMOVE ${SPHERE_ICON_TARGET})
-execute_process(
-        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-icons.sh
-        ${SPHERE_ICON_SOURCE} # source
-        ${SPHERE_ICON_TARGET} #target
-)
+
 # add_custom_command() should be used instead of execute_process as execute_process is
 # executed at configure time, instead of at build time. cmake is hard...
+add_custom_command(OUTPUT ${SPHERE_ICON_TARGET}
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-icons.sh
+        ${SPHERE_ICON_SOURCE} # source
+        ${SPHERE_ICON_TARGET} # target
+        DEPENDS ${SPHERE_ICON_SOURCE}
+        VERBATIM)
 
 set(MACOSX_BUNDLE_ICON_FILE ${SPHERE_ICON_NAME})
 set_source_files_properties(${SPHERE_ICON_TARGET} PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources")
+
+# Compile shaders and include in bundle
+set(SPHERE_SHADERS_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/data/shaders)
+set(SPHERE_SHADERS_TARGET ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+add_custom_command(OUTPUT ${SPHERE_SHADERS_TARGET}
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile-shaders.sh
+        ${SPHERE_SHADERS_SOURCE} # source
+        ${SPHERE_SHADERS_TARGET} # target
+        DEPENDS ${SPHERE_SHADERS_SOURCE}
+        VERBATIM)
 
 # Create executable
 add_executable(
         sphere
         MACOSX_BUNDLE
         ${SPHERE_ICON_TARGET}
+        ${SPHERE_SHADERS_TARGET}
         src/main.cpp src/HelloWorld.h)
 
 # Add GLFW and GLM dependency
