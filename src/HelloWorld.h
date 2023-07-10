@@ -12,6 +12,7 @@
 #include <map>
 #include <optional>
 #include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <cstdlib>
 #include <algorithm>
@@ -572,6 +573,25 @@ private:
         }
     }
 
+    static std::vector<char> readFile(const std::string& filename) {
+        std::ifstream file(filename,
+                           std::ios::ate | // start reading at the end of the file, because we can use the read position to know how big of a buffer we need to allocate
+                           std::ios::binary); // read as binary file, no text transformations
+
+        if (!file.is_open()) {
+            throw std::runtime_error("failed to open file");
+        }
+
+        size_t fileSize = (size_t) file.tellg();
+        std::vector<char> buffer(fileSize);
+
+        file.seekg(0);
+        file.read(buffer.data(), fileSize);
+        file.close();
+
+        return buffer;
+    }
+
     // order:
     // vertex / index buffer
     // 1. FIXED input assembler (collects raw vertex data from (index) buffers)
@@ -587,7 +607,7 @@ private:
     // frame buffer coordinates is in pixels (e.g. between 0 - 1080 for a resolution of 1920x1080)
     // NDC, normalized device coordinates is between (-1, -1) and (1, 1)
     void createGraphicsPipeline() {
-
+        //auto vertShaderCode = readFile("")
     }
 
     void mainLoop() {

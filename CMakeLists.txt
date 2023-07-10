@@ -1,11 +1,17 @@
+# https://developer.apple.com/documentation/xcode/embedding-nonstandard-code-structures-in-a-bundle
+
 cmake_minimum_required(VERSION 3.25)
 project(sphere)
 set(CMAKE_CXX_STANDARD 20)
 
+set(SPHERE_BUNDLE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents)
+set(SPHERE_RESOURCES_DIR ${SPHERE_BUNDLE_DIR}/Resources)
+set(SPHERE_FRAMEWORKS_DIR ${SPHERE_FRAMEWORKS_DIR}/Frameworks)
+
 # Generate macOS icons file
 set(SPHERE_ICON_NAME icon.icns)
 set(SPHERE_ICON_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/data/icons/icon.png)
-set(SPHERE_ICON_TARGET ${CMAKE_CURRENT_BINARY_DIR}/${SPHERE_ICON_NAME})
+set(SPHERE_ICON_TARGET ${SPHERE_RESOURCES_DIR}/${SPHERE_ICON_NAME})
 file(REMOVE ${SPHERE_ICON_TARGET})
 
 # add_custom_command() should be used instead of execute_process as execute_process is
@@ -18,12 +24,10 @@ add_custom_command(OUTPUT ${SPHERE_ICON_TARGET}
         VERBATIM)
 
 set(MACOSX_BUNDLE_ICON_FILE ${SPHERE_ICON_NAME})
-set_source_files_properties(${SPHERE_ICON_TARGET} PROPERTIES
-        MACOSX_PACKAGE_LOCATION "Resources")
 
 # Compile shaders and include in bundle
 set(SPHERE_SHADERS_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/data/shaders)
-set(SPHERE_SHADERS_TARGET ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+set(SPHERE_SHADERS_TARGET ${SPHERE_RESOURCES_DIR}/shaders)
 add_custom_command(OUTPUT ${SPHERE_SHADERS_TARGET}
         COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile-shaders.sh
         ${SPHERE_SHADERS_SOURCE} # source
@@ -53,9 +57,10 @@ target_include_directories(sphere
 target_link_libraries(sphere glfw glm)
 
 # Add Vulkan dependency
-set(SPHERE_VULKAN_SDK_PATH /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS/)
-set(ENV{VK_ICD_FILENAMES} ${SPHERE_VULKAN_SDK_PATH}share/vulkan/icd.d/MoltenVK_icd.json)
-set(ENV{VULKAN_SDK} SPHERE_VULKAN_SDK_PATH)
+#set(SPHERE_VULKAN_SDK_PATH /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS/)
+#set(ENV{VK_ICD_FILENAMES} ${SPHERE_VULKAN_SDK_PATH}share/vulkan/icd.d/MoltenVK_icd.json)
+#set(ENV{VULKAN_SDK} SPHERE_VULKAN_SDK_PATH)
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(sphere Vulkan::Vulkan)
+
