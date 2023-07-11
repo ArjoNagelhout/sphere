@@ -4,6 +4,27 @@ cmake_minimum_required(VERSION 3.25)
 project(sphere)
 set(CMAKE_CXX_STANDARD 20)
 
+set(CMAKE_MACOSX_RPATH TRUE)
+
+# use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+# don't add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+
+set(CMAKE_BUILD_RPATH @executable_path/../Frameworks/libvulkan.dylib;
+        @executable_path/../Frameworks/libMoltenVK.dylib)
+
+# the RPATH to be used when installing
+# set(CMAKE_INSTALL_RPATH @executable_path/../Frameworks/libvulkan.dylib;
+#         @executable_path/../Frameworks/libMoltenVK.dylib)
+
+
 set(SPHERE_BUNDLE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents)
 set(SPHERE_RESOURCES_DIR ${SPHERE_BUNDLE_DIR}/Resources)
 set(SPHERE_FRAMEWORKS_DIR ${SPHERE_BUNDLE_DIR}/Frameworks)
@@ -56,6 +77,10 @@ target_include_directories(sphere
         PRIVATE external/glm)
 target_link_libraries(sphere glfw glm)
 
+# Add Vulkan dependency
+find_package(Vulkan REQUIRED)
+target_link_libraries(sphere Vulkan::Vulkan)
+
 # Copy the molten VK and Vulkan .dylib dynamic libraries to the Frameworks directory
 set(SPHERE_VULKAN_SDK_PATH /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS)
 set(SPHERE_VULKAN_ICD ${SPHERE_VULKAN_SDK_PATH}/share/vulkan/icd.d/MoltenVK_icd.json)
@@ -70,10 +95,13 @@ add_custom_command(TARGET sphere POST_BUILD
         ${SPHERE_VULKAN_SDK_PATH}/lib/libMoltenVK.dylib
         ${SPHERE_FRAMEWORKS_DIR}/libMoltenVK.dylib)
 
-# Add Vulkan dependency
-find_package(Vulkan REQUIRED)
-target_link_libraries(sphere Vulkan::Vulkan)
-
-# set rpath
+#add_custom_command(TARGET sphere POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy
+#        ${SPHERE_VULKAN_SDK_PATH}/MoltenVK_icd.json
+#        ${SPHERE_FRAMEWORKS_DIR}/libMoltenVK.dylib)
 
 # set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};@executable_path/../Frameworks/)
+
+# message(${CMAKE_INSTALL_PREFIX})
+
+# install(TARGETS sphere DESTINATION laa)
