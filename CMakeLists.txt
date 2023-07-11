@@ -1,29 +1,6 @@
-# https://developer.apple.com/documentation/xcode/embedding-nonstandard-code-structures-in-a-bundle
-
 cmake_minimum_required(VERSION 3.25)
 project(sphere)
 set(CMAKE_CXX_STANDARD 20)
-
-set(CMAKE_MACOSX_RPATH TRUE)
-
-# use, i.e. don't skip the full RPATH for the build tree
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-
-# when building, don't use the install RPATH already
-# (but later on when installing)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-
-# don't add the automatically determined parts of the RPATH
-# which point to directories outside the build tree to the install RPATH
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
-
-set(CMAKE_BUILD_RPATH @executable_path/../Frameworks/libvulkan.dylib;
-        @executable_path/../Frameworks/libMoltenVK.dylib)
-
-# the RPATH to be used when installing
-# set(CMAKE_INSTALL_RPATH @executable_path/../Frameworks/libvulkan.dylib;
-#         @executable_path/../Frameworks/libMoltenVK.dylib)
-
 
 set(SPHERE_BUNDLE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents)
 set(SPHERE_RESOURCES_DIR ${SPHERE_BUNDLE_DIR}/Resources)
@@ -64,6 +41,16 @@ add_executable(
         ${SPHERE_SHADERS_TARGET}
         src/main.cpp src/HelloWorld.h)
 
+set_target_properties(sphere PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/data/Info.plist)
+
+set(MOLTENVK_DIR /Users/arjonagelhout/VulkanSDK/1.3.250.1)
+message(STATUS MoltenVK Dir: ${MOLTENVK_DIR})
+
+add_custom_command(TARGET sphere POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${MOLTENVK_DIR}/MoltenVK/dylib/macOS/libMoltenVK.dylib"
+        ${CMAKE_CURRENT_BINARY_DIR}/sphere.app/Contents/Frameworks/libMoltenVK.dylib
+        DEPENDS vulkan)
+
 # Add GLFW and GLM dependency
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -81,27 +68,17 @@ target_link_libraries(sphere glfw glm)
 find_package(Vulkan REQUIRED)
 target_link_libraries(sphere Vulkan::Vulkan)
 
-# Copy the molten VK and Vulkan .dylib dynamic libraries to the Frameworks directory
-set(SPHERE_VULKAN_SDK_PATH /Users/arjonagelhout/VulkanSDK/1.3.250.1/macOS)
-set(SPHERE_VULKAN_ICD ${SPHERE_VULKAN_SDK_PATH}/share/vulkan/icd.d/MoltenVK_icd.json)
+get_filename_component(Vulkan_LIBRARY_DIR ${Vulkan_LIBRARY} DIRECTORY)
 
-add_custom_command(TARGET sphere POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${SPHERE_VULKAN_SDK_PATH}/lib/libvulkan.dylib
-        ${SPHERE_FRAMEWORKS_DIR}/libvulkan.dylib)
+message(STATUS "Vulkan Library dir: ${Vulkan_LIBRARY_DIR}")
 
-add_custom_command(TARGET sphere POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${SPHERE_VULKAN_SDK_PATH}/lib/libMoltenVK.dylib
-        ${SPHERE_FRAMEWORKS_DIR}/libMoltenVK.dylib)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/install)
 
-#add_custom_command(TARGET sphere POST_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E copy
-#        ${SPHERE_VULKAN_SDK_PATH}/MoltenVK_icd.json
-#        ${SPHERE_FRAMEWORKS_DIR}/libMoltenVK.dylib)
-
-# set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};@executable_path/../Frameworks/)
-
-# message(${CMAKE_INSTALL_PREFIX})
-
-# install(TARGETS sphere DESTINATION laa)
+# Keep RPATH so fixup_bundle can use it to find libraries
+set_target_properties(sphere PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+install(TARGETS sphere BUNDLE DESTINATION "sphere")
+# Fix up the library references to be self-contained within the bundle.
+install(CODE "
+        include(BundleUtilities)
+        fixup_bundle(\${CMAKE_INSTALL_PREFIX}/sphere/sphere.app \"\" \"${Vulkan_LIBRARY_DIR}\")
+        ")
