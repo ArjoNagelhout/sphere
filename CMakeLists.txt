@@ -15,7 +15,6 @@ set(SPHERE_ICD_SOURCE ${MOLTENVK_DIR}/MoltenVK/dylib/macOS/MoltenVK_icd.json)
 set(SPHERE_ICD_TARGET ${CMAKE_BINARY_DIR}/staging-json/MoltenVK_icd.json)
 
 # MoltenVK JSON File
-
 execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/staging-json)
 execute_process(COMMAND sed -e "/\"library_path\":/s$:[[:space:]]*\"[[:space:]]*[\\.\\/]*$: \"..\\/..\\/..\\/Frameworks\\/$"
         ${SPHERE_ICD_SOURCE}
@@ -25,7 +24,7 @@ execute_process(COMMAND sed -e "/\"library_path\":/s$:[[:space:]]*\"[[:space:]]*
 # Modify the ICD JSON file to adjust the library path.
 # The ICD JSON file goes in the Resources/vulkan/icd.d directory, so adjust the
 # library_path to the relative path to the Frameworks directory in the bundle.
-# The regex does: substitute ':<whitespace>"<whitespace><all occurences of . and />' with:
+# The regex does: substitute ':<whitespace>"<whitespace><all occurrences of . and />' with:
 # ': "../../../Frameworks/'
 # ~~~
 add_custom_target(MoltenVK_icd-staging-json ALL
