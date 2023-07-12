@@ -9,7 +9,7 @@ set(SPHERE_RESOURCES_DIR ${SPHERE_BUNDLE_DIR}/Resources)
 set(SPHERE_FRAMEWORKS_DIR ${SPHERE_BUNDLE_DIR}/Frameworks)
 
 set(MOLTENVK_DIR /Users/arjonagelhout/VulkanSDK/1.3.250.1)
-message(STATUS MoltenVK Dir: ${MOLTENVK_DIR})
+message(STATUS "MoltenVK Dir: ${MOLTENVK_DIR}")
 
 set(SPHERE_ICD_SOURCE ${MOLTENVK_DIR}/MoltenVK/dylib/macOS/MoltenVK_icd.json)
 set(SPHERE_ICD_TARGET ${CMAKE_BINARY_DIR}/staging-json/MoltenVK_icd.json)
