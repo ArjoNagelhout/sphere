@@ -34,6 +34,8 @@ struct SwapchainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+const int MAX_FRAMES_IN_FLIGHT = 2;
+
 class HelloWorld {
 public:
     void run() {
@@ -66,6 +68,10 @@ private:
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence inFlightFence;
+    // std::vector<VkCommandBuffer> commandBuffers;
+    // std::vector<VkSemaphore> imageAvailableSemaphore;
+    //std::vector<VkSemaphore> renderFinishedSemaphore;
+    //std::vector<VkFence> inFlightFence;
 
     const char *NAME = "Sphere";
     const uint32_t WIDTH = 600;
