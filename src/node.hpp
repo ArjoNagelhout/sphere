@@ -21,7 +21,7 @@ namespace sphere {
         }
 
         // adds a child to this node
-        void add(const Node& node) {
+        void add(Node *node) {
 
             // make sure node is not this node
             // if (node == this) { throw std::runtime_error }
@@ -54,16 +54,14 @@ namespace sphere {
 
             // then iterate over children and print them
             for (auto &child : children) {
-                child.print(newLevel, maxLevels);
+                child->print(newLevel, maxLevels);
             }
         }
 #pragma clang diagnostic pop
 
-        std::vector<Node> children;
-
     private:
         std::string name;
-
+        std::vector<Node *> children;
     };
 
 }

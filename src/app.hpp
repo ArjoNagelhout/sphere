@@ -18,15 +18,17 @@ namespace sphere {
         static void run() {
             Scene scene{"test"};
 
-            Node test{"Test"};
-            Node child{"Child"};
-            Node grandChild{"GrandChild"};
+            Node test {"Test"};
+            Node child {"Child"};
+            Node child2 {"Child 2"};
+            Node child3 {"Child 3"};
+            Node grandChild {"GrandChild"};
 
-            child.add(grandChild);
-            test.add(child);
-            test.add(child);
-            test.add(child);
-            scene.rootNode.add(test);
+            scene.rootNode.add(&test);
+            child.add(&grandChild);
+            test.add(&child);
+            test.add(&child2);
+            test.add(&child3);
 
             scene.rootNode.print();
         }
