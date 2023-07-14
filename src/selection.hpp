@@ -10,9 +10,7 @@ namespace sphere {
     class Selection {
 
     public:
-        Selection() {
-
-        }
+        Selection() = default;
 
     private:
 
