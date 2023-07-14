@@ -15,9 +15,20 @@ namespace sphere {
         }
 
         // main loop
-        void run() {
+        static void run() {
             Scene scene{"test"};
-            std::cout << scene.GetName() << std::endl;
+
+            Node test{"Test"};
+            Node child{"Child"};
+            Node grandChild{"GrandChild"};
+
+            child.add(grandChild);
+            test.add(child);
+            test.add(child);
+            test.add(child);
+            scene.rootNode.add(test);
+
+            scene.rootNode.print();
         }
 
         // cleanup resources

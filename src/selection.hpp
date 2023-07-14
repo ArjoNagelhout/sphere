@@ -1,8 +1,25 @@
-//
-// Created by Arjo Nagelhout on 2023-07-14.
-//
-
 #ifndef SPHERE_SELECTION_HPP
 #define SPHERE_SELECTION_HPP
+
+#include "node.hpp"
+
+#include <vector>
+
+namespace sphere {
+
+    class Selection {
+
+    public:
+        Selection() {
+
+        }
+
+    private:
+
+        std::vector<Node> nodes;
+
+    };
+
+}
 
 #endif //SPHERE_SELECTION_HPP

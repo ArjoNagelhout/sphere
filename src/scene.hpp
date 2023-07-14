@@ -5,39 +5,31 @@
 #include <vector>
 #include <string>
 
+#include "node.hpp"
+
 namespace sphere {
 
     class Scene {
 
     public:
         // constructor with name
-        Scene(std::string name) {
-            std::cout << "Initialized scene" << std::endl;
+        // uses initializer list
+        Scene(std::string name) : rootNode("root") {
+            std::cout << "Initialized scene \"" << name << "\"\n";
             this->name = name;
         }
 
-        // adds an object to the scene
-        void add(std::string object) {
-
-        }
-
-        // removes an object from the scene
-        void remove(std::string object) {
-
-        }
-
-        std::string GetName() {
+        std::string getName() {
             return name;
         }
+
+        // root node in the scene
+        Node rootNode;
 
     private:
 
         // name of the scene
         std::string name;
-
-        // list of objects in the scene
-        std::vector<std::string> objects;
-
     };
 }
 
