@@ -58,22 +58,14 @@ if (APPLE)
                 VERBATIM)
 
         set(MACOSX_BUNDLE_ICON_FILE ${SPHERE_ICON_NAME})
-
-        set(SPHERE_SOURCES
-                ${SPHERE_ICON_TARGET}
-                ${SPHERE_SHADERS_TARGET}
-                ${SPHERE_ICD_TARGET})
 endif()
-
-set(SOURCES
-        src/main.cpp
-        "${CMAKE_SOURCE_DIR}/src/sphere.hpp"
-        "${CMAKE_SOURCE_DIR}/src/sphere.cpp")
 
 add_executable(sphere
         MACOSX_BUNDLE
-        "${SOURCES}"
-        "${SPHERE_SOURCES}")
+        src/main.cpp src/app.cpp src/app.hpp
+        ${SPHERE_ICON_TARGET}
+        ${SPHERE_SHADERS_TARGET}
+        ${SPHERE_ICD_TARGET} src/commands/undo_stack.cpp src/commands/undo_stack.hpp src/commands/command.cpp src/commands/command.hpp)
 
 target_link_libraries(sphere PUBLIC renderer)
 
