@@ -12,9 +12,7 @@ namespace sphere {
     class Mesh {
 
     public:
-        Mesh() {
-
-        }
+        Mesh() = default;
 
     private:
         std::string name;

@@ -9,12 +9,14 @@
 
 namespace sphere {
 
+    const char* ROOT_NODE_NAME = "root";
+
     class Scene {
 
     public:
         // constructor with name
         // uses initializer list
-        explicit Scene(const std::string &name) : rootNode("root"), name(name) {
+        explicit Scene(const std::string &name) : name(name) {
             std::cout << "Initialized scene \"" << name << "\"\n";
         }
 
@@ -23,7 +25,7 @@ namespace sphere {
         }
 
         // root node in the scene
-        Node rootNode;
+        Node rootNode{ROOT_NODE_NAME};
 
     private:
 

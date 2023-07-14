@@ -12,7 +12,7 @@ namespace sphere {
 
     const int INDENTATION_AMOUNT = 4;
 
-    /**
+    /*
      * A node has a transform, a parent
      *
      * Events can be trickle down (from parent to child), or bubble up (from child to parent)
@@ -28,7 +28,9 @@ namespace sphere {
 
         // NODE HIERARCHY
 
-        // adds a child to this node
+        /*
+         * Adds a child to this node
+         */
         void addChild(Node *node) {
 
             // make sure node is not this node
@@ -36,14 +38,23 @@ namespace sphere {
             children.push_back(node);
         }
 
-        // removes a child from this node
+        /*
+         * Removes a child from this node
+         */
         void removeChild(Node *node) {
             auto result = std::remove(children.begin(), children.end(), node);
         }
 
+        /*
+         * For reordering the hierarchy
+         */
+        void setChildIndex(Node *node, int index) {
+
+        }
+
         // destroys this node
         void destroy() {
-
+            // what happens with the node?
         }
 
         // sets the parent of this node to the given node
@@ -174,14 +185,10 @@ namespace sphere {
         // setters
 
         void setLocalPosition(glm::vec3 localPosition) {
-
+            localMatrix[3] = glm::vec4(localPosition.x, localPosition.y, localPosition.z, 1.0f);
         }
 
         void setLocalRotation(glm::quat localRotation) {
-
-        }
-
-        void setLocalPositionAndRotation(glm::vec3 localPosition, glm::quat localRotation) {
 
         }
 
@@ -198,10 +205,6 @@ namespace sphere {
         }
 
         void setRotation(glm::quat rotation) {
-
-        }
-
-        void setPositionAndRotation(glm::vec3 position, glm::quat rotation) {
 
         }
 
@@ -235,7 +238,7 @@ namespace sphere {
          * the world matrix to the supplied world matrix
          */
         void setWorldMatrix(glm::mat4x4 worldMatrix) {
-
+            this->worldMatrix = worldMatrix;
         }
 
         void setLocalMatrix(glm::mat4x4) {
@@ -257,6 +260,7 @@ namespace sphere {
             int spacesAmount = level * INDENTATION_AMOUNT;
             char *spacesBuffer = new char[spacesAmount];
             memset(spacesBuffer, ' ', sizeof(char) * spacesAmount);
+
             std::cout << spacesBuffer << "- " << name << "\n";
             delete[] spacesBuffer;
 
