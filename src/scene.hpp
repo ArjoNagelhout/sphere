@@ -14,9 +14,8 @@ namespace sphere {
     public:
         // constructor with name
         // uses initializer list
-        explicit Scene(std::string name) : rootNode("root") {
+        explicit Scene(const std::string &name) : rootNode("root"), name(name) {
             std::cout << "Initialized scene \"" << name << "\"\n";
-            this->name = name;
         }
 
         std::string getName() {

@@ -24,13 +24,17 @@ namespace sphere {
             Node child3 {"Child 3"};
             Node grandChild {"GrandChild"};
 
-            scene.rootNode.add(&test);
-            child.add(&grandChild);
-            test.add(&child);
-            test.add(&child2);
-            test.add(&child3);
+            scene.rootNode.addChild(&test);
+            child.addChild(&grandChild);
+            test.addChild(&child);
+            test.addChild(&child2);
+            test.addChild(&child3);
+            child3.addChild(&child);
 
             scene.rootNode.print();
+
+            child.setParent(&child);
+            child.setParent(&grandChild);
         }
 
         // cleanup resources
