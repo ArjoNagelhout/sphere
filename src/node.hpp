@@ -7,7 +7,9 @@
 
 #include <glm/mat4x4.hpp>
 #include<glm/gtc/quaternion.hpp>
-#include<glm/gtx/matrix_decompose.hpp>
+#include<glm/gtx/transform.hpp>
+#include<glm/gtx/quaternion.hpp>
+
 
 namespace sphere {
 
@@ -23,7 +25,7 @@ namespace sphere {
     class Node {
 
     public:
-        explicit Node(std::string name) {
+        explicit Node(std::string name, Node &parent) {
             this->name = std::move(name);
         }
 
@@ -56,12 +58,15 @@ namespace sphere {
         // destroys this node
         void destroy() {
             // what happens with the node?
+
+            // first destroy all child objects
         }
 
         // sets the parent of this node to the given node
         void setParent(Node *node, bool worldPositionStays = false) {
 
             if (node == nullptr) {
+                std::cout << "node is null" << std::endl;
                 return;
             }
 
@@ -183,20 +188,23 @@ namespace sphere {
 
         // setters
 
-        void setLocalPosition(glm::vec3 localPosition) {
-            this->localPosition = localPosition;
+        void setLocalPosition(glm::vec3 position) {
+            this->localPosition = position;
+            recalculateLocalMatrix();
         }
 
-        void setLocalRotation(glm::quat localRotation) {
-            this->localRotation = localRotation;
+        void setLocalRotation(glm::quat rotation) {
+            this->localRotation = rotation;
+            recalculateLocalMatrix();
         }
 
-        void setLocalEulerAngles(glm::vec3 localEulerAngles) {
-
+        void setLocalEulerAngles(glm::vec3 eulerAngles) {
+            recalculateLocalMatrix();
         }
 
-        void setLocalScale(glm::vec3 localScale) {
-            this->localScale = localScale;
+        void setLocalScale(glm::vec3 scale) {
+            this->localScale = scale;
+            recalculateLocalMatrix();
         }
 
         void setPosition(glm::vec3 position) {
@@ -247,8 +255,12 @@ namespace sphere {
 
     private:
         std::string name;
-
         std::vector<Node *> children;
+
+        /**
+         * Should be set when the parent is changed using setParent
+         **/
+        Node *parent;
 
         // we store the local position, rotation and scale
         // so that we don't have to continuously decompose and recompose the matrix
@@ -260,7 +272,8 @@ namespace sphere {
         glm::vec3 localScale;
 
         /*
-         *
+         * The computed local matrix that gets recalculated each time the local position, rotation or scale
+         * gets updated.
          */
         glm::mat4x4 computedLocalMatrix{};
 
@@ -270,24 +283,41 @@ namespace sphere {
         glm::mat4x4 computedWorldMatrix{};
 
         /*
-         * Called by the parent when its transform has changed.
-         *
-         * Propagates changes to child nodes
+         * Recalculates the local matrix
+         * Should be called when localPosition, localRotation or localScale get changed.
          */
-        void onParentTransformChanged() {
+        void recalculateLocalMatrix() {
 
+            // compose the local matrix from the translate, rotate and scale matrix
+            glm::mat4x4 translateMatrix{glm::translate(localPosition)};
+            glm::mat4x4 rotateMatrix{glm::toMat4(localRotation)};
+            glm::mat4x4 scaleMatrix{glm::scale(localScale)};
+
+            computedLocalMatrix = translateMatrix * rotateMatrix * scaleMatrix;
+
+            // when the local matrix is recalculated, we should also recalculate the world matrix
+            recalculateWorldMatrix();
         }
 
         /*
-         * Called when the local position, rotation or scale
-         * gets changed,
+         * Recalculates the world matrix using the parent's world matrix,
+         * calls recalculateWorldMatrix on all children as well.
          */
-        void onLocalTransformChanged() {
+        void recalculateWorldMatrix() {
+            glm::mat4x4 parentMatrix;
 
-            for (const auto &child : children) {
+            // use the parent's world matrix
+            if (parent == nullptr) {
+                parentMatrix = glm::mat4x4(1.0f); // use identity matrix if root node / floating node
+            } else {
+                parentMatrix = parent->computedWorldMatrix;
+            }
 
-                child->onParentTransformChanged();
+            computedWorldMatrix = parentMatrix * computedLocalMatrix;
 
+            // now loop over the children
+            for (auto const &child : children) {
+                child->recalculateWorldMatrix();
             }
         }
     };
