@@ -10,13 +10,14 @@
 #include<glm/gtx/transform.hpp>
 #include<glm/gtx/quaternion.hpp>
 
-
 namespace sphere {
 
     const int INDENTATION_AMOUNT = 4;
 
     /*
-     * A node has a transform, a parent
+     * A node has a transform, and should always have a parent.
+     *
+     *
      *
      * Events can be trickle down (from parent to child), or bubble up (from child to parent)
      *
@@ -25,8 +26,8 @@ namespace sphere {
     class Node {
 
     public:
-        explicit Node(std::string name, Node &parent) {
-            this->name = std::move(name);
+        explicit Node(std::string name, Node *parent = nullptr) : name(name), parent(parent) {
+            parent->addChild(this);
         }
 
         // NODE HIERARCHY
@@ -44,8 +45,8 @@ namespace sphere {
         /*
          * Removes a child from this node
          */
-        void removeChild(Node *node) {
-            auto result = std::remove(children.begin(), children.end(), node);
+        void removeChild(Node &node) {
+            auto result = std::remove(children.begin(), children.end(), &node);
         }
 
         /*
@@ -55,22 +56,25 @@ namespace sphere {
 
         }
 
-        // destroys this node
+        /*
+         * Destroy this node and all its children
+         */
         void destroy() {
-            // what happens with the node?
 
-            // first destroy all child objects
+            // first destroy all child nodes
+
+            // then destroy this node
         }
 
         // sets the parent of this node to the given node
-        void setParent(Node *node, bool worldPositionStays = false) {
+        void setParent(Node &node, bool worldPositionStays = false) {
 
-            if (node == nullptr) {
+            if (&node == nullptr) {
                 std::cout << "node is null" << std::endl;
                 return;
             }
 
-            if (node == this) {
+            if (&node == this) {
                 std::cout << "can't set node parent to itself" << std::endl;
                 return;
             }
@@ -80,15 +84,16 @@ namespace sphere {
         }
 
         /*
-         * Gets parent of this node
+         * Gets pointer to parent of this node
          */
         Node *getParent() {
-
+            return parent;
         };
 
         // TRANSFORM
 
         // operations
+
 
         /*
          * Performs a local rotation relative to the current rotation
@@ -171,7 +176,10 @@ namespace sphere {
         }
 
         glm::vec3 getPosition() {
-            return {0, 0, 0};
+            // should transform the world space matrix with
+            glm::vec4 positionColumn{localPosition, 1.0f};
+            glm::vec4 result = computedWorldMatrix * positionColumn;
+            return glm::vec3{result};
         }
 
         glm::quat getRotation() {
@@ -207,10 +215,16 @@ namespace sphere {
             recalculateLocalMatrix();
         }
 
+        /*
+         * Sets the world position
+         */
         void setPosition(glm::vec3 position) {
 
         }
 
+        /*
+         * Sets the world rotation
+         */
         void setRotation(glm::quat rotation) {
 
         }
@@ -316,7 +330,7 @@ namespace sphere {
             computedWorldMatrix = parentMatrix * computedLocalMatrix;
 
             // now loop over the children
-            for (auto const &child : children) {
+            for (auto const &child: children) {
                 child->recalculateWorldMatrix();
             }
         }

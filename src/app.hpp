@@ -24,20 +24,14 @@ namespace sphere {
         static void run() {
             Scene scene{"test"};
 
-            Node test {"Test"};
-            Node child {"Child"};
-            Node child2 {"Child 2"};
-            Node child3 {"Child 3"};
-            Node grandChild {"GrandChild"};
+            Node test {"Test", &scene.rootNode};
+            Node child {"Child", &test};
+            Node child2 {"Child 2", &child};
+            Node child3 {"Child 3", &child};
+            Node grandChild {"GrandChild", &child3};
 
-            test.setLocalPosition({3.2323f, 0, 0});
-            child.setLocalPosition({0, 2.1113f, 0});
-
-            scene.rootNode.addChild(&test);
-            child.addChild(&grandChild);
-            test.addChild(&child);
-            test.addChild(&child2);
-            test.addChild(&child3);
+            test.setLocalPosition({3.0f, 0, 0});
+            child.setLocalPosition({0, 2.0f, 0});
 
             scene.rootNode.print();
 

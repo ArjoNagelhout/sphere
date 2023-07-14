@@ -25,7 +25,7 @@ namespace sphere {
         }
 
         // root node in the scene
-        Node rootNode{ROOT_NODE_NAME};
+        Node rootNode{ROOT_NODE_NAME, nullptr};
 
     private:
 
