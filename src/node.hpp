@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <glm/mat4x4.hpp>
+#include<glm/gtc/quaternion.hpp>
 
 namespace sphere {
 
@@ -61,45 +62,130 @@ namespace sphere {
             // loop through all children, recursively traverse graph
         }
 
-        /**
-         * @brief Gets parent of this node
-         * */
-        Node *getParent{
+        /*
+         * Gets parent of this node
+         */
+        Node *getParent() {
 
         };
 
         // TRANSFORM
 
-        glm::vec3 getLocalPosition() {
-            return {localTransform[3]};
-        }
+        // operations
 
-        // todo
-        glm::vec4 getLocalRotation() {
-            return {};
-        }
-
-        glm::vec3 getLocalScale() {
+        /*
+         * Performs a local rotation relative to the current rotation
+         */
+        void rotate(glm::vec3 eulerAngles) {
 
         }
 
-        glm::vec3 getPosition() {
+        /*
+         *
+         */
+        void rotate(glm::quat rotation) {
 
         }
 
-        glm::vec4 getRotation() {
+        void translate() {
 
         }
 
-        glm::vec3 getScale() {
+        // directions in world space
+
+        /*
+         * Up directional vector in world space
+         */
+        glm::vec3 up() {
 
         }
+
+        /*
+         * Down directional vector in world space
+         */
+        glm::vec3 down() {
+
+        }
+
+        /*
+         * Forward directional vector in world space
+         */
+        glm::vec3 forward() {
+
+        }
+
+        /*
+         * Back directional vector in world space
+         */
+        glm::vec3 back() {
+
+        }
+
+        /*
+         * Right directional vector in world space
+         */
+        glm::vec3 right() {
+
+        }
+
+        /*
+         * Left directional vector in world space
+         */
+        glm::vec3 left() {
+
+        }
+
+        // getters
+
+        glm::vec3 localPosition() {
+            // last column of the matrix
+            return {localMatrix[3]};
+        }
+
+        glm::quat localRotation() {
+            return {0, 0, 0, 0};
+        }
+
+        glm::vec3 localEulerAngles() {
+            return {0, 0, 0};
+        }
+
+        glm::vec3 localScale() {
+            // length of first three column vectors
+            return {0, 0, 0};
+        }
+
+        glm::vec3 position() {
+            return {0, 0, 0};
+        }
+
+        glm::quat rotation() {
+            return {0, 0, 0, 0};
+        }
+
+        glm::vec3 eulerAngles() {
+            return {0, 0, 0};
+        }
+
+        glm::vec3 lossyScale() {
+            return {0, 0, 0};
+        }
+
+        // setters
 
         void setLocalPosition(glm::vec3 localPosition) {
 
         }
 
-        void setLocalRotation() {
+        void setLocalRotation(glm::quat localRotation) {
+
+        }
+
+        void setLocalPositionAndRotation(glm::vec3 localPosition, glm::quat localRotation) {
+
+        }
+
+        void setLocalEulerAngles(glm::vec3 localEulerAngles) {
 
         }
 
@@ -111,12 +197,51 @@ namespace sphere {
 
         }
 
-        void setRotation() {
+        void setRotation(glm::quat rotation) {
 
         }
 
-        void setScale(glm::vec3 scale) {
+        void setPositionAndRotation(glm::vec3 position, glm::quat rotation) {
 
+        }
+
+        void setEulerAngles(glm::vec3 eulerAngles) {
+
+        }
+
+        void setLossyScale(glm::vec3 scale) {
+
+        }
+
+        // MATRICES
+
+        /*
+         *
+         */
+        glm::mat4x4 getLocalMatrix() {
+            return localMatrix;
+        }
+
+        /*
+         * Gets the (cached) computed world matrix
+         * doesn't perform any operations
+         */
+        glm::mat4x4 getWorldMatrix() {
+            return worldMatrix;
+        }
+
+        /*
+         * Sets the local matrix so that it evaluates
+         * the world matrix to the supplied world matrix
+         */
+        void setWorldMatrix(glm::mat4x4 worldMatrix) {
+
+        }
+
+        void setLocalMatrix(glm::mat4x4) {
+            // propagate changes to all child nodes
+
+            onWorldMatrixChanged();
         }
 
 #pragma clang diagnostic push
@@ -152,10 +277,28 @@ namespace sphere {
         std::string name;
         std::vector<Node *> children;
 
-        // local transform that gets used to calculate the world transform
-        glm::mat4x4 localTransform{};
+        /*
+         *
+         */
+        glm::mat4x4 localMatrix{};
 
-        glm::mat4x4 worldTransform{};
+        /*
+         *
+         */
+        glm::mat4x4 worldMatrix{};
+
+        /*
+         *
+         */
+        void onWorldMatrixChanged() {
+
+            //
+            for (const auto &child : children) {
+
+                //child
+
+            }
+        }
     };
 }
 
