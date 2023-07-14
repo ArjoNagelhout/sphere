@@ -9,26 +9,14 @@ namespace sphere {
     class Command {
 
     public:
-        Command() {
-            initialize();
-        }
 
         // undo the command
-        virtual void undo() {
-
-        }
+        virtual void undo();
 
         // execute the command
-        virtual void redo() {
-
-        }
+        virtual void redo();
 
     private:
-
-        // perform setup, e.g. setting private variables
-        virtual void initialize() {
-
-        }
 
         std::vector<Command> children;
     };
