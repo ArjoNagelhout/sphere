@@ -7,7 +7,28 @@
 
 namespace sphere {
 
+    // Singleton
     class UndoStack {
+
+    public:
+        UndoStack() {
+
+        }
+
+        void undo() {
+
+        }
+
+        void redo() {
+
+        }
+
+        bool needsSaving() {
+
+        }
+
+    private:
+        // undo stack
 
     };
 

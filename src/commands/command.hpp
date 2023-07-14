@@ -14,12 +14,12 @@ namespace sphere {
         }
 
         // undo the command
-        void undo() {
+        virtual void undo() {
 
         }
 
         // execute the command
-        void redo() {
+        virtual void redo() {
 
         }
 

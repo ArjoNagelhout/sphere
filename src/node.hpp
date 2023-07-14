@@ -7,6 +7,7 @@
 
 #include <glm/mat4x4.hpp>
 #include<glm/gtc/quaternion.hpp>
+#include<glm/gtx/matrix_decompose.hpp>
 
 namespace sphere {
 
@@ -148,48 +149,46 @@ namespace sphere {
 
         // getters
 
-        glm::vec3 localPosition() {
-            // last column of the matrix
-            return {localMatrix[3]};
+        glm::vec3 getLocalPosition() {
+            return localPosition;
         }
 
-        glm::quat localRotation() {
+        glm::quat getLocalRotation() {
+            return localRotation;
+        }
+
+        glm::vec3 getLocalScale() {
+            return localScale;
+        }
+
+        glm::vec3 getLocalEulerAngles() {
+            return {0, 0, 0};
+        }
+
+        glm::vec3 getPosition() {
+            return {0, 0, 0};
+        }
+
+        glm::quat getRotation() {
             return {0, 0, 0, 0};
         }
 
-        glm::vec3 localEulerAngles() {
+        glm::vec3 getEulerAngles() {
             return {0, 0, 0};
         }
 
-        glm::vec3 localScale() {
-            // length of first three column vectors
-            return {0, 0, 0};
-        }
-
-        glm::vec3 position() {
-            return {0, 0, 0};
-        }
-
-        glm::quat rotation() {
-            return {0, 0, 0, 0};
-        }
-
-        glm::vec3 eulerAngles() {
-            return {0, 0, 0};
-        }
-
-        glm::vec3 lossyScale() {
+        glm::vec3 getLossyScale() {
             return {0, 0, 0};
         }
 
         // setters
 
         void setLocalPosition(glm::vec3 localPosition) {
-            localMatrix[3] = glm::vec4(localPosition.x, localPosition.y, localPosition.z, 1.0f);
+            this->localPosition = localPosition;
         }
 
         void setLocalRotation(glm::quat localRotation) {
-
+            this->localRotation = localRotation;
         }
 
         void setLocalEulerAngles(glm::vec3 localEulerAngles) {
@@ -197,7 +196,7 @@ namespace sphere {
         }
 
         void setLocalScale(glm::vec3 localScale) {
-
+            this->localScale = localScale;
         }
 
         void setPosition(glm::vec3 position) {
@@ -214,37 +213,6 @@ namespace sphere {
 
         void setLossyScale(glm::vec3 scale) {
 
-        }
-
-        // MATRICES
-
-        /*
-         *
-         */
-        glm::mat4x4 getLocalMatrix() {
-            return localMatrix;
-        }
-
-        /*
-         * Gets the (cached) computed world matrix
-         * doesn't perform any operations
-         */
-        glm::mat4x4 getWorldMatrix() {
-            return worldMatrix;
-        }
-
-        /*
-         * Sets the local matrix so that it evaluates
-         * the world matrix to the supplied world matrix
-         */
-        void setWorldMatrix(glm::mat4x4 worldMatrix) {
-            this->worldMatrix = worldMatrix;
-        }
-
-        void setLocalMatrix(glm::mat4x4) {
-            // propagate changes to all child nodes
-
-            onWorldMatrixChanged();
         }
 
 #pragma clang diagnostic push
@@ -279,27 +247,46 @@ namespace sphere {
 
     private:
         std::string name;
+
         std::vector<Node *> children;
 
-        /*
-         *
-         */
-        glm::mat4x4 localMatrix{};
+        // we store the local position, rotation and scale
+        // so that we don't have to continuously decompose and recompose the matrix
+
+        glm::vec3 localPosition;
+
+        glm::quat localRotation;
+
+        glm::vec3 localScale;
 
         /*
          *
          */
-        glm::mat4x4 worldMatrix{};
+        glm::mat4x4 computedLocalMatrix{};
 
         /*
          *
          */
-        void onWorldMatrixChanged() {
+        glm::mat4x4 computedWorldMatrix{};
 
-            //
+        /*
+         * Called by the parent when its transform has changed.
+         *
+         * Propagates changes to child nodes
+         */
+        void onParentTransformChanged() {
+
+        }
+
+        /*
+         * Called when the local position, rotation or scale
+         * gets changed,
+         */
+        void onLocalTransformChanged() {
+
             for (const auto &child : children) {
 
-                //child
+                child->onParentTransformChanged();
 
             }
         }

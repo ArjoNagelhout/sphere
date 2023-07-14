@@ -42,15 +42,13 @@ namespace sphere {
             scene.rootNode.print();
 
             std::cout << "test position:\n";
-            sphere::printPosition(test.position());
-            sphere::printPosition(test.localPosition());
+            sphere::printPosition(test.getPosition());
+            sphere::printPosition(test.getLocalPosition());
 
             std::cout << "child position:\n";
-            sphere::printPosition(child.position());
-            sphere::printPosition(child.localPosition());
+            sphere::printPosition(child.getPosition());
+            sphere::printPosition(child.getLocalPosition());
         }
-
-
 
         // cleanup resources
         void cleanUp() {
