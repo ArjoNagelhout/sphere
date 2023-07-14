@@ -46,7 +46,7 @@ if (APPLE)
         set_source_files_properties(${SPHERE_ICD_TARGET} PROPERTIES GENERATED TRUE)
 
         # Generate macOS icons file
-        set(SPHERE_ICON_NAME lala.icns)
+        set(SPHERE_ICON_NAME icon.icns)
         set(SPHERE_ICON_SOURCE ${CMAKE_SOURCE_DIR}/data/icons/icon.png)
         set(SPHERE_ICON_TARGET ${SPHERE_RESOURCES_DIR}/${SPHERE_ICON_NAME})
 
@@ -62,10 +62,18 @@ endif()
 
 add_executable(sphere
         MACOSX_BUNDLE
-        src/main.cpp src/app.cpp src/app.hpp
         ${SPHERE_ICON_TARGET}
         ${SPHERE_SHADERS_TARGET}
-        ${SPHERE_ICD_TARGET} src/commands/undo_stack.cpp src/commands/undo_stack.hpp src/commands/command.cpp src/commands/command.hpp)
+        ${SPHERE_ICD_TARGET}
+        src/main.cpp
+        src/app.hpp
+        src/commands/undo_stack.hpp
+        src/commands/command.hpp
+        src/scene.hpp
+        src/camera.hpp
+        src/mesh.hpp
+        src/node.hpp
+        src/commands/add_node.hpp src/texture.hpp src/selection.hpp src/commands/select_node.hpp)
 
 target_link_libraries(sphere PUBLIC renderer)
 

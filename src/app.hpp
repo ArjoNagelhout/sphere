@@ -2,6 +2,7 @@
 #define SPHERE_APP_HPP
 
 #include <renderer.hpp>
+#include "scene.hpp"
 
 namespace sphere {
 
@@ -9,13 +10,20 @@ namespace sphere {
 
     public:
         // e.g. Initialize all resources
-        void initialize();
+        void initialize() {
+
+        }
 
         // main loop
-        void run();
+        void run() {
+            Scene scene{"test"};
+            std::cout << scene.GetName() << std::endl;
+        }
 
         // cleanup resources
-        void cleanUp();
+        void cleanUp() {
+
+        }
 
     private:
         renderer::Renderer renderer;
