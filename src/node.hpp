@@ -34,25 +34,6 @@ namespace sphere {
             }
         }
 
-        // NODE HIERARCHY
-
-        /*
-         * Adds a child to this node
-         */
-        void addChild(Node *node) {
-
-            // make sure node is not this node
-            // if (node == this) { throw std::runtime_error }
-            children.push_back(node);
-        }
-
-        /*
-         * Removes a child from this node
-         */
-        void removeChild(Node &node) {
-            auto result = std::remove(children.begin(), children.end(), &node);
-        }
-
         /*
          * For reordering the hierarchy
          */
@@ -183,7 +164,7 @@ namespace sphere {
             // should transform the world space matrix with
             glm::vec4 positionColumn{localPosition, 1.0f};
             glm::vec4 result = computedWorldMatrix * positionColumn;
-            return glm::vec3{result};
+            return glm::vec3{result.x, result.y, result.z};
         }
 
         glm::quat getRotation() {
@@ -252,11 +233,7 @@ namespace sphere {
             // first print self
 
             int spacesAmount = level * INDENTATION_AMOUNT;
-            char *spacesBuffer = new char[spacesAmount];
-            memset(spacesBuffer, ' ', sizeof(char) * spacesAmount);
-
-            std::cout << spacesBuffer << "- " << name << "\n";
-            delete[] spacesBuffer;
+            std::cout << std::string(spacesAmount, ' ') << "- " << name << "\n";
 
             int newLevel = level + 1;
             if (newLevel >= maxLevels) {
@@ -273,6 +250,7 @@ namespace sphere {
 
     private:
         std::string name;
+
         std::vector<Node *> children;
 
         /*
@@ -295,12 +273,29 @@ namespace sphere {
          * The computed local matrix that gets recalculated each time the local position, rotation or scale
          * gets updated.
          */
-        glm::mat4x4 computedLocalMatrix{};
+        glm::mat4x4 computedLocalMatrix{1.0f};
 
         /*
          *
          */
-        glm::mat4x4 computedWorldMatrix{};
+        glm::mat4x4 computedWorldMatrix{1.0f};
+
+        /*
+         * Adds a child to this node
+         */
+        void addChild(Node *node) {
+
+            // make sure node is not this node
+            // if (node == this) { throw std::runtime_error }
+            children.push_back(node);
+        }
+
+        /*
+         * Removes a child from this node
+         */
+        void removeChild(Node &node) {
+            auto result = std::remove(children.begin(), children.end(), &node);
+        }
 
         /*
          * Recalculates the local matrix
@@ -319,6 +314,8 @@ namespace sphere {
             recalculateWorldMatrix();
         }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "misc-no-recursion"
         /*
          * Recalculates the world matrix using the parent's world matrix,
          * calls recalculateWorldMatrix on all children as well.
@@ -333,13 +330,14 @@ namespace sphere {
                 parentMatrix = parent->computedWorldMatrix;
             }
 
-            computedWorldMatrix = parentMatrix * computedLocalMatrix;
+            computedWorldMatrix = computedLocalMatrix * parentMatrix;
 
             // now loop over the children
             for (auto const &child: children) {
                 child->recalculateWorldMatrix();
             }
         }
+#pragma clang diagnostic pop
     };
 }
 

@@ -9,8 +9,6 @@
 
 namespace sphere {
 
-    const char* ROOT_NODE_NAME = "root";
-
     class Scene {
 
     public:
@@ -25,7 +23,8 @@ namespace sphere {
         }
 
         // root node in the scene
-        Node rootNode{ROOT_NODE_NAME, nullptr};
+        std::string rootString{"root"};
+        Node rootNode{rootString, nullptr};
 
     private:
 

@@ -31,7 +31,7 @@ namespace sphere {
             Node grandChild {"GrandChild", &child3};
 
             test.setLocalPosition({3.0f, 0, 0});
-            child.setLocalPosition({0, 2.0f, 0});
+            child.setLocalPosition({0, 1.0f, 32.0f});
 
             scene.rootNode.print();
 
