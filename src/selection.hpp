@@ -14,7 +14,7 @@ namespace sphere {
 
     private:
 
-        std::vector<Node> nodes;
+        std::vector<Node *> nodes;
 
     };
 

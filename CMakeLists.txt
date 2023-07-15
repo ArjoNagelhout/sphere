@@ -73,11 +73,11 @@ add_executable(sphere
         src/camera.hpp
         src/mesh.hpp
         src/node.hpp
-        src/commands/add_node_command.hpp
+        src/commands/add_nodes_command.hpp
         src/texture.hpp
         src/selection.hpp
-        src/commands/select_node_command.hpp
-        src/commands/transform_command.hpp)
+        src/commands/select_nodes_command.hpp
+        src/commands/transform_nodes_command.hpp src/commands/remove_nodes_command.hpp)
 
 target_link_libraries(sphere PUBLIC renderer)
 

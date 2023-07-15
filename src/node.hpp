@@ -73,7 +73,7 @@ namespace sphere {
         /*
          * Gets pointer to parent of this node
          */
-        Node *getParent() {
+        Node *getParent() const {
             return parent;
         };
 

@@ -1,5 +1,5 @@
-#ifndef SPHERE_ADD_NODE_COMMAND_HPP
-#define SPHERE_ADD_NODE_COMMAND_HPP
+#ifndef SPHERE_ADD_NODES_COMMAND_HPP
+#define SPHERE_ADD_NODES_COMMAND_HPP
 
 #include "command.hpp"
 #include "../scene.hpp"
@@ -9,10 +9,10 @@ namespace sphere {
     /*
      * Command for adding a node to a given scene
      */
-    class AddNodeCommand : Command {
+    class AddNodesCommand : Command {
 
     public:
-        AddNodeCommand(Scene &scene) : scene(scene) {
+        AddNodesCommand(Scene &scene) : scene(scene) {
 
         }
 
@@ -24,4 +24,4 @@ namespace sphere {
     };
 }
 
-#endif //SPHERE_ADD_NODE_COMMAND_HPP
+#endif //SPHERE_ADD_NODES_COMMAND_HPP
