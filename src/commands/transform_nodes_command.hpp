@@ -37,20 +37,18 @@ namespace sphere {
         void undo() override {
             for (auto const &data : dataList) {
                 Node *node = data.node;
-
-                node->setLocalPosition(data.oldLocalPosition);
-                node->setLocalRotation(data.oldLocalRotation);
-                node->setLocalScale(data.oldLocalScale);
+                node->setLocalTransform(data.oldLocalPosition,
+                                        data.oldLocalRotation,
+                                        data.oldLocalScale);
             }
         }
 
         void redo() override {
             for (auto const &data : dataList) {
                 Node *node = data.node;
-
-                node->setLocalPosition(data.newLocalPosition);
-                node->setLocalRotation(data.newLocalRotation);
-                node->setLocalScale(data.newLocalScale);
+                node->setLocalTransform(data.newLocalPosition,
+                                        data.newLocalRotation,
+                                        data.newLocalScale);
             }
         }
 

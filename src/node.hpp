@@ -182,6 +182,16 @@ namespace sphere {
 
         // setters
 
+        /*
+         * Only calls recalculateLocalMatrix once
+         */
+        void setLocalTransform(glm::vec3 position, glm::quat rotation, glm::vec3 scale) {
+            this->localPosition = position;
+            this->localRotation = rotation;
+            this->localScale = scale;
+            recalculateLocalMatrix();
+        }
+
         void setLocalPosition(glm::vec3 position) {
             this->localPosition = position;
             recalculateLocalMatrix();

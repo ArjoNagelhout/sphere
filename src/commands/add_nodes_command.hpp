@@ -7,7 +7,7 @@
 namespace sphere {
 
     /*
-     * Command for adding a node to a given scene
+     * Command for adding nodes to given nodes
      */
     class AddNodesCommand : Command {
 
