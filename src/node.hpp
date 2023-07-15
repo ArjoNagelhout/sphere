@@ -26,8 +26,12 @@ namespace sphere {
     class Node {
 
     public:
-        explicit Node(std::string name, Node *parent = nullptr) : name(name), parent(parent) {
-            parent->addChild(this);
+        explicit Node(std::string name, Node *parent = nullptr)
+            : name(std::move(name)), parent(parent) {
+
+            if (parent != nullptr) {
+                parent->addChild(this);
+            }
         }
 
         // NODE HIERARCHY
@@ -67,21 +71,21 @@ namespace sphere {
         }
 
         // sets the parent of this node to the given node
-        void setParent(Node &node, bool worldPositionStays = false) {
-
-            if (&node == nullptr) {
-                std::cout << "node is null" << std::endl;
-                return;
-            }
-
-            if (&node == this) {
-                std::cout << "can't set node parent to itself" << std::endl;
-                return;
-            }
-
-            // check if node is not child of this node
-            // loop through all children, recursively traverse graph
-        }
+//        void setParent(Node node, bool worldPositionStays = false) {
+//
+//            if (&node == nullptr) {
+//                std::cout << "node is null" << std::endl;
+//                return;
+//            }
+//
+//            if (&node == this) {
+//                std::cout << "can't set node parent to itself" << std::endl;
+//                return;
+//            }
+//
+//            // check if node is not child of this node
+//            // loop through all children, recursively traverse graph
+//        }
 
         /*
          * Gets pointer to parent of this node
@@ -119,42 +123,42 @@ namespace sphere {
          * Up directional vector in world space
          */
         glm::vec3 up() {
-
+            return {0, 0, 0};
         }
 
         /*
          * Down directional vector in world space
          */
         glm::vec3 down() {
-
+            return {0, 0, 0};
         }
 
         /*
          * Forward directional vector in world space
          */
         glm::vec3 forward() {
-
+            return {0, 0, 0};
         }
 
         /*
          * Back directional vector in world space
          */
         glm::vec3 back() {
-
+            return {0, 0, 0};
         }
 
         /*
          * Right directional vector in world space
          */
         glm::vec3 right() {
-
+            return {0, 0, 0};
         }
 
         /*
          * Left directional vector in world space
          */
         glm::vec3 left() {
-
+            return {0, 0, 0};
         }
 
         // getters
@@ -271,19 +275,21 @@ namespace sphere {
         std::string name;
         std::vector<Node *> children;
 
-        /**
+        /*
          * Should be set when the parent is changed using setParent
-         **/
+         */
         Node *parent;
 
         // we store the local position, rotation and scale
         // so that we don't have to continuously decompose and recompose the matrix
 
-        glm::vec3 localPosition;
+        glm::vec3 localPosition{0, 0, 0};
 
-        glm::quat localRotation;
+        // default: identity quaternion
+        glm::quat localRotation{1.0f, 0, 0, 0};
 
-        glm::vec3 localScale;
+        // default: scale of 1
+        glm::vec3 localScale{1.0f, 1.0f, 1.0f};
 
         /*
          * The computed local matrix that gets recalculated each time the local position, rotation or scale
