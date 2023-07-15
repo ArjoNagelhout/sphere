@@ -21,7 +21,7 @@ namespace sphere {
         }
 
         // main loop
-        static void run() {
+        void run() {
             Scene scene{"test"};
 
             Node test {"Test", &scene.rootNode};
@@ -42,6 +42,8 @@ namespace sphere {
             std::cout << "child position:\n";
             sphere::printPosition(child.getPosition());
             sphere::printPosition(child.getLocalPosition());
+
+            renderer.run();
         }
 
         // cleanup resources

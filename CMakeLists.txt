@@ -77,7 +77,7 @@ add_executable(sphere
         src/texture.hpp
         src/selection.hpp
         src/commands/select_nodes_command.hpp
-        src/commands/transform_nodes_command.hpp src/commands/remove_nodes_command.hpp)
+        src/commands/transform_nodes_command.hpp src/commands/remove_nodes_command.hpp src/shader.hpp src/mesh_renderer_node.hpp src/material.hpp)
 
 target_link_libraries(sphere PUBLIC renderer)
 
