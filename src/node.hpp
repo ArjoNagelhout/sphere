@@ -15,9 +15,7 @@ namespace sphere {
     const int INDENTATION_AMOUNT = 4;
 
     /*
-     * A node has a transform, and should always have a parent.
-     *
-     *
+     * A node has a transform and exists in a scene hierarchy.
      *
      * Events can be trickle down (from parent to child), or bubble up (from child to parent)
      *
@@ -47,8 +45,12 @@ namespace sphere {
         void destroy() {
 
             // first destroy all child nodes
+            for (auto const &child : children) {
+                child->destroy();
+            }
 
             // then destroy this node
+            parent->removeChild(this);
         }
 
         // sets the parent of this node to the given node
@@ -161,9 +163,8 @@ namespace sphere {
         }
 
         glm::vec3 getPosition() {
-            // should transform the world space matrix with
-            glm::vec4 positionColumn{localPosition, 1.0f};
-            glm::vec4 result = computedWorldMatrix * positionColumn;
+
+            glm::vec4 result = computedWorldMatrix * glm::vec4{0, 0, 0, 1.0f};
             return glm::vec3{result.x, result.y, result.z};
         }
 
@@ -293,8 +294,8 @@ namespace sphere {
         /*
          * Removes a child from this node
          */
-        void removeChild(Node &node) {
-            auto result = std::remove(children.begin(), children.end(), &node);
+        void removeChild(Node *node) {
+            auto result = std::remove(children.begin(), children.end(), node);
         }
 
         /*

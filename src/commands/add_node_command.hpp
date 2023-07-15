@@ -12,14 +12,14 @@ namespace sphere {
     class AddNodeCommand : Command {
 
     public:
-        AddNodeCommand(Scene &scene) : scene(&scene) {
+        AddNodeCommand(Scene &scene) : scene(scene) {
 
         }
 
 
 
     private:
-        Scene* scene;
+        Scene& scene;
 
     };
 }
