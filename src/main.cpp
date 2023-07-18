@@ -1,11 +1,11 @@
-#include "app.hpp"
+#include "application.hpp"
 
 int main()
 {
-    sphere::App app;
+    sphere::Application application;
 
     try {
-        app.run();
+        application.run();
     } catch (const std::exception& e){
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

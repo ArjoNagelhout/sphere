@@ -1,6 +1,7 @@
-#ifndef SPHERE_APP_HPP
-#define SPHERE_APP_HPP
+#ifndef SPHERE_APPLICATION_HPP
+#define SPHERE_APPLICATION_HPP
 
+#include <window.hpp>
 #include <device.hpp>
 #include "scene.hpp"
 
@@ -12,11 +13,17 @@ namespace sphere {
                   << "z: " << position.z << '\n';
     }
 
-    class App {
+    class Application {
 
     public:
-        // e.g. Initialize all resources
-        void initialize() {
+
+        Application() :
+            window("Application name", 200, 100),
+            device(window) {
+
+        }
+
+        ~Application() {
 
         }
 
@@ -24,11 +31,11 @@ namespace sphere {
         void run() {
             Scene scene{"test"};
 
-            Node test {"Test", &scene.rootNode};
-            Node child {"Child", &test};
-            Node child2 {"Child 2", &child};
-            Node child3 {"Child 3", &child};
-            Node grandChild {"GrandChild", &child3};
+            Node test{"Test", &scene.rootNode};
+            Node child{"Child", &test};
+            Node child2{"Child 2", &child};
+            Node child3{"Child 3", &child};
+            Node grandChild{"GrandChild", &child3};
 
             test.setLocalPosition({3.0f, 0, 0});
             child.setLocalPosition({0, 1.0f, 32.0f});
@@ -42,21 +49,13 @@ namespace sphere {
             std::cout << "child position:\n";
             sphere::printPosition(child.getPosition());
             sphere::printPosition(child.getLocalPosition());
-
-            //renderer.run();
-
-        }
-
-        // cleanup resources
-        void cleanUp() {
-
         }
 
     private:
-        //renderer::Renderer renderer;
+        renderer::Window window;
         renderer::Device device;
     };
 
 } // sphere
 
-#endif //SPHERE_APP_HPP
+#endif //SPHERE_APPLICATION_HPP

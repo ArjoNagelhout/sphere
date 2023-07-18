@@ -66,7 +66,7 @@ add_executable(sphere
         ${SPHERE_SHADERS_TARGET}
         ${SPHERE_ICD_TARGET}
         src/main.cpp
-        src/app.hpp
+        src/application.hpp
         src/commands/undo_stack.hpp
         src/commands/command.hpp
         src/scene.hpp
@@ -77,7 +77,7 @@ add_executable(sphere
         src/texture.hpp
         src/selection.hpp
         src/commands/select_nodes_command.hpp
-        src/commands/transform_nodes_command.hpp src/commands/remove_nodes_command.hpp src/shader.hpp src/mesh_renderer_node.hpp src/material.hpp)
+        src/commands/transform_nodes_command.hpp src/commands/remove_nodes_command.hpp src/shader.hpp src/mesh_renderer_node.hpp src/material.hpp libs/renderer/window.hpp)
 
 target_link_libraries(sphere PUBLIC renderer)
 

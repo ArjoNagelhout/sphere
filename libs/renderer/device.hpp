@@ -1,8 +1,11 @@
 #ifndef SPHERE_DEVICE_HPP
 #define SPHERE_DEVICE_HPP
 
-#include <vulkan/vulkan.h>
+#define GLFW_INCLUDE_VULKAN
+#include <glfw/glfw3.h>
 #include <vulkan/vk_enum_string_helper.h>
+
+#include "window.hpp"
 
 #include <stdexcept>
 #include <vector>
@@ -16,12 +19,20 @@ namespace renderer {
     const uint32_t ENGINE_VERSION = VK_MAKE_VERSION(1, 0, 0);
     const uint32_t APPLICATION_VERSION = VK_MAKE_VERSION(1, 0, 0);
 
+    /*
+     * Creates a device that can be used from a physical device.
+     * Is dependent on a glfw window already being created.
+     *
+     * Does all vulkan setup related to setting the right extensions, layers, and
+     * creating the vulkan instance. 
+     */
     class Device {
 
     public:
-        // initialize in constructor (no double initialization)
-        Device() {
-            // create instance
+        // initialize in constructor (no two-step initialization)
+        explicit Device(renderer::Window &window) : window(window) {
+
+            // application info
             VkApplicationInfo appInfo{};
             appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
             appInfo.apiVersion = VK_API_VERSION_1_0;
@@ -55,6 +66,18 @@ namespace renderer {
                         << ", specVersion: " << layer.specVersion << '\n';
             }
 
+            // vulkan instance extensions required for creating vulkan surfaces for glfw windows.
+            uint32_t glfwRequiredExtensionsCount;
+            const char **glfwRequiredExtensionsArray = glfwGetRequiredInstanceExtensions(&glfwRequiredExtensionsCount);
+            std::vector<const char *> glfwRequiredExtensions(glfwRequiredExtensionsArray, glfwRequiredExtensionsArray + glfwRequiredExtensionsCount);
+
+            std::cout << "count: " << glfwRequiredExtensionsCount << std::endl;
+
+            for (auto const &glfwRequiredExtension : glfwRequiredExtensions) {
+                std::cout << "glfw required extension: " << glfwRequiredExtension << '\n';
+            }
+
+            // create instance
             VkInstanceCreateInfo instanceCreateInfo{};
             instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             instanceCreateInfo.pApplicationInfo = &appInfo;
@@ -73,6 +96,7 @@ namespace renderer {
         }
 
     private:
+        Window &window;
         VkInstance instance;
     };
 }
