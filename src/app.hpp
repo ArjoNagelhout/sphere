@@ -1,7 +1,7 @@
 #ifndef SPHERE_APP_HPP
 #define SPHERE_APP_HPP
 
-#include <renderer.hpp>
+#include <device.hpp>
 #include "scene.hpp"
 
 namespace sphere {
@@ -43,7 +43,8 @@ namespace sphere {
             sphere::printPosition(child.getPosition());
             sphere::printPosition(child.getLocalPosition());
 
-            renderer.run();
+            //renderer.run();
+
         }
 
         // cleanup resources
@@ -52,7 +53,8 @@ namespace sphere {
         }
 
     private:
-        renderer::Renderer renderer;
+        //renderer::Renderer renderer;
+        renderer::Device device;
     };
 
 } // sphere
