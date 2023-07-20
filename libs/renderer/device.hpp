@@ -21,6 +21,14 @@ namespace renderer {
     const uint32_t ENGINE_VERSION = VK_MAKE_VERSION(1, 0, 0);
     const uint32_t APPLICATION_VERSION = VK_MAKE_VERSION(1, 0, 0);
 
+    bool operator==(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {
+        return lhs.extensionName == rhs.extensionName && lhs.specVersion == rhs.specVersion;
+    }
+
+    bool operator!=(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {
+        return !(lhs == rhs);
+    }
+
     /*
      * Creates a device that can be used from a physical device.
      * Is dependent on a glfw window already being created.
@@ -33,7 +41,19 @@ namespace renderer {
     public:
         // initialize in constructor (no two-step initialization)
         explicit Device(renderer::Window &window) : window(window) {
+            createInstance(instance, false);
+        }
 
+        // cleanup
+        ~Device() {
+            vkDestroyInstance(instance, nullptr);
+        }
+
+    private:
+        Window &window;
+        VkInstance instance;
+
+        void createInstance(VkInstance &instance, bool enableValidationLayers) {
             // application info
             VkApplicationInfo appInfo{};
             appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -84,15 +104,6 @@ namespace renderer {
             }
         }
 
-        // cleanup
-        ~Device() {
-            vkDestroyInstance(instance, nullptr);
-        }
-
-    private:
-        Window &window;
-        VkInstance instance;
-
         void getEnabledInstanceLayerNames(std::vector<const char *> &enabledLayerNames, uint32_t &enabledLayerCount) {
             enabledLayerNames = std::vector<const char *>(0);
             enabledLayerCount = 0;
@@ -102,7 +113,9 @@ namespace renderer {
          * Returns the enabled instance extension names based on the required glfw extensions
          * and custom supplied extensions.
          */
-        void getEnabledInstanceExtensions(std::vector<const char *> &enabledExtensionNames, uint32_t &enabledExtensionCount, VkInstanceCreateFlags &flags) {
+        void
+        getEnabledInstanceExtensions(std::vector<const char *> &enabledExtensionNames, uint32_t &enabledExtensionCount,
+                                     VkInstanceCreateFlags &flags) {
 
             uint32_t extensionsCount;
             vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr);
@@ -125,16 +138,24 @@ namespace renderer {
                 std::cout << "glfw required extension: " << glfwRequiredExtension << std::endl;
             }
 
+
+
             // add glfw required extensions to the enabled extensions
             for (auto const &glfwRequiredExtension: glfwRequiredExtensions) {
 
-                if (std::find_if(extensions.begin(),
-                                 extensions.end(),
-                                 [glfwRequiredExtension](VkExtensionProperties extension) {
-                                     return strcmp(extension.extensionName, glfwRequiredExtension) != 0;
-                                 }) != extensions.end()) {
-                    enabledExtensionNames.push_back(glfwRequiredExtension);
+                auto result = std::find_if(extensions.begin(),
+                                           extensions.end(),
+                                           [&](const VkExtensionProperties extension) -> bool {
+//                                     std::cout << strcmp(extension.extensionName, glfwRequiredExtension) << std::endl;
+//                                     std::cout << extension.extensionName << std::endl;
+                                               return (strcmp(extension.extensionName, glfwRequiredExtension) == 0);
+                                           });
 
+                std::cout << "found the following: " << result->extensionName << std::endl;
+                std::cout << "this is the end: " << extensions.end()->extensionName << std::endl;
+
+                if (*result != *(extensions.end())) {
+                    enabledExtensionNames.push_back(glfwRequiredExtension);
                     std::cout << "added glfw required extension: " << glfwRequiredExtension << std::endl;
                 }
             }
@@ -142,9 +163,9 @@ namespace renderer {
             // if on macOS, we need to enable the portability subset extension
             if (std::find_if(extensions.begin(),
                              extensions.end(),
-                             [](VkExtensionProperties extension) {
-                                 return strcmp(extension.extensionName,
-                                               VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) != 0;
+                             [](VkExtensionProperties extension) -> bool {
+                                 return (strcmp(extension.extensionName,
+                                                VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) != 0);
                              }) != extensions.end()) {
                 enabledExtensionNames.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
                 flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
