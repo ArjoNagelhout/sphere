@@ -29,26 +29,26 @@ namespace sphere {
 
         // main loop
         void run() {
-            Scene scene{"test"};
-
-            Node test{"Test", &scene.rootNode};
-            Node child{"Child", &test};
-            Node child2{"Child 2", &child};
-            Node child3{"Child 3", &child};
-            Node grandChild{"GrandChild", &child3};
-
-            test.setLocalPosition({3.0f, 0, 0});
-            child.setLocalPosition({0, 1.0f, 32.0f});
-
-            scene.rootNode.print();
-
-            std::cout << "test position:\n";
-            sphere::printPosition(test.getPosition());
-            sphere::printPosition(test.getLocalPosition());
-
-            std::cout << "child position:\n";
-            sphere::printPosition(child.getPosition());
-            sphere::printPosition(child.getLocalPosition());
+//            Scene scene{"test"};
+//
+//            Node test{"Test", &scene.rootNode};
+//            Node child{"Child", &test};
+//            Node child2{"Child 2", &child};
+//            Node child3{"Child 3", &child};
+//            Node grandChild{"GrandChild", &child3};
+//
+//            test.setLocalPosition({3.0f, 0, 0});
+//            child.setLocalPosition({0, 1.0f, 32.0f});
+//
+//            scene.rootNode.print();
+//
+//            std::cout << "test position:\n";
+//            sphere::printPosition(test.getPosition());
+//            sphere::printPosition(test.getLocalPosition());
+//
+//            std::cout << "child position:\n";
+//            sphere::printPosition(child.getPosition());
+//            sphere::printPosition(child.getLocalPosition());
         }
 
     private:

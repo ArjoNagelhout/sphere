@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <map>
 
 namespace renderer {
 
@@ -42,6 +43,7 @@ namespace renderer {
         // initialize in constructor (no two-step initialization)
         explicit Device(renderer::Window &window) : window(window) {
             createInstance(instance, false);
+            pickPhysicalDevice(instance, physicalDevice);
         }
 
         // cleanup
@@ -52,6 +54,8 @@ namespace renderer {
     private:
         Window &window;
         VkInstance instance;
+        VkPhysicalDevice physicalDevice;
+        VkDevice device;
 
         void createInstance(VkInstance &instance, bool enableValidationLayers) {
             // application info
@@ -70,7 +74,7 @@ namespace renderer {
 
             for (auto const &layer: layers) {
                 std::cout
-                        << "layer: " << layer.layerName
+                        << "instance layer: " << layer.layerName
                         << ", description: " << layer.description
                         << ", implVersion: " << layer.implementationVersion
                         << ", specVersion: " << layer.specVersion << '\n';
@@ -104,6 +108,105 @@ namespace renderer {
             }
         }
 
+        void pickPhysicalDevice(VkInstance &instance, VkPhysicalDevice &physicalDevice) {
+
+            uint32_t physicalDeviceCount;
+            vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
+            std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+            vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
+
+            if (physicalDeviceCount == 0) {
+                throw std::runtime_error("no device found with Vulkan support");
+            }
+
+            std::cout << physicalDeviceCount << " devices found with Vulkan support" << std::endl;
+
+            // print devices
+            for (auto const &physicalDevice : physicalDevices) {
+
+                // get device properties
+                VkPhysicalDeviceProperties properties;
+                vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+                std::cout
+                        << "physical device: " << properties.deviceName
+                        << ", device type: " << string_VkPhysicalDeviceType(properties.deviceType)
+                        << std::endl;
+
+                getPhysicalDeviceQueueFamilyProperties(physicalDevice);
+            }
+
+            // determine the best physical device that supports all required extensions
+            int bestScore = 0;
+            VkPhysicalDevice bestPhysicalDevice = nullptr;
+            std::string physicalDeviceErrorMessage{"Physical device does not support required extensions and features"};
+            for (auto const &physicalDevice : physicalDevices) {
+
+                int score = getPhysicalDeviceScore(physicalDevice, physicalDeviceErrorMessage);
+                if (score > 0 && score > bestScore) {
+                    bestScore = score;
+                    bestPhysicalDevice = physicalDevice;
+                }
+            }
+
+            if (bestPhysicalDevice == nullptr) {
+                throw std::runtime_error(physicalDeviceErrorMessage);
+            }
+
+            physicalDevice = bestPhysicalDevice;
+        }
+
+        /**
+         * Returns the score of a given physical device, so that the best one can be selected.
+         *
+         * @param errorMessage When the physical device does not support a required feature, this string will be populated with the error message.
+         * @returns The score. 0 if not valid.
+         */
+        int getPhysicalDeviceScore(const VkPhysicalDevice &physicalDevice, std::string &errorMessage) {
+            int score = 0;
+
+            // get device properties
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+            if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+                score += 2000;
+            } else if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+                score += 1000;
+            }
+
+            VkPhysicalDeviceFeatures features;
+            vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+
+            return score;
+        }
+
+        void getPhysicalDeviceQueueFamilyProperties(const VkPhysicalDevice &physicalDevice) {
+            uint32_t queueFamilyPropertiesCount;
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
+            std::vector<VkQueueFamilyProperties> queueFamilyPropertiesList(queueFamilyPropertiesCount);
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, queueFamilyPropertiesList.data());
+
+            for (const auto &queueFamilyProperties : queueFamilyPropertiesList) {
+
+                std::cout << "queue family properties: "
+                    << string_VkQueueFlags(queueFamilyProperties.queueFlags)
+                    << ", queueCount: " << queueFamilyProperties.queueCount
+                    << std::endl;
+            }
+        }
+
+        void createDevice(VkPhysicalDevice &physicalDevice, VkDevice &device) {
+
+            VkDeviceCreateInfo deviceCreateInfo{};
+            deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+            // layer names
+            // extension names
+            //deviceCreateInfo.
+
+            vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
+        }
+
         void getEnabledInstanceLayerNames(std::vector<const char *> &enabledLayerNames, uint32_t &enabledLayerCount) {
             enabledLayerNames = std::vector<const char *>(0);
             enabledLayerCount = 0;
@@ -123,7 +226,7 @@ namespace renderer {
             vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, extensions.data());
 
             for (auto const &extension: extensions) {
-                std::cout << "extension: " << extension.extensionName << ", specVersion: " << extension.specVersion
+                std::cout << "instance extension: " << extension.extensionName << ", specVersion: " << extension.specVersion
                           << std::endl;
             }
 
@@ -133,7 +236,6 @@ namespace renderer {
             std::vector<const char *> glfwRequiredExtensions(glfwRequiredExtensionsArray,
                                                              glfwRequiredExtensionsArray + glfwRequiredExtensionsCount);
 
-            std::cout << "count: " << glfwRequiredExtensionsCount << std::endl;
             for (auto const &glfwRequiredExtension: glfwRequiredExtensions) {
                 std::cout << "glfw required extension: " << glfwRequiredExtension << std::endl;
             }
@@ -162,8 +264,6 @@ namespace renderer {
                 flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
                 std::cout << "added portability extension" << std::endl;
-            } else {
-                std::cout << "did not add portability extension" << std::endl;
             }
 
             enabledExtensionCount = static_cast<uint32_t>(enabledExtensionNames.size());
