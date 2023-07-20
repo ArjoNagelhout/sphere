@@ -138,39 +138,32 @@ namespace renderer {
                 std::cout << "glfw required extension: " << glfwRequiredExtension << std::endl;
             }
 
-
-
             // add glfw required extensions to the enabled extensions
             for (auto const &glfwRequiredExtension: glfwRequiredExtensions) {
-
-                auto result = std::find_if(extensions.begin(),
+                if (*std::find_if(extensions.begin(),
                                            extensions.end(),
-                                           [&](const VkExtensionProperties extension) -> bool {
-//                                     std::cout << strcmp(extension.extensionName, glfwRequiredExtension) << std::endl;
-//                                     std::cout << extension.extensionName << std::endl;
+                                           [&glfwRequiredExtension](const VkExtensionProperties extension) -> bool {
                                                return (strcmp(extension.extensionName, glfwRequiredExtension) == 0);
-                                           });
-
-                std::cout << "found the following: " << result->extensionName << std::endl;
-                std::cout << "this is the end: " << extensions.end()->extensionName << std::endl;
-
-                if (*result != *(extensions.end())) {
+                                           }) != *(extensions.end())) {
                     enabledExtensionNames.push_back(glfwRequiredExtension);
                     std::cout << "added glfw required extension: " << glfwRequiredExtension << std::endl;
+                } else {
+                    throw std::runtime_error("could not add required extension: " + std::string(glfwRequiredExtension));
                 }
             }
 
             // if on macOS, we need to enable the portability subset extension
-            if (std::find_if(extensions.begin(),
+            if (*std::find_if(extensions.begin(),
                              extensions.end(),
                              [](VkExtensionProperties extension) -> bool {
-                                 return (strcmp(extension.extensionName,
-                                                VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) != 0);
-                             }) != extensions.end()) {
+                                 return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0);
+                             }) != *extensions.end()) {
                 enabledExtensionNames.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
                 flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
                 std::cout << "added portability extension" << std::endl;
+            } else {
+                std::cout << "did not add portability extension" << std::endl;
             }
 
             enabledExtensionCount = static_cast<uint32_t>(enabledExtensionNames.size());
