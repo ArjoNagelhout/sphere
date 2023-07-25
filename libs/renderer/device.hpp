@@ -277,7 +277,8 @@ namespace renderer {
                     return strcmp(extension.extensionName, requiredDeviceExtensionName) == 0;
                 }) == *deviceExtensions.end()) {
                     // this means the device extension is not supported
-
+                    errorMessage = std::string("physical device does not contain required device extension ") + std::string(requiredDeviceExtensionName);
+                    return 0;
                 }
             }
 
