@@ -73,10 +73,10 @@ namespace renderer {
     public:
         // initialize in constructor (no two-step initialization)
         explicit Device(renderer::Window &window) : window(window) {
-            createInstance(instance, validationLayerNames);
+            createInstance(instance, requiredInstanceLayerNames);
             createSurface(instance, window.window(), surface);
-            pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData);
-            createDevice(physicalDevice, device, queueFamiliesData);
+            pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData, requiredDeviceExtensionNames);
+            createDevice(physicalDevice, device, queueFamiliesData, requiredDeviceExtensionNames);
         }
 
         // cleanup
@@ -98,7 +98,11 @@ namespace renderer {
         VkPhysicalDevice physicalDevice;
         VkDevice device;
 
-        const std::vector<const char *> validationLayerNames{
+        const std::vector<const char *> requiredDeviceExtensionNames{
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
+
+        const std::vector<const char *> requiredInstanceLayerNames{
             "VK_LAYER_KHRONOS_validation"
         };
 
@@ -173,7 +177,11 @@ namespace renderer {
          * Picks the physical device with the highest score and one that is valid.
          * Sets the physicalDevice and queueFamiliesData (i.e. caches the queueFamiliesData in this class)
          */
-        static void pickPhysicalDevice(const VkInstance &instance, const VkSurfaceKHR &surface, VkPhysicalDevice &physicalDevice, QueueFamiliesData &queueFamiliesData) {
+        static void pickPhysicalDevice(const VkInstance &instance,
+                                       const VkSurfaceKHR &surface,
+                                       VkPhysicalDevice &physicalDevice,
+                                       QueueFamiliesData &queueFamiliesData,
+                                       const std::vector<const char *> &requiredDeviceExtensionNames = {}) {
 
             uint32_t physicalDeviceCount;
             vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
@@ -204,7 +212,7 @@ namespace renderer {
             std::string physicalDeviceErrorMessage{"Physical device does not support required extensions and features"};
             for (auto const &physicalDevice : physicalDevices) {
 
-                int score = getPhysicalDeviceScore(physicalDevice, surface, physicalDeviceErrorMessage);
+                int score = getPhysicalDeviceScore(physicalDevice, surface, physicalDeviceErrorMessage, requiredDeviceExtensionNames);
                 if (score > 0 && score > bestScore) {
                     bestScore = score;
                     bestPhysicalDevice = physicalDevice;
@@ -228,7 +236,10 @@ namespace renderer {
          * @param errorMessage When the physical device does not support a required feature, this string will be populated with the error message.
          * @returns The score. 0 if not valid.
          */
-        static int getPhysicalDeviceScore(const VkPhysicalDevice &physicalDevice, const VkSurfaceKHR &surface, std::string &errorMessage) {
+        static int getPhysicalDeviceScore(const VkPhysicalDevice &physicalDevice,
+                                          const VkSurfaceKHR &surface,
+                                          std::string &errorMessage,
+                                          const std::vector<const char *> requiredDeviceExtensionNames = {}) {
             int score = 0;
 
             // get physical device properties
@@ -258,9 +269,21 @@ namespace renderer {
             std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionsCount);
             vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, deviceExtensions.data());
 
-            for (const auto &deviceExtension : deviceExtensions) {
-                std::cout << "Supported device extension: " << deviceExtension.extensionName << std::endl;
+            // see if this physical device supports the required device extensions
+            for (const auto &requiredDeviceExtensionName : requiredDeviceExtensionNames) {
+                if (*std::find_if(deviceExtensions.begin(),
+                                  deviceExtensions.end(),
+                                  [&requiredDeviceExtensionName](const VkExtensionProperties extension) -> bool {
+                    return strcmp(extension.extensionName, requiredDeviceExtensionName) == 0;
+                }) == *deviceExtensions.end()) {
+                    // this means the device extension is not supported
+
+                }
             }
+
+//            for (const auto &deviceExtension : deviceExtensions) {
+//                std::cout << "Supported device extension: " << deviceExtension.extensionName << std::endl;
+//            }
 
             // vkEnumerateDeviceLayerProperties should be ignored, as device layers are deprecated.
 
@@ -316,7 +339,7 @@ namespace renderer {
          * Creates a logical device based on the chosen physical device.
          * This is the end of the responsibilities of the device class.
          */
-        static void createDevice(VkPhysicalDevice &physicalDevice, VkDevice &device, const QueueFamiliesData &queueFamiliesData) {
+        static void createDevice(VkPhysicalDevice &physicalDevice, VkDevice &device, const QueueFamiliesData &queueFamiliesData, const std::vector<const char *> &requiredDeviceExtensionNames = {}) {
 
             // first create a queue create info for each queue family
             std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
@@ -345,7 +368,7 @@ namespace renderer {
             }
 
             // add the required device extensions
-            std::vector<const char *> enabledDeviceExtensionNames(0);
+            std::vector<const char *> enabledDeviceExtensionNames(requiredDeviceExtensionNames.begin(), requiredDeviceExtensionNames.end());
 
             // VUID-VkDeviceCreateInfo-pProperties-04451: if a physical device supports VK_KHR_portability_subset, it should be added to the ppEnabledExtensionNames.
             uint32_t deviceExtensionsCount;
@@ -359,9 +382,14 @@ namespace renderer {
                     [](const VkExtensionProperties extension) -> bool {
                         return strcmp(extension.extensionName, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME) == 0;
                     }) != *deviceExtensions.end()) {
-
-                std::cout << "Added required extension: " << VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME << std::endl;
+                // because VK_KHR_portability_subset depends on VK_KHR_get_physical_device_properties2, it needs to be added to the device extensions as well.
                 enabledDeviceExtensionNames.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+                enabledDeviceExtensionNames.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+            }
+
+            // print enabled device extensions
+            for (const auto &enabledDeviceExtensionName : enabledDeviceExtensionNames) {
+                std::cout << "enabled device extension: " << enabledDeviceExtensionName << std::endl;
             }
 
             VkDeviceCreateInfo deviceCreateInfo{};
@@ -402,9 +430,9 @@ namespace renderer {
          * Returns the enabled instance extension names based on the required glfw extensions
          * and custom supplied extensions.
          */
-        static void
-        getEnabledInstanceExtensions(std::vector<const char *> &enabledExtensionNames, uint32_t &enabledExtensionCount,
-                                     VkInstanceCreateFlags &flags) {
+        static void getEnabledInstanceExtensions(std::vector<const char *> &enabledExtensionNames,
+                                                 uint32_t &enabledExtensionCount,
+                                                 VkInstanceCreateFlags &flags) {
 
             uint32_t extensionsCount;
             vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr);
