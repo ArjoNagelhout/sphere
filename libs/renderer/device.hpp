@@ -14,6 +14,7 @@
 #include <string>
 #include <algorithm>
 #include <map>
+#include <optional>
 
 namespace renderer {
 
@@ -22,6 +23,7 @@ namespace renderer {
     const uint32_t ENGINE_VERSION = VK_MAKE_VERSION(1, 0, 0);
     const uint32_t APPLICATION_VERSION = VK_MAKE_VERSION(1, 0, 0);
 
+    // equality operators
     bool operator==(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {
         return lhs.extensionName == rhs.extensionName && lhs.specVersion == rhs.specVersion;
     }
@@ -29,6 +31,33 @@ namespace renderer {
     bool operator!=(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {
         return !(lhs == rhs);
     }
+
+    bool operator==(VkLayerProperties &lhs, VkLayerProperties &rhs) {
+        return lhs.layerName == rhs.layerName && lhs.specVersion == rhs.specVersion && lhs.implementationVersion == rhs.implementationVersion;
+    }
+
+    bool operator!=(VkLayerProperties &lhs, VkLayerProperties &rhs) {
+        return !(lhs == rhs);
+    }
+
+    struct QueueFamilyData {
+
+        uint32_t index;
+        VkQueueFamilyProperties properties;
+
+    };
+
+    /*
+     * Data for each queue family (e.g. their index)
+     */
+    struct QueueFamiliesData {
+        std::optional<QueueFamilyData> graphicsQueueFamilyData;
+        std::optional<QueueFamilyData> presentQueueFamilyData;
+
+        bool isComplete() {
+            return graphicsQueueFamilyData.has_value() && presentQueueFamilyData.has_value();
+        }
+    };
 
     /*
      * Creates a device that can be used from a physical device.
@@ -42,22 +71,36 @@ namespace renderer {
     public:
         // initialize in constructor (no two-step initialization)
         explicit Device(renderer::Window &window) : window(window) {
-            createInstance(instance, false);
-            pickPhysicalDevice(instance, physicalDevice);
+            createInstance(instance, validationLayerNames);
+            createSurface(instance, window.window(), surface);
+            pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData);
+            createDevice(physicalDevice, device, queueFamiliesData);
         }
 
         // cleanup
         ~Device() {
+            vkDestroyDevice(device, nullptr);
+            vkDestroySurfaceKHR(instance, surface, nullptr);
             vkDestroyInstance(instance, nullptr);
+        }
+
+        const VkDevice &getDevice() {
+            return device;
         }
 
     private:
         Window &window;
         VkInstance instance;
+        VkSurfaceKHR surface;
+        QueueFamiliesData queueFamiliesData;
         VkPhysicalDevice physicalDevice;
         VkDevice device;
 
-        void createInstance(VkInstance &instance, bool enableValidationLayers) {
+        const std::vector<const char *> validationLayerNames{
+            "VK_LAYER_KHRONOS_validation"
+        };
+
+        static void createInstance(VkInstance &instance, const std::vector<const char *> &requiredLayerNames = {}) {
             // application info
             VkApplicationInfo appInfo{};
             appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -72,6 +115,7 @@ namespace renderer {
             std::vector<VkLayerProperties> layers(layersCount);
             vkEnumerateInstanceLayerProperties(&layersCount, layers.data());
 
+            // print layers
             for (auto const &layer: layers) {
                 std::cout
                         << "instance layer: " << layer.layerName
@@ -88,7 +132,7 @@ namespace renderer {
 
             uint32_t enabledLayerCount;
             std::vector<const char *> enabledLayerNames;
-            getEnabledInstanceLayerNames(enabledLayerNames, enabledLayerCount);
+            getEnabledInstanceLayerNames(requiredLayerNames, enabledLayerNames, enabledLayerCount);
 
             // create instance
             VkInstanceCreateInfo instanceCreateInfo{};
@@ -108,7 +152,26 @@ namespace renderer {
             }
         }
 
-        void pickPhysicalDevice(VkInstance &instance, VkPhysicalDevice &physicalDevice) {
+        /*
+         * we use glfw to create a surface, because otherwise we need to call platform specific functions such as
+         * vkCreateAndroidSurfaceKHR and vkCreateWaylandSurfaceKHR.
+         *
+         * A VkSurfaceKHR can be used to present images to the screen.
+         */
+        static void createSurface(VkInstance &instance, GLFWwindow *window, VkSurfaceKHR &surface) {
+
+            VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create window surface: ") + string_VkResult(result));
+            }
+        }
+
+        /*
+         * Picks the physical device with the highest score and one that is valid.
+         * Sets the physicalDevice and queueFamiliesData (i.e. caches the queueFamiliesData in this class)
+         */
+        static void pickPhysicalDevice(VkInstance &instance, const VkSurfaceKHR &surface, VkPhysicalDevice &physicalDevice, QueueFamiliesData &queueFamiliesData) {
 
             uint32_t physicalDeviceCount;
             vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
@@ -131,8 +194,6 @@ namespace renderer {
                         << "physical device: " << properties.deviceName
                         << ", device type: " << string_VkPhysicalDeviceType(properties.deviceType)
                         << std::endl;
-
-                getPhysicalDeviceQueueFamilyProperties(physicalDevice);
             }
 
             // determine the best physical device that supports all required extensions
@@ -141,7 +202,7 @@ namespace renderer {
             std::string physicalDeviceErrorMessage{"Physical device does not support required extensions and features"};
             for (auto const &physicalDevice : physicalDevices) {
 
-                int score = getPhysicalDeviceScore(physicalDevice, physicalDeviceErrorMessage);
+                int score = getPhysicalDeviceScore(physicalDevice, surface, physicalDeviceErrorMessage);
                 if (score > 0 && score > bestScore) {
                     bestScore = score;
                     bestPhysicalDevice = physicalDevice;
@@ -153,6 +214,7 @@ namespace renderer {
             }
 
             physicalDevice = bestPhysicalDevice;
+            queueFamiliesData = getQueueFamiliesData(physicalDevice, surface);
         }
 
         /**
@@ -161,7 +223,7 @@ namespace renderer {
          * @param errorMessage When the physical device does not support a required feature, this string will be populated with the error message.
          * @returns The score. 0 if not valid.
          */
-        int getPhysicalDeviceScore(const VkPhysicalDevice &physicalDevice, std::string &errorMessage) {
+        static int getPhysicalDeviceScore(const VkPhysicalDevice &physicalDevice, const VkSurfaceKHR &surface, std::string &errorMessage) {
             int score = 0;
 
             // get device properties
@@ -174,49 +236,136 @@ namespace renderer {
                 score += 1000;
             }
 
+            // we need a present and a graphics queue
+            QueueFamiliesData queueFamiliesData = getQueueFamiliesData(physicalDevice, surface);
+            if (!queueFamiliesData.isComplete()) {
+                errorMessage = "physical device does not contain both a present and a graphics queue";
+                return 0; // early return
+            }
+
             VkPhysicalDeviceFeatures features;
             vkGetPhysicalDeviceFeatures(physicalDevice, &features);
 
             return score;
         }
 
-        void getPhysicalDeviceQueueFamilyProperties(const VkPhysicalDevice &physicalDevice) {
-            uint32_t queueFamilyPropertiesCount;
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
-            std::vector<VkQueueFamilyProperties> queueFamilyPropertiesList(queueFamilyPropertiesCount);
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, queueFamilyPropertiesList.data());
+        /*
+         * Enumerates over the existing queue families that are available on the GPU and populates
+         * the QueueFamilyData struct that contains the indices for the queue families.
+         *
+         * This could later be refactored to be smarter about which queue to use depending on which one has better performance
+         * for that specific supported operation. Also use separate queues for graphics and compute or transfering.
+         */
+        static QueueFamiliesData getQueueFamiliesData(const VkPhysicalDevice &physicalDevice, const VkSurfaceKHR &surface) {
 
-            for (const auto &queueFamilyProperties : queueFamilyPropertiesList) {
+            QueueFamiliesData queueFamiliesData{};
 
-                std::cout << "queue family properties: "
-                    << string_VkQueueFlags(queueFamilyProperties.queueFlags)
-                    << ", queueCount: " << queueFamilyProperties.queueCount
-                    << std::endl;
+            uint32_t queueFamilyPropertyCount;
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
+            std::vector<VkQueueFamilyProperties> queueFamilyPropertiesList(queueFamilyPropertyCount);
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyPropertiesList.data());
+
+            for (int i = 0; i < queueFamilyPropertyCount; i++) {
+                auto const &queueFamilyProperties = queueFamilyPropertiesList[i];
+
+                if (queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                    QueueFamilyData data{};
+                    data.index = i;
+                    data.properties = queueFamilyProperties;
+                    queueFamiliesData.graphicsQueueFamilyData = data;
+                }
+
+                VkBool32 presentSupport;
+                vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+
+                if (presentSupport) {
+                    QueueFamilyData data{};
+                    data.index = i;
+                    data.properties = queueFamilyProperties;
+                    queueFamiliesData.presentQueueFamilyData = data;
+                }
+
+                // if both the present queue index and the graphics queue index are set, stop enumerating.
+                if (queueFamiliesData.isComplete()) {
+                    break;
+                }
             }
+
+            return queueFamiliesData;
         }
 
-        void createDevice(VkPhysicalDevice &physicalDevice, VkDevice &device) {
+        /*
+         * Creates a logical device based on the chosen physical device.
+         * This is the end of the responsibilities of the device class.
+         */
+        static void createDevice(VkPhysicalDevice &physicalDevice, VkDevice &device, const QueueFamiliesData &queueFamiliesData) {
+
+            // first create a queue create info for each queue family
+            std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+
+            // uses a map so that no duplicate entries can exist.
+            std::map<uint32_t, QueueFamilyData> queueFamilyDataMap = {
+                    {queueFamiliesData.presentQueueFamilyData.value().index, queueFamiliesData.presentQueueFamilyData.value()},
+                    {queueFamiliesData.graphicsQueueFamilyData.value().index, queueFamiliesData.graphicsQueueFamilyData.value()}
+            };
+
+            float queuePriority = 1.0f;
+            for (auto queueFamilyData: queueFamilyDataMap) {
+                QueueFamilyData data{queueFamilyData.second};
+
+                VkDeviceQueueCreateInfo queueCreateInfo{};
+                queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+                queueCreateInfo.queueFamilyIndex = data.index;
+                queueCreateInfo.queueCount = data.properties.queueCount;
+
+                // Within the same device, queues with higher priority may be allotted more processing time than queues
+                // with lower priority, the higher priority queue may also execute fully before executing the lower
+                // priority queue
+                queueCreateInfo.pQueuePriorities = &queuePriority;
+
+                queueCreateInfos.push_back(queueCreateInfo);
+            }
 
             VkDeviceCreateInfo deviceCreateInfo{};
             deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+            deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+            deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 
             // layer names
             // extension names
             //deviceCreateInfo.
 
-            vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
+            vkCreateDevice(physicalDevice,&deviceCreateInfo, nullptr, &device);
         }
 
-        void getEnabledInstanceLayerNames(std::vector<const char *> &enabledLayerNames, uint32_t &enabledLayerCount) {
-            enabledLayerNames = std::vector<const char *>(0);
-            enabledLayerCount = 0;
+        static void getEnabledInstanceLayerNames(const std::vector<const char *> &requiredLayerNames, std::vector<const char *> &enabledLayerNames, uint32_t &enabledLayerCount) {
+            uint32_t layersCount;
+            vkEnumerateInstanceLayerProperties(&layersCount, nullptr);
+            std::vector<VkLayerProperties> layers(layersCount);
+            vkEnumerateInstanceLayerProperties(&layersCount, layers.data());
+
+            for (auto requiredLayerName : requiredLayerNames) {
+                if (*std::find_if(layers.begin(),
+                                  layers.end(),
+                                  [&requiredLayerName](const VkLayerProperties layer) -> bool {
+                                      return strcmp(layer.layerName, requiredLayerName) == 0;
+                                  }) != *layers.end()) {
+                    std::cout << "Added required layer: " << requiredLayerName << std::endl;
+                    enabledLayerNames.push_back(requiredLayerName);
+                } else {
+                    // couldn't find required validation layer
+                    throw std::runtime_error(std::string("Device does not support required layer: ") + std::string(requiredLayerName));
+                }
+            }
+
+            enabledLayerCount = static_cast<uint32_t>(enabledLayerNames.size());
         }
 
         /*
          * Returns the enabled instance extension names based on the required glfw extensions
          * and custom supplied extensions.
          */
-        void
+        static void
         getEnabledInstanceExtensions(std::vector<const char *> &enabledExtensionNames, uint32_t &enabledExtensionCount,
                                      VkInstanceCreateFlags &flags) {
 
@@ -256,10 +405,10 @@ namespace renderer {
 
             // if on macOS, we need to enable the portability subset extension
             if (*std::find_if(extensions.begin(),
-                             extensions.end(),
-                             [](VkExtensionProperties extension) -> bool {
-                                 return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0);
-                             }) != *extensions.end()) {
+                              extensions.end(),
+                              [](VkExtensionProperties extension) -> bool {
+                return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0);
+            }) != *extensions.end()) {
                 enabledExtensionNames.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
                 flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 

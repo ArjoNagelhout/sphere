@@ -29,6 +29,7 @@ namespace sphere {
 
         // main loop
         void run() {
+
 //            Scene scene{"test"};
 //
 //            Node test{"Test", &scene.rootNode};
