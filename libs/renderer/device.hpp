@@ -18,6 +18,8 @@
 
 namespace renderer {
 
+#define VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME "VK_KHR_portability_subset"
+
     const char *ENGINE_NAME = "Sphere";
     const char *APPLICATION_NAME = "Sphere";
     const uint32_t ENGINE_VERSION = VK_MAKE_VERSION(1, 0, 0);
@@ -158,7 +160,7 @@ namespace renderer {
          *
          * A VkSurfaceKHR can be used to present images to the screen.
          */
-        static void createSurface(VkInstance &instance, GLFWwindow *window, VkSurfaceKHR &surface) {
+        static void createSurface(const VkInstance &instance, GLFWwindow *window, VkSurfaceKHR &surface) {
 
             VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
 
@@ -171,7 +173,7 @@ namespace renderer {
          * Picks the physical device with the highest score and one that is valid.
          * Sets the physicalDevice and queueFamiliesData (i.e. caches the queueFamiliesData in this class)
          */
-        static void pickPhysicalDevice(VkInstance &instance, const VkSurfaceKHR &surface, VkPhysicalDevice &physicalDevice, QueueFamiliesData &queueFamiliesData) {
+        static void pickPhysicalDevice(const VkInstance &instance, const VkSurfaceKHR &surface, VkPhysicalDevice &physicalDevice, QueueFamiliesData &queueFamiliesData) {
 
             uint32_t physicalDeviceCount;
             vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
@@ -220,13 +222,16 @@ namespace renderer {
         /**
          * Returns the score of a given physical device, so that the best one can be selected.
          *
+         * Todo: a list of required / preferred device extensions should be supplied.
+         * Todo: a list of required / preferred features should be supplied.
+         *
          * @param errorMessage When the physical device does not support a required feature, this string will be populated with the error message.
          * @returns The score. 0 if not valid.
          */
         static int getPhysicalDeviceScore(const VkPhysicalDevice &physicalDevice, const VkSurfaceKHR &surface, std::string &errorMessage) {
             int score = 0;
 
-            // get device properties
+            // get physical device properties
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
@@ -243,8 +248,21 @@ namespace renderer {
                 return 0; // early return
             }
 
+            // get physical device features, e.g. robustBufferAccess or geometryShader (all VkBool32)
             VkPhysicalDeviceFeatures features;
             vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+
+            // get physical device extensions
+            uint32_t deviceExtensionsCount;
+            vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, nullptr);
+            std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionsCount);
+            vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, deviceExtensions.data());
+
+            for (const auto &deviceExtension : deviceExtensions) {
+                std::cout << "Supported device extension: " << deviceExtension.extensionName << std::endl;
+            }
+
+            // vkEnumerateDeviceLayerProperties should be ignored, as device layers are deprecated.
 
             return score;
         }
@@ -326,14 +344,33 @@ namespace renderer {
                 queueCreateInfos.push_back(queueCreateInfo);
             }
 
+            // add the required device extensions
+            std::vector<const char *> enabledDeviceExtensionNames(0);
+
+            // VUID-VkDeviceCreateInfo-pProperties-04451: if a physical device supports VK_KHR_portability_subset, it should be added to the ppEnabledExtensionNames.
+            uint32_t deviceExtensionsCount;
+            vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, nullptr);
+            std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionsCount);
+            vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, deviceExtensions.data());
+
+            if (*std::find_if(
+                    deviceExtensions.begin(),
+                    deviceExtensions.end(),
+                    [](const VkExtensionProperties extension) -> bool {
+                        return strcmp(extension.extensionName, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME) == 0;
+                    }) != *deviceExtensions.end()) {
+
+                std::cout << "Added required extension: " << VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME << std::endl;
+                enabledDeviceExtensionNames.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+            }
+
             VkDeviceCreateInfo deviceCreateInfo{};
             deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
             deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
             deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-            // layer names
-            // extension names
-            //deviceCreateInfo.
+            deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enabledDeviceExtensionNames.size());
+            deviceCreateInfo.ppEnabledExtensionNames = enabledDeviceExtensionNames.data();
+            // deviceCreateInfo.ppEnabledLayerNames and deviceCreateInfo.enabledLayerCount are deprecated. layers are now specified when creating the vulkan instance.
 
             vkCreateDevice(physicalDevice,&deviceCreateInfo, nullptr, &device);
         }
