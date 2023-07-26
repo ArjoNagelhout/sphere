@@ -1,8 +1,9 @@
 #ifndef SPHERE_APPLICATION_HPP
 #define SPHERE_APPLICATION_HPP
 
-#include <window.hpp>
-#include <device.hpp>
+#include "window.hpp"
+#include "device.hpp"
+#include "swapchain.hpp"
 #include "scene.hpp"
 
 namespace sphere {
@@ -19,8 +20,8 @@ namespace sphere {
 
         Application() :
             window("Application name", 200, 100),
-            device(window) {
-
+            device(window),
+            swapchain(device) {
         }
 
         ~Application() {
@@ -55,6 +56,7 @@ namespace sphere {
     private:
         renderer::Window window;
         renderer::Device device;
+        renderer::Swapchain swapchain;
     };
 
 } // sphere

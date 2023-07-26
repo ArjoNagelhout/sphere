@@ -6,6 +6,7 @@
 #include <glfw/glfw3.h>
 #include <vulkan/vk_enum_string_helper.h>
 
+#include "utils.hpp"
 #include "window.hpp"
 
 #include <stdexcept>
@@ -25,28 +26,15 @@ namespace renderer {
     const uint32_t ENGINE_VERSION = VK_MAKE_VERSION(1, 0, 0);
     const uint32_t APPLICATION_VERSION = VK_MAKE_VERSION(1, 0, 0);
 
-    // equality operators
-    bool operator==(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {
-        return lhs.extensionName == rhs.extensionName && lhs.specVersion == rhs.specVersion;
-    }
-
-    bool operator!=(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {
-        return !(lhs == rhs);
-    }
-
-    bool operator==(VkLayerProperties &lhs, VkLayerProperties &rhs) {
-        return lhs.layerName == rhs.layerName && lhs.specVersion == rhs.specVersion && lhs.implementationVersion == rhs.implementationVersion;
-    }
-
-    bool operator!=(VkLayerProperties &lhs, VkLayerProperties &rhs) {
-        return !(lhs == rhs);
-    }
-
     struct QueueFamilyData {
-
         uint32_t index;
         VkQueueFamilyProperties properties;
+    };
 
+    struct SurfaceData {
+        VkSurfaceCapabilitiesKHR surfaceCapabilities;
+        std::vector<VkPresentModeKHR> surfacePresentModes;
+        std::vector<VkSurfaceFormatKHR> surfaceFormats;
     };
 
     /*
@@ -67,12 +55,14 @@ namespace renderer {
      *
      * Does all vulkan setup related to setting the right extensions, layers, and
      * creating the vulkan instance.
+     *
+     * Also creates a surface to draw on.
      */
     class Device {
 
     public:
         // initialize in constructor (no two-step initialization)
-        explicit Device(renderer::Window &window) : window(window) {
+        explicit Device(Window &window) : window(window) {
             createInstance(instance, requiredInstanceLayerNames);
             createSurface(instance, window.window(), surface);
             pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData, requiredDeviceExtensionNames);
@@ -88,6 +78,14 @@ namespace renderer {
 
         const VkDevice &getDevice() {
             return device;
+        }
+
+        const VkSurfaceKHR &getSurface() {
+            return surface;
+        }
+
+        SurfaceData getSurfaceData() {
+            return getSurfaceData(physicalDevice, surface);
         }
 
     private:
@@ -171,6 +169,27 @@ namespace renderer {
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create window surface: ") + string_VkResult(result));
             }
+        }
+
+        static SurfaceData getSurfaceData(const VkPhysicalDevice &physicalDevice, const VkSurfaceKHR &surface) {
+
+            // get surface capabilities
+            VkSurfaceCapabilitiesKHR surfaceCapabilities;
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
+
+            // get present modes
+            uint32_t presentModeCount;
+            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+            std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+
+            // get formats
+            uint32_t formatCount;
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+            std::vector<VkSurfaceFormatKHR> formats(formatCount);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+
+            return {surfaceCapabilities, presentModes, formats};
         }
 
         /*

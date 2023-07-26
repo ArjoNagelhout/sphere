@@ -1,5 +1,5 @@
 set(SOURCES
-        reference.hpp device.hpp reference.cpp renderer.hpp)
+        reference.hpp device.hpp reference.cpp renderer.hpp swapchain.hpp utils.hpp)
 
 add_library(renderer "${SOURCES}")
 
