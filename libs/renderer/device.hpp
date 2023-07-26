@@ -88,6 +88,10 @@ namespace renderer {
             return getSurfaceData(physicalDevice, surface);
         }
 
+        QueueFamiliesData getQueueFamiliesData() {
+            return queueFamiliesData;
+        }
+
     private:
         Window &window;
         VkInstance instance;

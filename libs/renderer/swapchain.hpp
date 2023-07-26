@@ -80,22 +80,42 @@ namespace renderer {
             return surfaceFormats[0];
         }
 
+        static VkExtent2D pickSwapchainExtent() {
+            return {0, 0};
+        }
+
         static void createSwapchain(Device &device, VkSwapchainKHR &swapchain, const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats = {}) {
 
             SurfaceData surfaceData = device.getSurfaceData();
             VkSurfaceFormatKHR surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
+            VkExtent2D extent = pickSwapchainExtent();
 
             VkSwapchainCreateInfoKHR swapchainCreateInfo{};
             swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
             swapchainCreateInfo.surface = device.getSurface();
-            swapchainCreateInfo.minImageCount = surfaceData.surfaceCapabilities.minImageCount;
-
+            //swapchainCreateInfo.minImageCount = surfaceData.surfaceCapabilities.minImageCount;
             swapchainCreateInfo.presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes);
             swapchainCreateInfo.imageFormat = surfaceFormat.format;
             swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
-            swapchainCreateInfo.imageExtent = VkExtent2D{0, 0};
+            swapchainCreateInfo.imageExtent = extent;
             swapchainCreateInfo.imageArrayLayers = 1; // for stereoscopic rendering should be more than 1
-            swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_
+            swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // listed in surfaceCapabilities.supportedUsageFlags, but VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT is guaranteed to always exist
+
+            // determine if the graphics queue family and the present queue family share the same index
+            QueueFamiliesData queueFamiliesData = device.getQueueFamiliesData();
+            uint32_t queueFamilyIndices[]{queueFamiliesData.graphicsQueueFamilyData->index, queueFamiliesData.presentQueueFamilyData->index};
+
+            if (queueFamilyIndices[0] == queueFamilyIndices[1]) {
+                swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+                swapchainCreateInfo.queueFamilyIndexCount = 2;
+                swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+            } else {
+                // An image is owned by one queue family at a time and ownership must be explicitly transferred before
+                // using it in another queue family. This option offers the best performance.
+                swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+                swapchainCreateInfo.queueFamilyIndexCount = 0; // optional
+                swapchainCreateInfo.pQueueFamilyIndices = nullptr; // optional
+            }
 
             VkResult result = vkCreateSwapchainKHR(device.getDevice(), &swapchainCreateInfo, nullptr, &swapchain);
             if (result != VK_SUCCESS) {
