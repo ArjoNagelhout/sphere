@@ -278,6 +278,17 @@ namespace renderer {
                 return 0; // early return
             }
 
+            // make sure physical device has support for drawing onto the given surface
+            SurfaceData surfaceData = getSurfaceData(physicalDevice, surface);
+
+            if (surfaceData.surfaceFormats.empty()) {
+                errorMessage = "physical device has no supported surface formats";
+                return 0;
+            } else if (surfaceData.surfacePresentModes.empty()) {
+                errorMessage = "physical device has no supported present modes";
+                return 0;
+            }
+
             // get physical device features, e.g. robustBufferAccess or geometryShader (all VkBool32)
             VkPhysicalDeviceFeatures features;
             vkGetPhysicalDeviceFeatures(physicalDevice, &features);

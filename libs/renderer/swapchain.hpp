@@ -12,6 +12,26 @@
 
 namespace renderer {
 
+    /*
+     * A swapchain provides the ability to present rendering results to a surface.
+     *
+     * A swapchain is an abstraction for an array of presentable images that are associated with a surface.
+     * The presentable images are represented by VkImage objects created by the platform.
+     *
+     * One image (which can be an array image for multiview/stereoscopic-3D surfaces) is displayed at a time,
+     * but multiple images can be queued for presentation.
+     *
+     * An application renders to the image, and then queues the image for presentation to the surface.
+     *
+     * Only one active swapchain can be bound to a surface.
+     *
+     * The swapchain should be recreated when the window is resized. For performance, we can use the old swapchain as
+     * a basis for the new swapchain using creatInfo.oldSwapchain.
+     *
+     * The application acquires VkImages from the *presentation engine*, which is the platform's compositor or display engine.
+     *
+     * use presentable image only after vkAcquireNextImageKHR, and before vkQueuePresentKHR
+     */
     class Swapchain {
 
     public:
@@ -68,9 +88,14 @@ namespace renderer {
             VkSwapchainCreateInfoKHR swapchainCreateInfo{};
             swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
             swapchainCreateInfo.surface = device.getSurface();
+            swapchainCreateInfo.minImageCount = surfaceData.surfaceCapabilities.minImageCount;
+
             swapchainCreateInfo.presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes);
             swapchainCreateInfo.imageFormat = surfaceFormat.format;
             swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
+            swapchainCreateInfo.imageExtent = VkExtent2D{0, 0};
+            swapchainCreateInfo.imageArrayLayers = 1; // for stereoscopic rendering should be more than 1
+            swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_
 
             VkResult result = vkCreateSwapchainKHR(device.getDevice(), &swapchainCreateInfo, nullptr, &swapchain);
             if (result != VK_SUCCESS) {
