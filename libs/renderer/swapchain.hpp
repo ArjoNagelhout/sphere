@@ -9,6 +9,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace renderer {
 
@@ -36,7 +37,7 @@ namespace renderer {
 
     public:
         explicit Swapchain(Device &device) : device(device) {
-            createSwapchain(device, swapchain, preferredSurfaceFormats);
+            createSwapchain(device, swapchain, swapchainImageFormat, swapchainExtent, swapchainImages, preferredSurfaceFormats);
         }
 
         ~Swapchain() {
@@ -46,6 +47,9 @@ namespace renderer {
     private:
         Device &device;
         VkSwapchainKHR swapchain;
+        VkFormat swapchainImageFormat;
+        VkExtent2D swapchainExtent;
+        std::vector<VkImage> swapchainImages;
 
         const std::vector<VkSurfaceFormatKHR> preferredSurfaceFormats{
                 {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
@@ -84,8 +88,12 @@ namespace renderer {
             return {0, 0};
         }
 
-        static void createSwapchain(Device &device, VkSwapchainKHR &swapchain, const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats = {}) {
-
+        static void createSwapchain(Device &device,
+                                    VkSwapchainKHR &swapchain,
+                                    VkFormat &swapchainImageFormat,
+                                    VkExtent2D &swapchainExtent,
+                                    std::vector<VkImage> &swapchainImages,
+                                    const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats = {}) {
             SurfaceData surfaceData = device.getSurfaceData();
             VkSurfaceFormatKHR surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
             VkExtent2D extent = pickSwapchainExtent();
@@ -94,7 +102,6 @@ namespace renderer {
             swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
             swapchainCreateInfo.surface = device.getSurface();
             //swapchainCreateInfo.minImageCount = surfaceData.surfaceCapabilities.minImageCount;
-            swapchainCreateInfo.presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes);
             swapchainCreateInfo.imageFormat = surfaceFormat.format;
             swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
             swapchainCreateInfo.imageExtent = extent;
@@ -110,19 +117,34 @@ namespace renderer {
                 swapchainCreateInfo.queueFamilyIndexCount = 2;
                 swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
             } else {
-                // An image is owned by one queue family at a time and ownership must be explicitly transferred before
+                // an image is owned by one queue family at a time and ownership must be explicitly transferred before
                 // using it in another queue family. This option offers the best performance.
                 swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
                 swapchainCreateInfo.queueFamilyIndexCount = 0; // optional
                 swapchainCreateInfo.pQueueFamilyIndices = nullptr; // optional
             }
 
+            swapchainCreateInfo.preTransform = surfaceData.surfaceCapabilities.currentTransform;
+            swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // ignores the alpha channel when compositing the window with other surfaces on certain window systems.
+            swapchainCreateInfo.presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes);
+            swapchainCreateInfo.clipped = VK_TRUE;
+            swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
             VkResult result = vkCreateSwapchainKHR(device.getDevice(), &swapchainCreateInfo, nullptr, &swapchain);
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create swapchain: ") + string_VkResult(result));
             }
-        }
 
+            // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
+            // in order to perform any rendering operations, create a VkImageView from a VkImage.
+            uint32_t swapchainImagesCount;
+            vkGetSwapchainImagesKHR(device.getDevice(), swapchain, &swapchainImagesCount, nullptr);
+            swapchainImages.resize(swapchainImagesCount);
+            vkGetSwapchainImagesKHR(device.getDevice(), swapchain, &swapchainImagesCount, swapchainImages.data());
+
+            swapchainImageFormat = surfaceFormat.format;
+            swapchainExtent = extent;
+        }
     };
 
 }
