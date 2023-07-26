@@ -36,8 +36,8 @@ namespace renderer {
     class Swapchain {
 
     public:
-        explicit Swapchain(Device &device) : device(device) {
-            createSwapchain(device, swapchain, swapchainImageFormat, swapchainExtent, swapchainImages, preferredSurfaceFormats);
+        explicit Swapchain(Window &window, Device &device) : window(window), device(device) {
+            createSwapchain(window, device, swapchain, swapchainImageFormat, swapchainExtent, swapchainImages, preferredSurfaceFormats);
         }
 
         ~Swapchain() {
@@ -45,6 +45,7 @@ namespace renderer {
         }
 
     private:
+        Window &window;
         Device &device;
         VkSwapchainKHR swapchain;
         VkFormat swapchainImageFormat;
@@ -84,11 +85,39 @@ namespace renderer {
             return surfaceFormats[0];
         }
 
-        static VkExtent2D pickSwapchainExtent() {
-            return {0, 0};
+        static VkExtent2D pickSwapchainExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR &surfaceCapabilities) {
+            if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+                // vulkan says: extent should match window extent. but for some window managers
+                // this is not required, this is indicated with setting the width and height extent
+                // to the max value of uint32_t
+                return surfaceCapabilities.currentExtent;
+            } else {
+                int width, height;
+                glfwGetFramebufferSize(window, &width, &height);
+
+                VkExtent2D actualExtent = {
+                        static_cast<uint32_t>(width),
+                        static_cast<uint32_t>(height)
+                };
+
+                actualExtent.width = std::clamp(actualExtent.width,
+                                                surfaceCapabilities.minImageExtent.width,
+                                                surfaceCapabilities.maxImageExtent.width);
+                actualExtent.height = std::clamp(actualExtent.height,
+                                                 surfaceCapabilities.minImageExtent.height,
+                                                 surfaceCapabilities.maxImageExtent.height);
+                return actualExtent;
+            }
         }
 
-        static void createSwapchain(Device &device,
+//        // resolution of the swap chain images
+//        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
+//
+//
+//        }
+
+        static void createSwapchain(Window &window,
+                                    Device &device,
                                     VkSwapchainKHR &swapchain,
                                     VkFormat &swapchainImageFormat,
                                     VkExtent2D &swapchainExtent,
@@ -96,12 +125,21 @@ namespace renderer {
                                     const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats = {}) {
             SurfaceData surfaceData = device.getSurfaceData();
             VkSurfaceFormatKHR surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
-            VkExtent2D extent = pickSwapchainExtent();
+            VkExtent2D extent = pickSwapchainExtent(window.getWindow(), surfaceData.surfaceCapabilities);
+
+            // TODO: Look at Vulkan Tutorial why the +1 is included
+            uint32_t imageCount = surfaceData.surfaceCapabilities.minImageCount + 1; // minImageCount is guaranteed to be 1
+
+            // limit image count
+            // if maxImageCount is 0, that means there is no hard limit for the amount of images.
+            if (surfaceData.surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceData.surfaceCapabilities.maxImageCount) {
+                imageCount = surfaceData.surfaceCapabilities.maxImageCount;
+            }
 
             VkSwapchainCreateInfoKHR swapchainCreateInfo{};
             swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
             swapchainCreateInfo.surface = device.getSurface();
-            //swapchainCreateInfo.minImageCount = surfaceData.surfaceCapabilities.minImageCount;
+            swapchainCreateInfo.minImageCount = imageCount;
             swapchainCreateInfo.imageFormat = surfaceFormat.format;
             swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
             swapchainCreateInfo.imageExtent = extent;
@@ -129,8 +167,9 @@ namespace renderer {
             swapchainCreateInfo.presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes);
             swapchainCreateInfo.clipped = VK_TRUE;
             swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
-
+            std::cout << "me" << std::endl;
             VkResult result = vkCreateSwapchainKHR(device.getDevice(), &swapchainCreateInfo, nullptr, &swapchain);
+            std::cout << "Whooops" << std::endl;
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create swapchain: ") + string_VkResult(result));
             }
@@ -144,9 +183,10 @@ namespace renderer {
 
             swapchainImageFormat = surfaceFormat.format;
             swapchainExtent = extent;
+
+            std::cout << swapchainImagesCount << std::endl;
         }
     };
-
 }
 
 #endif //SPHERE_SWAPCHAIN_HPP

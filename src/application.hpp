@@ -21,7 +21,7 @@ namespace sphere {
         Application() :
             window("Application name", 200, 100),
             device(window),
-            swapchain(device) {
+            swapchain(window, device) {
         }
 
         ~Application() {

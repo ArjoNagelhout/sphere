@@ -64,7 +64,7 @@ namespace renderer {
         // initialize in constructor (no two-step initialization)
         explicit Device(Window &window) : window(window) {
             createInstance(instance, requiredInstanceLayerNames);
-            createSurface(instance, window.window(), surface);
+            createSurface(instance, window.getWindow(), surface);
             pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData, requiredDeviceExtensionNames);
             createDevice(physicalDevice, device, queueFamiliesData, requiredDeviceExtensionNames);
         }
@@ -253,7 +253,6 @@ namespace renderer {
         /**
          * Returns the score of a given physical device, so that the best one can be selected.
          *
-         * Todo: a list of required / preferred device extensions should be supplied.
          * Todo: a list of required / preferred features should be supplied.
          *
          * @param errorMessage When the physical device does not support a required feature, this string will be populated with the error message.

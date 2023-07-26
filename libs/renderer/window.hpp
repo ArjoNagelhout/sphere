@@ -19,21 +19,21 @@ namespace renderer {
             glfwInit();
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-            m_pWindow = glfwCreateWindow(width, height, name, nullptr, nullptr);
-            glfwSetWindowSizeLimits(m_pWindow, minWidth, minHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
+            window = glfwCreateWindow(width, height, name, nullptr, nullptr);
+            glfwSetWindowSizeLimits(window, minWidth, minHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
         }
 
         ~Window() {
-            glfwDestroyWindow(m_pWindow);
+            glfwDestroyWindow(window);
             glfwTerminate();
         }
 
-        GLFWwindow *window() {
-            return m_pWindow;
+        GLFWwindow *getWindow() {
+            return window;
         }
 
     private:
-        GLFWwindow *m_pWindow;
+        GLFWwindow *window;
     };
 }
 
