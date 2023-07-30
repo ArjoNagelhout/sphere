@@ -336,6 +336,7 @@ namespace renderer {
             physicalDevice = bestPhysicalDevice;
             queueFamiliesData = getQueueFamiliesData(physicalDevice, surface);
 
+            // print picked device
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(physicalDevice, &properties);
             std::cout << "picked device: " << properties.deviceName << std::endl;
