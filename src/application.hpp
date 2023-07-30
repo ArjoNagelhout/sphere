@@ -16,7 +16,7 @@ namespace sphere {
 
     public:
 
-        Application() {
+        Application() : renderer("Sphere") {
         }
 
         ~Application() {
@@ -25,6 +25,8 @@ namespace sphere {
 
         // main loop
         void run() {
+
+            renderer.run();
 
 //            Scene scene{"test"};
 //

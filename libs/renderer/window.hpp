@@ -11,7 +11,7 @@ namespace renderer {
     class Window {
 
     public:
-        Window(char *name,
+        Window(std::string title,
                uint32_t width,
                uint32_t height,
                uint32_t minWidth = GLFW_DONT_CARE,
@@ -21,7 +21,7 @@ namespace renderer {
             glfwInit();
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-            window = glfwCreateWindow(width, height, name, nullptr, nullptr);
+            window = glfwCreateWindow(width, height, title.data(), nullptr, nullptr);
             glfwSetWindowSizeLimits(window, minWidth, minHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
             std::cout << "created window" << std::endl;

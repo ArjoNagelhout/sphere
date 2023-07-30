@@ -6,17 +6,29 @@
 
 namespace renderer {
 
+    /*
+     * The Renderer class ties together the different Vulkan objects and
+     * is the main entry point for getting things onto the screen.
+     */
     class Renderer {
 
     public:
-        explicit Renderer() :
-                window("Application name", 200, 100),
+        explicit Renderer(const std::string &applicationName) :
+                window(applicationName, 200, 100),
                 device(window),
                 swapchain(window, device) {
-
         }
 
         ~Renderer() {
+
+        }
+
+        void run() {
+            GLFWwindow *glfwWindow = window.getWindow();
+
+            while (!glfwWindowShouldClose(glfwWindow)) {
+                glfwPollEvents();
+            }
 
         }
 
