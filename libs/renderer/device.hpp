@@ -66,7 +66,7 @@ namespace renderer {
             createInstance(instance, requiredInstanceLayerNames, requiredInstanceExtensionNames);
             createSurface(instance, window.getWindow(), surface);
             pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData, requiredDeviceExtensionNames);
-            createDevice(physicalDevice, device, queueFamiliesData, requiredDeviceExtensionNames);
+            createDevice(physicalDevice, device, queueFamiliesData, graphicsQueue, presentQueue, requiredDeviceExtensionNames);
         }
 
         // cleanup
@@ -84,6 +84,14 @@ namespace renderer {
             return surface;
         }
 
+        const VkQueue &getGraphicsQueue() {
+            return graphicsQueue;
+        }
+
+        const VkQueue &getPresentQueue() {
+            return presentQueue;
+        }
+
         SurfaceData getSurfaceData() {
             return getSurfaceData(physicalDevice, surface);
         }
@@ -99,6 +107,8 @@ namespace renderer {
         QueueFamiliesData queueFamiliesData;
         VkPhysicalDevice physicalDevice;
         VkDevice device;
+        VkQueue graphicsQueue;
+        VkQueue presentQueue;
 
         const std::vector<const char *> requiredInstanceExtensionNames{
 
@@ -458,7 +468,13 @@ namespace renderer {
          * Creates a logical device based on the chosen physical device.
          * This is the end of the responsibilities of the device class.
          */
-        static void createDevice(VkPhysicalDevice &physicalDevice, VkDevice &device, const QueueFamiliesData &queueFamiliesData, const std::vector<const char *> &requiredDeviceExtensionNames = {}) {
+        static void createDevice(
+                VkPhysicalDevice &physicalDevice,
+                VkDevice &device,
+                const QueueFamiliesData &queueFamiliesData,
+                VkQueue &graphicsQueue,
+                VkQueue &presentQueue,
+                const std::vector<const char *> &requiredDeviceExtensionNames = {}) {
 
             // first create a queue create info for each queue family
             std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
@@ -526,6 +542,10 @@ namespace renderer {
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create logical device: ") + string_VkResult(result));
             }
+
+            // get the first queues of the queue families for now.
+            vkGetDeviceQueue(device, queueFamiliesData.graphicsQueueFamilyData->index, 0, &graphicsQueue);
+            vkGetDeviceQueue(device, queueFamiliesData.presentQueueFamilyData->index, 0, &presentQueue);
 
             std::cout << "created logical device" << std::endl;
         }

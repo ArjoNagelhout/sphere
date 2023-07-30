@@ -172,6 +172,8 @@ namespace renderer {
                 throw std::runtime_error(std::string("failed to create swapchain: ") + string_VkResult(result));
             }
 
+            std::cout << "created swapchain" << std::endl;
+
             // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
             // in order to perform any rendering operations, create a VkImageView from a VkImage.
             uint32_t swapchainImagesCount;
@@ -181,8 +183,6 @@ namespace renderer {
 
             swapchainImageFormat = surfaceFormat.format;
             swapchainExtent = extent;
-
-            std::cout << swapchainImagesCount << std::endl;
         }
     };
 }
