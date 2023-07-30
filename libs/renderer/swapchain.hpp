@@ -110,12 +110,6 @@ namespace renderer {
             }
         }
 
-//        // resolution of the swap chain images
-//        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
-//
-//
-//        }
-
         static void createSwapchain(Window &window,
                                     Device &device,
                                     VkSwapchainKHR &swapchain,
@@ -127,8 +121,11 @@ namespace renderer {
             VkSurfaceFormatKHR surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
             VkExtent2D extent = pickSwapchainExtent(window.getWindow(), surfaceData.surfaceCapabilities);
 
-            // TODO: Look at Vulkan Tutorial why the +1 is included
-            uint32_t imageCount = surfaceData.surfaceCapabilities.minImageCount + 1; // minImageCount is guaranteed to be 1
+            // from vulkan-tutorial.com
+            // Sticking to this minimum means that we may sometimes have to wait on the driver to complete internal
+            // operations before we can acquire another image to render to. Therefore, it is recommended to request
+            // at least one more image than the minimum:
+            uint32_t imageCount = surfaceData.surfaceCapabilities.minImageCount + 1; // minImageCount is guaranteed to be at least 1
 
             // limit image count
             // if maxImageCount is 0, that means there is no hard limit for the amount of images.
@@ -151,15 +148,16 @@ namespace renderer {
             uint32_t queueFamilyIndices[]{queueFamiliesData.graphicsQueueFamilyData->index, queueFamiliesData.presentQueueFamilyData->index};
 
             if (queueFamilyIndices[0] == queueFamilyIndices[1]) {
-                swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-                swapchainCreateInfo.queueFamilyIndexCount = 2;
-                swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
-            } else {
-                // an image is owned by one queue family at a time and ownership must be explicitly transferred before
-                // using it in another queue family. This option offers the best performance.
+                // This option offers the best performance.
                 swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
                 swapchainCreateInfo.queueFamilyIndexCount = 0; // optional
                 swapchainCreateInfo.pQueueFamilyIndices = nullptr; // optional
+            } else {
+                // an image is owned by one queue family at a time and ownership must be explicitly transferred before
+                // using it in another queue family.
+                swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+                swapchainCreateInfo.queueFamilyIndexCount = 2;
+                swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
             }
 
             swapchainCreateInfo.preTransform = surfaceData.surfaceCapabilities.currentTransform;
@@ -167,9 +165,9 @@ namespace renderer {
             swapchainCreateInfo.presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes);
             swapchainCreateInfo.clipped = VK_TRUE;
             swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
-            std::cout << "me" << std::endl;
+
             VkResult result = vkCreateSwapchainKHR(device.getDevice(), &swapchainCreateInfo, nullptr, &swapchain);
-            std::cout << "Whooops" << std::endl;
+
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create swapchain: ") + string_VkResult(result));
             }

@@ -63,7 +63,7 @@ namespace renderer {
     public:
         // initialize in constructor (no two-step initialization)
         explicit Device(Window &window) : window(window) {
-            createInstance(instance, requiredInstanceLayerNames);
+            createInstance(instance, requiredInstanceLayerNames, requiredInstanceExtensionNames);
             createSurface(instance, window.getWindow(), surface);
             pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData, requiredDeviceExtensionNames);
             createDevice(physicalDevice, device, queueFamiliesData, requiredDeviceExtensionNames);
@@ -100,6 +100,10 @@ namespace renderer {
         VkPhysicalDevice physicalDevice;
         VkDevice device;
 
+        const std::vector<const char *> requiredInstanceExtensionNames{
+
+        };
+
         const std::vector<const char *> requiredDeviceExtensionNames{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
@@ -108,7 +112,9 @@ namespace renderer {
             "VK_LAYER_KHRONOS_validation"
         };
 
-        static void createInstance(VkInstance &instance, const std::vector<const char *> &requiredLayerNames = {}) {
+        static void createInstance(VkInstance &instance,
+                                   const std::vector<const char *> &requiredLayerNames = {},
+                                   const std::vector<const char *> &requiredExtensionNames = {}) {
             // application info
             VkApplicationInfo appInfo{};
             appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -118,25 +124,11 @@ namespace renderer {
             appInfo.pEngineName = ENGINE_NAME;
             appInfo.pApplicationName = APPLICATION_NAME;
 
-            uint32_t layersCount;
-            vkEnumerateInstanceLayerProperties(&layersCount, nullptr);
-            std::vector<VkLayerProperties> layers(layersCount);
-            vkEnumerateInstanceLayerProperties(&layersCount, layers.data());
-
-            // print layers
-            for (auto const &layer: layers) {
-                std::cout
-                        << "instance layer: " << layer.layerName
-                        << ", description: " << layer.description
-                        << ", implVersion: " << layer.implementationVersion
-                        << ", specVersion: " << layer.specVersion << '\n';
-            }
-
             VkInstanceCreateFlags flags{};
 
             uint32_t enabledExtensionCount;
             std::vector<const char *> enabledExtensionNames;
-            getEnabledInstanceExtensions(enabledExtensionNames, enabledExtensionCount, flags);
+            getEnabledInstanceExtensions(/* requiredExtensionNames, */ enabledExtensionNames, enabledExtensionCount, flags);
 
             uint32_t enabledLayerCount;
             std::vector<const char *> enabledLayerNames;
@@ -152,12 +144,103 @@ namespace renderer {
             instanceCreateInfo.ppEnabledLayerNames = enabledLayerNames.data();
             instanceCreateInfo.flags = flags;
 
-            VkResult createInstanceResult = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
-            if (createInstanceResult != VK_SUCCESS) {
-                throw std::runtime_error(
-                        std::string("failed to create instance: ") +
-                        std::string(string_VkResult(createInstanceResult)));
+            VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create instance: ") + string_VkResult(result));
             }
+
+            std::cout << "created instance" << std::endl;
+        }
+
+        static void getEnabledInstanceLayerNames(const std::vector<const char *> &requiredLayerNames, std::vector<const char *> &enabledLayerNames, uint32_t &enabledLayerCount) {
+            uint32_t layersCount;
+            vkEnumerateInstanceLayerProperties(&layersCount, nullptr);
+            std::vector<VkLayerProperties> layers(layersCount);
+            vkEnumerateInstanceLayerProperties(&layersCount, layers.data());
+
+            for (auto requiredLayerName : requiredLayerNames) {
+                if (*std::find_if(layers.begin(),
+                                  layers.end(),
+                                  [&requiredLayerName](const VkLayerProperties layer) -> bool {
+                                      return strcmp(layer.layerName, requiredLayerName) == 0;
+                                  }) != *layers.end()) {
+                    //std::cout << "Added required layer: " << requiredLayerName << std::endl;
+                    enabledLayerNames.push_back(requiredLayerName);
+                } else {
+                    // couldn't find required validation layer
+                    throw std::runtime_error(std::string("Device does not support required layer: ") + std::string(requiredLayerName));
+                }
+            }
+
+            for (const auto &enabledLayerName : enabledLayerNames) {
+                std::cout << "enabled instance layer: " << enabledLayerName << std::endl;
+            }
+
+            enabledLayerCount = static_cast<uint32_t>(enabledLayerNames.size());
+        }
+
+        /*
+         * Returns the enabled instance extension names based on the required glfw extensions
+         * and custom supplied extensions.
+         *
+         * TODO: Implement required extensions
+         */
+        static void getEnabledInstanceExtensions(/* const std::vector<const char *> &requiredExtensionNames , */
+                                                 std::vector<const char *> &enabledExtensionNames,
+                                                 uint32_t &enabledExtensionCount,
+                                                 VkInstanceCreateFlags &flags) {
+
+            uint32_t extensionsCount;
+            vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr);
+            std::vector<VkExtensionProperties> extensions(extensionsCount);
+            vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, extensions.data());
+
+//            // print extension names
+//            for (auto const &extension: extensions) {
+//                std::cout << "instance extension: " << extension.extensionName << ", specVersion: " << extension.specVersion
+//                          << std::endl;
+//            }
+
+            // vulkan instance extensions required for creating vulkan surfaces for glfw windows.
+            uint32_t glfwRequiredExtensionsCount;
+            const char **glfwRequiredExtensionsArray = glfwGetRequiredInstanceExtensions(&glfwRequiredExtensionsCount);
+            std::vector<const char *> glfwRequiredExtensions(glfwRequiredExtensionsArray,
+                                                             glfwRequiredExtensionsArray + glfwRequiredExtensionsCount);
+//            print glfw required extension names
+//            for (auto const &glfwRequiredExtension: glfwRequiredExtensions) {
+//                std::cout << "glfw required extension: " << glfwRequiredExtension << std::endl;
+//            }
+
+            // add glfw required extensions to the enabled extensions
+            for (auto const &glfwRequiredExtension: glfwRequiredExtensions) {
+                if (*std::find_if(extensions.begin(),
+                                  extensions.end(),
+                                  [&glfwRequiredExtension](const VkExtensionProperties extension) -> bool {
+                                      return (strcmp(extension.extensionName, glfwRequiredExtension) == 0);
+                                  }) != *(extensions.end())) {
+                    enabledExtensionNames.push_back(glfwRequiredExtension);
+                } else {
+                    throw std::runtime_error("could not add required extension: " + std::string(glfwRequiredExtension));
+                }
+            }
+
+            // if on macOS, we need to enable the portability subset extension
+            if (*std::find_if(extensions.begin(),
+                              extensions.end(),
+                              [](VkExtensionProperties extension) -> bool {
+                                  return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0);
+                              }) != *extensions.end()) {
+                enabledExtensionNames.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+                enabledExtensionNames.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // needs to be enabled as well
+                flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+            }
+
+            for (auto const &enabledExtension : enabledExtensionNames) {
+                std::cout << "enabled instance extension: " << enabledExtension << std::endl;
+            }
+
+            enabledExtensionCount = static_cast<uint32_t>(enabledExtensionNames.size());
         }
 
         /*
@@ -173,6 +256,8 @@ namespace renderer {
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create window surface: ") + string_VkResult(result));
             }
+
+            std::cout << "created surface" << std::endl;
         }
 
         static SurfaceData getSurfaceData(const VkPhysicalDevice &physicalDevice, const VkSurfaceKHR &surface) {
@@ -410,15 +495,17 @@ namespace renderer {
             std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionsCount);
             vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, deviceExtensions.data());
 
+//            for (const auto &deviceExtension : deviceExtensions) {
+//                std::cout << "supported device extension: " << deviceExtension.extensionName << std::endl;
+//            }
+
             if (*std::find_if(
                     deviceExtensions.begin(),
                     deviceExtensions.end(),
                     [](const VkExtensionProperties extension) -> bool {
                         return strcmp(extension.extensionName, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME) == 0;
                     }) != *deviceExtensions.end()) {
-                // because VK_KHR_portability_subset depends on VK_KHR_get_physical_device_properties2, it needs to be added to the device extensions as well.
                 enabledDeviceExtensionNames.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-                enabledDeviceExtensionNames.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
             }
 
             // print enabled device extensions
@@ -434,87 +521,13 @@ namespace renderer {
             deviceCreateInfo.ppEnabledExtensionNames = enabledDeviceExtensionNames.data();
             // deviceCreateInfo.ppEnabledLayerNames and deviceCreateInfo.enabledLayerCount are deprecated. layers are now specified when creating the vulkan instance.
 
-            vkCreateDevice(physicalDevice,&deviceCreateInfo, nullptr, &device);
-        }
+            VkResult result = vkCreateDevice(physicalDevice,&deviceCreateInfo, nullptr, &device);
 
-        static void getEnabledInstanceLayerNames(const std::vector<const char *> &requiredLayerNames, std::vector<const char *> &enabledLayerNames, uint32_t &enabledLayerCount) {
-            uint32_t layersCount;
-            vkEnumerateInstanceLayerProperties(&layersCount, nullptr);
-            std::vector<VkLayerProperties> layers(layersCount);
-            vkEnumerateInstanceLayerProperties(&layersCount, layers.data());
-
-            for (auto requiredLayerName : requiredLayerNames) {
-                if (*std::find_if(layers.begin(),
-                                  layers.end(),
-                                  [&requiredLayerName](const VkLayerProperties layer) -> bool {
-                                      return strcmp(layer.layerName, requiredLayerName) == 0;
-                                  }) != *layers.end()) {
-                    std::cout << "Added required layer: " << requiredLayerName << std::endl;
-                    enabledLayerNames.push_back(requiredLayerName);
-                } else {
-                    // couldn't find required validation layer
-                    throw std::runtime_error(std::string("Device does not support required layer: ") + std::string(requiredLayerName));
-                }
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create logical device: ") + string_VkResult(result));
             }
 
-            enabledLayerCount = static_cast<uint32_t>(enabledLayerNames.size());
-        }
-
-        /*
-         * Returns the enabled instance extension names based on the required glfw extensions
-         * and custom supplied extensions.
-         */
-        static void getEnabledInstanceExtensions(std::vector<const char *> &enabledExtensionNames,
-                                                 uint32_t &enabledExtensionCount,
-                                                 VkInstanceCreateFlags &flags) {
-
-            uint32_t extensionsCount;
-            vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr);
-            std::vector<VkExtensionProperties> extensions(extensionsCount);
-            vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, extensions.data());
-
-            for (auto const &extension: extensions) {
-                std::cout << "instance extension: " << extension.extensionName << ", specVersion: " << extension.specVersion
-                          << std::endl;
-            }
-
-            // vulkan instance extensions required for creating vulkan surfaces for glfw windows.
-            uint32_t glfwRequiredExtensionsCount;
-            const char **glfwRequiredExtensionsArray = glfwGetRequiredInstanceExtensions(&glfwRequiredExtensionsCount);
-            std::vector<const char *> glfwRequiredExtensions(glfwRequiredExtensionsArray,
-                                                             glfwRequiredExtensionsArray + glfwRequiredExtensionsCount);
-
-            for (auto const &glfwRequiredExtension: glfwRequiredExtensions) {
-                std::cout << "glfw required extension: " << glfwRequiredExtension << std::endl;
-            }
-
-            // add glfw required extensions to the enabled extensions
-            for (auto const &glfwRequiredExtension: glfwRequiredExtensions) {
-                if (*std::find_if(extensions.begin(),
-                                           extensions.end(),
-                                           [&glfwRequiredExtension](const VkExtensionProperties extension) -> bool {
-                                               return (strcmp(extension.extensionName, glfwRequiredExtension) == 0);
-                                           }) != *(extensions.end())) {
-                    enabledExtensionNames.push_back(glfwRequiredExtension);
-                    std::cout << "added glfw required extension: " << glfwRequiredExtension << std::endl;
-                } else {
-                    throw std::runtime_error("could not add required extension: " + std::string(glfwRequiredExtension));
-                }
-            }
-
-            // if on macOS, we need to enable the portability subset extension
-            if (*std::find_if(extensions.begin(),
-                              extensions.end(),
-                              [](VkExtensionProperties extension) -> bool {
-                return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0);
-            }) != *extensions.end()) {
-                enabledExtensionNames.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-                flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-
-                std::cout << "added portability extension" << std::endl;
-            }
-
-            enabledExtensionCount = static_cast<uint32_t>(enabledExtensionNames.size());
+            std::cout << "created logical device" << std::endl;
         }
     };
 }

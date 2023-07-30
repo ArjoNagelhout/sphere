@@ -4,6 +4,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
+#include <iostream>
+
 namespace renderer {
 
     class Window {
@@ -21,6 +23,8 @@ namespace renderer {
             glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
             window = glfwCreateWindow(width, height, name, nullptr, nullptr);
             glfwSetWindowSizeLimits(window, minWidth, minHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
+
+            std::cout << "created window" << std::endl;
         }
 
         ~Window() {
