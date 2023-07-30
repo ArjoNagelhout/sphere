@@ -98,13 +98,13 @@ namespace renderer {
 
         void initVulkan() {
 
-            initWindow();
-            createInstance();
-            setupDebugMessenger();
-            createSurface();
-            pickPhysicalDevice();
-            createLogicalDevice();
-            createSwapchain();
+            initWindow(); // implemented
+            createInstance(); // implemented
+            setupDebugMessenger(); // implemented
+            createSurface(); // implemented
+            pickPhysicalDevice(); // implemented
+            createLogicalDevice(); // implemented
+            createSwapchain(); // implemented
             createImageViews();
             createRenderPass();
             createGraphicsPipeline();

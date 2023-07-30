@@ -44,6 +44,10 @@ namespace renderer {
             vkDestroySwapchainKHR(device.getDevice(), swapchain, nullptr);
         }
 
+        VkFormat getSwapchainImageFormat() {
+            return swapchainImageFormat;
+        }
+
     private:
         Window &window;
         Device &device;
