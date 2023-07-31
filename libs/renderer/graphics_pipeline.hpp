@@ -5,6 +5,7 @@
 #include <vulkan/vk_enum_string_helper.h>
 
 #include <device.hpp>
+#include <swapchain.hpp>
 
 #include <stdexcept>
 
@@ -18,39 +19,74 @@ namespace renderer {
     class GraphicsPipeline {
 
     public:
-        explicit GraphicsPipeline(Device device) {
-            createGraphicsPipeline(device.getDevice());
+        explicit GraphicsPipeline(Device &device, Swapchain &swapchain) : device(device), swapchain(swapchain) {
+            createRenderPass(device.getDevice(), swapchain.getSwapchainImageFormat(), renderPass);
+            createGraphicsPipeline(device.getDevice(), swapchain, renderPass, graphicsPipeline);
         }
 
         ~GraphicsPipeline() {
-            //vkDestroyPipeline()
+            vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
         }
 
     private:
+        Device &device;
+        Swapchain &swapchain;
+        VkRenderPass renderPass;
+        VkPipeline graphicsPipeline;
 
+        /*
+         * A render pass defines a set of image resources (attachments) to be used during rendering.
+         *
+         * draw commands (vkCmdDraw...) need to be recorded into a render pass instance.
+         *
+         * VkRenderPass represents collection of attachments, subpasses, dependencies between these subpasses, and
+         * describes how attachments are handled between these subpasses.
+         */
         static void createRenderPass(const VkDevice &device, const VkFormat &format, VkRenderPass &renderPass) {
 
-            VkAttachmentDescription attachment{};
-            attachment.format = format;
-            attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            VkAttachmentDescription colorAttachment{};
+            colorAttachment.format = format;
+            colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // for multisampling
+            colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+            VkAttachmentReference colorAttachmentReference{};
+            colorAttachmentReference.attachment = 0; // index corresponding to the render pass create info pAttachments
+            colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
             VkSubpassDescription subpass{};
+            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.inputAttachmentCount = 0; // optional
+            subpass.pInputAttachments = nullptr; // optional
+            subpass.colorAttachmentCount = 1;
+            subpass.pColorAttachments = &colorAttachmentReference;
+            subpass.pResolveAttachments = nullptr; // optional
+            subpass.pDepthStencilAttachment = nullptr; // optional
+            subpass.preserveAttachmentCount = 0; // optional
+            subpass.pPreserveAttachments = nullptr; // optional
+
+            // subpass dependency is "glue" between different subpasses
+            VkSubpassDependency subpassDependency{};
+            subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+            subpassDependency.dstSubpass = 0;
+            subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            subpassDependency.srcAccessMask = 0;
+            subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            //subpassDependency.dependencyFlags
 
             VkRenderPassCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-            //createInfo.flags
-            //createInfo.attachmentCount
-            //createInfo.pAttachments
-            //createInfo.subpassCount
-            //createInfo.pSubpasses
-            //createInfo.dependencyCount
-            //createInfo.pDependencies
+            createInfo.attachmentCount = 1;
+            createInfo.pAttachments = &colorAttachment;
+            createInfo.subpassCount = 1;
+            createInfo.pSubpasses = &subpass;
+            createInfo.dependencyCount = 1;
+            createInfo.pDependencies = &subpassDependency;
 
             VkResult result = vkCreateRenderPass(device, &createInfo, nullptr, &renderPass);
 
@@ -61,7 +97,14 @@ namespace renderer {
             std::cout << "created render pass" << std::endl;
         }
 
+        /*
+         * Graphics pipeline consists of a lot of steps, e.g. vertex input, rasterization
+         *
+         * Some are fixed and can be set on pipeline creation, and others are done via shaders etc.
+         */
         static void createGraphicsPipeline(const VkDevice &device,
+                                           Swapchain &swapchain,
+                                           const VkRenderPass &renderPass,
                                            VkPipeline &graphicsPipeline) {
 
             VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
@@ -78,20 +121,53 @@ namespace renderer {
                 throw std::runtime_error(std::string("failed to create pipeline layout: ") + string_VkResult(pipelineLayoutResult));
             }
 
+            // how are vertices input into the pipeline
             VkPipelineVertexInputStateCreateInfo vertexInputState{};
             vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            vertexInputState.vertexBindingDescriptionCount = 0;
+            vertexInputState.pVertexBindingDescriptions = nullptr; // array of VkVertexInputBindingDescription
+            vertexInputState.vertexAttributeDescriptionCount = 0;
+            vertexInputState.pVertexAttributeDescriptions = nullptr;
 
+            // how do vertices get converted into a primitive (i.e. triangle)
             VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
-            vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+            inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+            inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            inputAssemblyState.primitiveRestartEnable = VK_FALSE;
 
-            VkPipelineTessellationStateCreateInfo tesselationState{};
-            vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+            // VkPipelineTessellationStateCreateInfo tesselationState{};
+            // tesselationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+            // tesselationState.patchControlPoints =
+
+            VkExtent2D extent = swapchain.getSwapchainExtent();
+
+            VkViewport viewport{};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            //viewport.width = swapchain.getSwapchainExtent();
+            // viewport.height
+            //viewport.minDepth
+            //viewport.maxDepth
 
             VkPipelineViewportStateCreateInfo viewportState{};
-            vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+            viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+            //viewportState.viewportCount
+            //viewportState.pViewports
+            //viewportState.scissorCount
+            //viewportState.pScissors
 
             VkPipelineRasterizationStateCreateInfo rasterizationState{};
-            vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+            rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+            //rasterizationState.depthClampEnable
+            //rasterizationState.rasterizerDiscardEnable
+            //rasterizationState.polygonMode
+            //rasterizationState.cullMode
+            //rasterizationState.frontFace
+            //rasterizationState.depthBiasEnable
+            //rasterizationState.depthBiasConstantFactor
+            //rasterizationState.depthBiasClamp
+            //rasterizationState.depthBiasSlopeFactor
+            //rasterizationState.lineWidth
 
             VkPipelineMultisampleStateCreateInfo multisampleState{};
             multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -112,7 +188,7 @@ namespace renderer {
             //createInfo.pStages
             createInfo.pVertexInputState = &vertexInputState;
             createInfo.pInputAssemblyState = &inputAssemblyState;
-            createInfo.pTessellationState = &tesselationState;
+            createInfo.pTessellationState = nullptr;
             createInfo.pViewportState = &viewportState;
             createInfo.pRasterizationState = &rasterizationState;
             createInfo.pMultisampleState = &multisampleState;
@@ -120,10 +196,10 @@ namespace renderer {
             createInfo.pColorBlendState = &colorBlendState;
             createInfo.pDynamicState = &dynamicState;
             createInfo.layout = pipelineLayout;
-            //createInfo.renderPass
-            //createInfo.subpass
-            //createInfo.basePipelineHandle
-            //createInfo.basePipelineIndex
+            createInfo.renderPass = renderPass;
+            createInfo.subpass = 0;
+            createInfo.basePipelineHandle = VK_NULL_HANDLE; // / optional, can be used to create a new graphics pipeline by deriving from an existing.pipeline, makes switching quicker.
+            createInfo.basePipelineIndex = -1;
 
             VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &graphicsPipeline);
 

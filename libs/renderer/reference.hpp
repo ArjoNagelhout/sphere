@@ -673,7 +673,7 @@ namespace renderer {
         // vertex / index buffer
         // 1. FIXED input assembler (collects raw vertex data from (index) buffers)
         // 2. PROGRAMMABLE vertex shader (applies transformations, e.g. from model space to screen space)
-        // 3. PROGRAMMABLE tesselation (subdivide geometry based on rules to increase mesh quality)
+        // 3. PROGRAMMABLE tessellation (subdivide geometry based on rules to increase mesh quality)
         // 4. PROGRAMMABLE geometry shader (not used, inefficient)
         // 5. FIXED rasterization (transforms primitives into fragments (pixels), discard fragments using depth testing)
         // 6. PROGRAMMABLE fragment shader (does things per pixel)

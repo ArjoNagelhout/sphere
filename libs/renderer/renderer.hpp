@@ -14,7 +14,7 @@ namespace renderer {
 
     public:
         explicit Renderer(const std::string &applicationName) :
-                window(applicationName, 200, 100),
+                window(applicationName, 600, 300, 200, 100),
                 device(window),
                 swapchain(window, device) {
         }
