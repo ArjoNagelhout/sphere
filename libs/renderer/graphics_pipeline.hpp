@@ -121,10 +121,10 @@ namespace renderer {
             vertexShaderStageInfo.pName = "main";
 
             VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
-            vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            vertexShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-            vertexShaderStageInfo.module = fragmentShaderModule;
-            vertexShaderStageInfo.pName = "main";
+            fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            fragmentShaderStageInfo.module = fragmentShaderModule;
+            fragmentShaderStageInfo.pName = "main";
 
             std::vector<VkPipelineShaderStageCreateInfo> shaderStageInfos = {
                     vertexShaderStageInfo,
@@ -277,6 +277,9 @@ namespace renderer {
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create graphics pipeline: ") + string_VkResult(result));
             }
+
+            vkDestroyShaderModule(device, vertexShaderModule, nullptr);
+            vkDestroyShaderModule(device, fragmentShaderModule, nullptr);
 
             std::cout << "created graphics pipeline" << std::endl;
         }
