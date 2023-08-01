@@ -62,9 +62,22 @@ namespace renderer {
 
     public:
         // initialize in constructor (no two-step initialization)
-        explicit Device(Window &window) : window(window) {
-            createInstance(instance, requiredInstanceLayers, requiredInstanceExtensions);
-            createDebugMessenger();
+        explicit Device(Window &window, bool debug) : window(window) {
+
+            std::vector<const char *> allRequiredInstanceExtensions{requiredInstanceExtensions.begin(), requiredInstanceExtensions.end()};
+            std::vector<const char *> allRequiredInstanceLayers{requiredInstanceLayers.begin(), requiredInstanceLayers.end()};
+
+            if (debug) {
+                allRequiredInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+                allRequiredInstanceLayers.push_back("VK_LAYER_KHRONOS_validation");
+            }
+
+            createInstance(instance, allRequiredInstanceLayers, allRequiredInstanceExtensions);
+
+            if (debug) {
+                createDebugMessenger(instance, debugMessenger);
+            }
+
             createSurface(instance, window.getWindow(), surface);
             pickPhysicalDevice(instance, surface, physicalDevice,  queueFamiliesData, requiredDeviceExtensions);
             createDevice(physicalDevice, device, queueFamiliesData, graphicsQueue, presentQueue, requiredDeviceExtensions);
@@ -110,13 +123,14 @@ namespace renderer {
         VkDevice device;
         VkQueue graphicsQueue;
         VkQueue presentQueue;
+        VkDebugUtilsMessengerEXT debugMessenger;
 
         const std::vector<const char *> requiredInstanceExtensions{
 
         };
 
         const std::vector<const char *> requiredInstanceLayers{
-                "VK_LAYER_KHRONOS_validation"
+
         };
 
         const std::vector<const char *> requiredDeviceExtensions{
@@ -239,10 +253,54 @@ namespace renderer {
             return enabledExtensions;
         }
 
-        static void createDebugMessenger() {
+        static void createDebugMessenger(const VkInstance &instance, VkDebugUtilsMessengerEXT &debugMessenger) {
+            VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+            createInfo.messageSeverity =
+                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            createInfo.messageType =
+                    VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                    VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                    VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+            createInfo.pfnUserCallback = debugCallback;
+
+            VkResult result = createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger);
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create debug messenger") + string_VkResult(result));
+            }
 
             std::cout << "created debug messenger" << std::endl;
+        }
 
+        // Proxy function that looks up the address of the function, because it's part of an extension
+        static VkResult createDebugUtilsMessengerEXT(VkInstance instance,
+                                              const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+                                              const VkAllocationCallbacks *pAllocator,
+                                              VkDebugUtilsMessengerEXT *pDebugMessenger) {
+            auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,"vkCreateDebugUtilsMessengerEXT");
+            if (func != nullptr) {
+                return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+            } else {
+                return VK_ERROR_EXTENSION_NOT_PRESENT;
+            }
+        }
+
+        static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+                VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                VkDebugUtilsMessageTypeFlagsEXT messageType,
+                const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                void *pUserData) {
+
+            std::cerr << "validation layer output: "
+                      << pCallbackData->pMessage
+                      << ", severity:" << string_VkDebugUtilsMessageSeverityFlagBitsEXT(messageSeverity)
+                      << ", type: " << string_VkDebugUtilsMessageTypeFlagsEXT(messageType)
+                      << std::endl;
+
+            return VK_FALSE;
         }
 
         /*

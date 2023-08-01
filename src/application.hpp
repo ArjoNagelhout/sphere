@@ -16,7 +16,7 @@ namespace sphere {
 
     public:
 
-        Application() : renderer("Sphere") {
+        Application() : renderer("Sphere", true) {
         }
 
         ~Application() {

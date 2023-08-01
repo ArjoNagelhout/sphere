@@ -3,6 +3,7 @@
 
 #include "device.hpp"
 #include "swapchain.hpp"
+#include "graphics_pipeline.hpp"
 
 namespace renderer {
 
@@ -13,10 +14,12 @@ namespace renderer {
     class Renderer {
 
     public:
-        explicit Renderer(const std::string &applicationName) :
+        explicit Renderer(const std::string &applicationName, bool debug) :
                 window(applicationName, 600, 300, 200, 100),
-                device(window),
-                swapchain(window, device) {
+                device(window, debug),
+                swapchain(window, device),
+                graphicsPipeline(device, swapchain) {
+            std::cout << "renderer" << std::endl;
         }
 
         ~Renderer() {
@@ -36,6 +39,7 @@ namespace renderer {
         Window window;
         Device device;
         Swapchain swapchain;
+        GraphicsPipeline graphicsPipeline;
     };
 }
 

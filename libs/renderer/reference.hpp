@@ -706,7 +706,10 @@ namespace renderer {
             fragShaderStageInfo.module = fragShaderModule;
             fragShaderStageInfo.pName = "main";
 
-            VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+            std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
+                    vertShaderStageInfo,
+                    fragShaderStageInfo
+            };
 
             std::vector<VkDynamicState> dynamicStates = {
                     VK_DYNAMIC_STATE_VIEWPORT,
@@ -809,7 +812,6 @@ namespace renderer {
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount = 2;
             pipelineInfo.pStages = shaderStages;
-
             pipelineInfo.pVertexInputState = &vertexInputInfo;
             pipelineInfo.pInputAssemblyState = &inputAssembly;
             pipelineInfo.pViewportState = &viewportState;
