@@ -38,6 +38,7 @@ namespace renderer {
     public:
         explicit Swapchain(Window &window, Device &device) : window(window), device(device) {
             createSwapchain(window, device, swapchain, swapchainImageFormat, swapchainExtent, swapchainImages, preferredSurfaceFormats);
+            createImageViews(device.getDevice(), swapchainImages, swapchainImageFormat, swapchainImageViews);
         }
 
         ~Swapchain() {
@@ -52,6 +53,10 @@ namespace renderer {
             return swapchainExtent;
         }
 
+        const std::vector<VkImageView> &getSwapchainImageViews() {
+            return swapchainImageViews;
+        }
+
     private:
         Window &window;
         Device &device;
@@ -59,6 +64,7 @@ namespace renderer {
         VkFormat swapchainImageFormat;
         VkExtent2D swapchainExtent;
         std::vector<VkImage> swapchainImages;
+        std::vector<VkImageView> swapchainImageViews;
 
         const std::vector<VkSurfaceFormatKHR> preferredSurfaceFormats{
                 {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
@@ -192,6 +198,40 @@ namespace renderer {
             swapchainImageFormat = surfaceFormat.format;
             swapchainExtent = extent;
         }
+
+        static void createImageViews(const VkDevice &device, std::vector<VkImage> &swapchainImages, const VkFormat &format, std::vector<VkImageView> &swapchainImageViews) {
+            swapchainImageViews.resize(swapchainImages.size());
+
+            for (size_t i = 0; i < swapchainImages.size(); i++) {
+
+                VkImageViewCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+                createInfo.image = swapchainImages[i];
+                createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                createInfo.format = format;
+                createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                createInfo.subresourceRange.baseMipLevel = 0;
+                createInfo.subresourceRange.levelCount = 1;
+                createInfo.subresourceRange.baseArrayLayer = 0;
+                createInfo.subresourceRange.layerCount = 1;
+
+                // If you were working on a stereographic 3D application, then you would create a swap chain
+                // with multiple layers. You could then create multiple image views for each image representing
+                // the views for the left and right eyes by accessing different layers.
+
+                VkResult result = vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i]);
+
+                if (result != VK_SUCCESS) {
+                    throw std::runtime_error(std::string("failed to create image view: ") + string_VkResult(result));
+                }
+            }
+        }
+
+
     };
 }
 
