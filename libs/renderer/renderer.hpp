@@ -210,7 +210,7 @@ namespace renderer {
                     .offset = {0, 0},
                     .extent = extent};
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-            vkCmdDraw(commandBuffer, 0, 1, 0, 0);
+            vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
             vkCmdEndRenderPass(commandBuffer);
 
