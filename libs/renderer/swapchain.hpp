@@ -45,6 +45,10 @@ namespace renderer {
             destroySwapchain();
         }
 
+        const VkSwapchainKHR &getSwapchain() {
+            return swapchain;
+        }
+
         const VkFormat &getSwapchainImageFormat() {
             return swapchainImageFormat;
         }
@@ -55,6 +59,10 @@ namespace renderer {
 
         const std::vector<VkImageView> &getSwapchainImageViews() {
             return swapchainImageViews;
+        }
+
+        const std::vector<VkFramebuffer> &getSwapchainFramebuffers() {
+            return swapchainFramebuffers;
         }
 
         /*

@@ -811,7 +811,7 @@ namespace renderer {
             VkGraphicsPipelineCreateInfo pipelineInfo{};
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount = 2;
-            pipelineInfo.pStages = shaderStages;
+            pipelineInfo.pStages = shaderStages.data();
             pipelineInfo.pVertexInputState = &vertexInputInfo;
             pipelineInfo.pInputAssemblyState = &inputAssembly;
             pipelineInfo.pViewportState = &viewportState;

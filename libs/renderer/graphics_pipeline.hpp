@@ -30,6 +30,10 @@ namespace renderer {
             vkDestroyPipelineLayout(device.getDevice(), graphicsPipelineLayout, nullptr);
         }
 
+        const VkPipeline &getGraphicsPipeline() {
+            return graphicsPipeline;
+        }
+
     private:
         Device &device;
         Swapchain &swapchain;
