@@ -28,7 +28,6 @@ namespace renderer {
         ~GraphicsPipeline() {
             vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
             vkDestroyPipelineLayout(device.getDevice(), graphicsPipelineLayout, nullptr);
-
         }
 
     private:

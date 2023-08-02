@@ -11,7 +11,7 @@ namespace renderer {
     class Window {
 
     public:
-        Window(std::string title,
+        explicit Window(std::string title,
                uint32_t width,
                uint32_t height,
                uint32_t minWidth = GLFW_DONT_CARE,

@@ -120,8 +120,8 @@ namespace renderer {
         }
 
     private:
-        const bool debug;
-        Window &window;
+        bool debug;
+        const Window &window;
 
         VkInstance instance;
         VkSurfaceKHR surface;

@@ -6,6 +6,7 @@
 #include "graphics_pipeline.hpp"
 
 #include <iostream>
+#include <memory>
 
 namespace renderer {
 
@@ -16,77 +17,33 @@ namespace renderer {
     class Renderer {
 
     public:
-        explicit Renderer(const std::string &applicationName, bool debug) :
-                window(applicationName, 600, 300, 200, 100),
-                device(window, debug),
-                swapchain(window, device),
-                renderPass(device, swapchain),
-                graphicsPipeline(device, swapchain, renderPass) {
-
-            createFrameBuffers(device.getDevice(),
-                               renderPass.getRenderPass(),
-                               swapchain.getSwapchainImageViews(),
-                               swapchain.getSwapchainExtent(),
-                               framebuffers);
+        explicit Renderer(const std::string &applicationName, bool debug) {
+            window = std::make_unique<Window>(applicationName, 600, 300, 200, 100);
+            device = std::make_unique<Device>(*window, debug);
+            swapchain = std::make_unique<Swapchain>(*window, *device);
+            renderPass = std::make_unique<RenderPass>(*device, *swapchain);
+            swapchain->createSwapchainFramebuffers(renderPass->getRenderPass());
+            graphicsPipeline = std::make_unique<GraphicsPipeline>(*device, *swapchain, *renderPass);
         }
 
-        ~Renderer() {
-            vkDestroyFramebuffer()
-        }
+        ~Renderer() = default;
 
         void run() {
-            GLFWwindow *glfwWindow = window.getWindow();
+            GLFWwindow *glfwWindow = window->getWindow();
 
             while (!glfwWindowShouldClose(glfwWindow)) {
                 glfwPollEvents();
                 drawFrame();
             }
-            vkDeviceWaitIdle(device.getDevice());
+            vkDeviceWaitIdle(device->getDevice());
         }
 
     private:
-        Window window;
-        Device device;
-        Swapchain swapchain;
-        RenderPass renderPass;
-        GraphicsPipeline graphicsPipeline;
-
-        std::vector<VkFramebuffer> framebuffers;
-
-        /*
-         * Dependent on both render pass (stored now in GraphicsPipeline)
-         * and swapchain (stored in Swapchain), so we move it here for now.
-         */
-        static void createFrameBuffers(const VkDevice &device,
-                                       const VkRenderPass &renderPass,
-                                       const std::vector<VkImageView> &swapchainImageViews,
-                                       const VkExtent2D &swapchainExtent,
-                                       std::vector<VkFramebuffer> swapchainFramebuffers) {
-            swapchainFramebuffers.resize(swapchainImageViews.size());
-
-            for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-                std::vector<VkImageView> attachments{
-                        swapchainImageViews[i]
-                };
-
-                VkFramebufferCreateInfo createInfo{};
-                createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-                createInfo.renderPass = renderPass;
-                createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-                createInfo.pAttachments = attachments.data();
-                createInfo.width = swapchainExtent.width;
-                createInfo.height = swapchainExtent.height;
-                createInfo.layers = 1;
-
-                VkResult result = vkCreateFramebuffer(device, &createInfo, nullptr, &swapchainFramebuffers[i]);
-
-                if (result != VK_SUCCESS) {
-                    throw std::runtime_error(std::string("failed to create frame buffer: ") + string_VkResult(result));
-                }
-            }
-
-            std::cout << "created frame buffers" << std::endl;
-        }
+        std::unique_ptr<Window> window;
+        std::unique_ptr<Device> device;
+        std::unique_ptr<Swapchain> swapchain;
+        std::unique_ptr<RenderPass> renderPass;
+        std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
         static void drawFrame() {
 

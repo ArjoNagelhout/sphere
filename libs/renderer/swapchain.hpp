@@ -42,7 +42,7 @@ namespace renderer {
         }
 
         ~Swapchain() {
-            vkDestroySwapchainKHR(device.getDevice(), swapchain, nullptr);
+            destroySwapchain();
         }
 
         const VkFormat &getSwapchainImageFormat() {
@@ -57,6 +57,24 @@ namespace renderer {
             return swapchainImageViews;
         }
 
+        /*
+         * This is a separate method, because the frame buffers very much
+         * belong to the swapchain, but they depend on the render pass to
+         * be initialized, which in itself is dependent on the rest of the
+         * swapchain to already be initialized. :)
+         *
+         * Can probably be refactored in the future.
+         */
+        void createSwapchainFramebuffers(const VkRenderPass &renderPass) {
+            this->renderPass = renderPass;
+
+            createSwapchainFrameBuffers(device.getDevice(),
+                                        this->renderPass,
+                                        swapchainImageViews,
+                                        swapchainExtent,
+                                        swapchainFramebuffers);
+        }
+
     private:
         Window &window;
         Device &device;
@@ -65,6 +83,8 @@ namespace renderer {
         VkExtent2D swapchainExtent;
         std::vector<VkImage> swapchainImages;
         std::vector<VkImageView> swapchainImageViews;
+        VkRenderPass renderPass;
+        std::vector<VkFramebuffer> swapchainFramebuffers;
 
         const std::vector<VkSurfaceFormatKHR> preferredSurfaceFormats{
                 {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
@@ -231,7 +251,52 @@ namespace renderer {
             }
         }
 
+        /*
+         * Dependent on both render pass (stored now in GraphicsPipeline)
+         * and swapchain (stored in Swapchain), so we move it here for now.
+         */
+        static void createSwapchainFrameBuffers(const VkDevice &device,
+                                                const VkRenderPass &renderPass,
+                                                const std::vector<VkImageView> &swapchainImageViews,
+                                                const VkExtent2D &swapchainExtent,
+                                                std::vector<VkFramebuffer> &swapchainFramebuffers) {
+            swapchainFramebuffers.resize(swapchainImageViews.size());
 
+            for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+                std::vector<VkImageView> attachments{
+                        swapchainImageViews[i]
+                };
+
+                VkFramebufferCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+                createInfo.renderPass = renderPass;
+                createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+                createInfo.pAttachments = attachments.data();
+                createInfo.width = swapchainExtent.width;
+                createInfo.height = swapchainExtent.height;
+                createInfo.layers = 1;
+
+                VkResult result = vkCreateFramebuffer(device, &createInfo, nullptr, &swapchainFramebuffers[i]);
+
+                if (result != VK_SUCCESS) {
+                    throw std::runtime_error(std::string("failed to create frame buffer: ") + string_VkResult(result));
+                }
+            }
+
+            std::cout << "created frame buffers" << std::endl;
+        }
+
+        void destroySwapchain() {
+            for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
+                vkDestroyFramebuffer(device.getDevice(), swapchainFramebuffers[i], nullptr);
+            }
+
+            for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+                vkDestroyImageView(device.getDevice(), swapchainImageViews[i], nullptr);
+            }
+
+            vkDestroySwapchainKHR(device.getDevice(), swapchain, nullptr);
+        }
     };
 }
 
