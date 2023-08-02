@@ -31,8 +31,9 @@ namespace renderer {
 
             while (!glfwWindowShouldClose(glfwWindow)) {
                 glfwPollEvents();
+                drawFrame();
             }
-
+            vkDeviceWaitIdle(device.getDevice());
         }
 
     private:
@@ -40,6 +41,10 @@ namespace renderer {
         Device device;
         Swapchain swapchain;
         GraphicsPipeline graphicsPipeline;
+
+        void drawFrame() {
+
+        }
     };
 }
 

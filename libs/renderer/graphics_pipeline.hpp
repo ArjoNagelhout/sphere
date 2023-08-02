@@ -22,11 +22,13 @@ namespace renderer {
     public:
         explicit GraphicsPipeline(Device &device, Swapchain &swapchain) : device(device), swapchain(swapchain) {
             createRenderPass(device.getDevice(), swapchain.getSwapchainImageFormat(), renderPass);
-            createGraphicsPipeline(device.getDevice(), swapchain, renderPass, graphicsPipeline);
+            createGraphicsPipeline(device.getDevice(), swapchain, renderPass, graphicsPipeline, graphicsPipelineLayout);
         }
 
         ~GraphicsPipeline() {
             vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
+            vkDestroyPipelineLayout(device.getDevice(), graphicsPipelineLayout, nullptr);
+            vkDestroyRenderPass(device.getDevice(), renderPass, nullptr);
         }
 
     private:
@@ -34,6 +36,7 @@ namespace renderer {
         Swapchain &swapchain;
         VkRenderPass renderPass;
         VkPipeline graphicsPipeline;
+        VkPipelineLayout graphicsPipelineLayout;
 
         /*
          * A render pass defines a set of image resources (attachments) to be used during rendering.
@@ -106,7 +109,8 @@ namespace renderer {
         static void createGraphicsPipeline(const VkDevice &device,
                                            Swapchain &swapchain,
                                            const VkRenderPass &renderPass,
-                                           VkPipeline &graphicsPipeline) {
+                                           VkPipeline &graphicsPipeline,
+                                           VkPipelineLayout &graphicsPipelineLayout) {
 
             std::vector<char> vertexShaderCode = readFile("shaders/shader_vert.spv");
             std::vector<char> fragmentShaderCode = readFile("shaders/shader_frag.spv");
@@ -246,8 +250,7 @@ namespace renderer {
             pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
             pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-            VkPipelineLayout pipelineLayout;
-            VkResult pipelineLayoutResult = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+            VkResult pipelineLayoutResult = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &graphicsPipelineLayout);
 
             if (pipelineLayoutResult != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create pipeline layout: ") + string_VkResult(pipelineLayoutResult));
@@ -266,7 +269,7 @@ namespace renderer {
             createInfo.pDepthStencilState = nullptr; //&depthStencilState;
             createInfo.pColorBlendState = &colorBlendState;
             createInfo.pDynamicState = &dynamicState;
-            createInfo.layout = pipelineLayout;
+            createInfo.layout = graphicsPipelineLayout;
             createInfo.renderPass = renderPass;
             createInfo.subpass = 0;
             createInfo.basePipelineHandle = VK_NULL_HANDLE; // / optional, can be used to create a new graphics pipeline by deriving from an existing.pipeline, makes switching quicker.

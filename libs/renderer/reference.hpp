@@ -106,8 +106,8 @@ namespace renderer {
             createLogicalDevice(); // implemented
             createSwapchain(); // implemented
             createImageViews();
-            createRenderPass();
-            createGraphicsPipeline();
+            createRenderPass(); // implemented
+            createGraphicsPipeline(); // implemented
             createFramebuffers();
             createCommandPool();
             createCommandBuffers();

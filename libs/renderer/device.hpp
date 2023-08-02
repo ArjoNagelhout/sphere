@@ -62,7 +62,7 @@ namespace renderer {
 
     public:
         // initialize in constructor (no two-step initialization)
-        explicit Device(Window &window, bool debug) : window(window) {
+        explicit Device(Window &window, bool debug) : debug(debug), window(window) {
 
             std::vector<const char *> allRequiredInstanceExtensions{requiredInstanceExtensions.begin(), requiredInstanceExtensions.end()};
             std::vector<const char *> allRequiredInstanceLayers{requiredInstanceLayers.begin(), requiredInstanceLayers.end()};
@@ -87,6 +87,11 @@ namespace renderer {
         ~Device() {
             vkDestroyDevice(device, nullptr);
             vkDestroySurfaceKHR(instance, surface, nullptr);
+
+            if (debug) {
+                destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+            }
+
             vkDestroyInstance(instance, nullptr);
         }
 
@@ -115,7 +120,9 @@ namespace renderer {
         }
 
     private:
+        const bool debug;
         Window &window;
+
         VkInstance instance;
         VkSurfaceKHR surface;
         QueueFamiliesData queueFamiliesData;
@@ -285,6 +292,16 @@ namespace renderer {
                 return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
             } else {
                 return VK_ERROR_EXTENSION_NOT_PRESENT;
+            }
+        }
+
+        // Again, a proxy function because it's part of an extension and can't be directly called
+        static void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                           const VkAllocationCallbacks *pAllocator) {
+            auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
+                                                                                    "vkDestroyDebugUtilsMessengerEXT");
+            if (func != nullptr) {
+                func(instance, debugMessenger, pAllocator);
             }
         }
 
