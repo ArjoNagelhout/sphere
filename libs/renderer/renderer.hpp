@@ -176,10 +176,11 @@ namespace renderer {
 
             uint32_t vertexStride = physicalDeviceData.minVertexInputBindingStrideAlignment;
             uint32_t vertexCount = 3;
+            uint64_t bufferSize = vertexStride * vertexCount;
 
             VkBufferCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            createInfo.size = vertexStride * vertexCount; // size in bytes, should be greater than zero
+            createInfo.size = bufferSize; // size in bytes, should be greater than zero
             createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             createInfo.queueFamilyIndexCount = 0;
@@ -192,6 +193,44 @@ namespace renderer {
             }
 
             std::cout << "created vertex buffer" << std::endl;
+
+            // now we need to allocate the memory, fill it with the proper data and bind it to the buffer
+            VkPhysicalDeviceMemoryProperties memoryProperties;
+            vkGetPhysicalDeviceMemoryProperties(device.getPhysicalDevice(), &memoryProperties);
+
+            for (uint32_t i = 0; i < memoryProperties.memoryHeapCount; i++) {
+                const VkMemoryHeap &heap = memoryProperties.memoryHeaps[i];
+                std::cout
+                    << "heap [" << i << "] flags: " << string_VkMemoryHeapFlags(heap.flags)
+                    << ", size: " << heap.size << std::endl;
+            }
+
+            for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+                const VkMemoryType &memoryType = memoryProperties.memoryTypes[i];
+
+                std::cout
+                        << "memory type [" << i << "] flags: " << string_VkMemoryPropertyFlags(memoryType.propertyFlags)
+                        << ", heap index: " << memoryType.heapIndex << std::endl;
+            }
+
+//            std::cout << "memory types: " << memoryProperties.memoryTypeCount << std::endl;
+//            for (const auto &memoryType : memoryProperties.memoryTypes) {
+//                std::cout << "heap index: " + memoryType.heapIndex << std::endl;
+//                std::cout << "property flags: " + memoryType.propertyFlags << std::endl;
+//            }
+
+            VkMemoryAllocateInfo allocateInfo{};
+            allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+            //allocateInfo.memoryTypeIndex
+            //allocateInfo.allocationSize = bufferSize;
+
+            //vkAllocateMemory(device.getDevice(), )
+
+
+
+
+            VkDeviceSize offset = 0;
+            //vkBindBufferMemory(device.getDevice(), vertexBuffer, offset)
         }
 
         static void recordCommandBuffer(

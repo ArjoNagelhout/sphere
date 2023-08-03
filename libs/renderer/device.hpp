@@ -116,6 +116,10 @@ namespace renderer {
             return presentQueue;
         }
 
+        const VkPhysicalDevice getPhysicalDevice() {
+            return physicalDevice;
+        }
+
         SurfaceData getSurfaceData() {
             return getSurfaceData(physicalDevice, surface);
         }
