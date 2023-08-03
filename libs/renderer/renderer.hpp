@@ -33,9 +33,13 @@ namespace renderer {
                                             renderFinishedSemaphores,
                                             inFlightFences,
                                             MAX_FRAMES_IN_FLIGHT);
+
+            createVertexBuffer(*device, vertexBuffer);
         }
 
         ~Renderer() {
+
+            vkDestroyBuffer(device->getDevice(), vertexBuffer, nullptr);
 
             // destroy synchronization primitives
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -50,8 +54,8 @@ namespace renderer {
         void run() {
             GLFWwindow *glfwWindow = window->getWindow();
 
-            while (!glfwWindowShouldClose(glfwWindow)) {
-                glfwPollEvents();
+            //while (!glfwWindowShouldClose(glfwWindow)) {
+                //glfwPollEvents();
                 drawFrame(currentFrame,
                           MAX_FRAMES_IN_FLIGHT,
                           *device,
@@ -61,8 +65,9 @@ namespace renderer {
                           commandBuffers,
                           imageAvailableSemaphores,
                           renderFinishedSemaphores,
-                          inFlightFences);
-            }
+                          inFlightFences,
+                          vertexBuffer);
+            //}
             vkDeviceWaitIdle(device->getDevice());
         }
 
@@ -82,6 +87,8 @@ namespace renderer {
         std::vector<VkFence> inFlightFences;
 
         uint32_t currentFrame = 0;
+
+        VkBuffer vertexBuffer;
 
         static void createCommandPool(Device &device,
                                       VkCommandPool &commandPool) {
@@ -163,12 +170,37 @@ namespace renderer {
             std::cout << "created synchronization primitives" << std::endl;
         }
 
+        static void createVertexBuffer(Device &device, VkBuffer &vertexBuffer) {
+
+            PhysicalDeviceData physicalDeviceData = device.getPhysicalDeviceData();
+
+            uint32_t vertexStride = physicalDeviceData.minVertexInputBindingStrideAlignment;
+            uint32_t vertexCount = 3;
+
+            VkBufferCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            createInfo.size = vertexStride * vertexCount; // size in bytes, should be greater than zero
+            createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            createInfo.queueFamilyIndexCount = 0;
+            createInfo.pQueueFamilyIndices = nullptr;
+
+            VkResult result = vkCreateBuffer(device.getDevice(), &createInfo, nullptr, &vertexBuffer);
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create vertex buffer") + string_VkResult(result));
+            }
+
+            std::cout << "created vertex buffer" << std::endl;
+        }
+
         static void recordCommandBuffer(
                 VkCommandBuffer &commandBuffer,
                 uint32_t imageIndex,
                 Swapchain &swapchain,
                 GraphicsPipeline &graphicsPipeline,
-                RenderPass &renderPass) {
+                RenderPass &renderPass,
+                VkBuffer &vertexBuffer) {
             VkCommandBufferBeginInfo beginInfo{};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = 0;
@@ -210,7 +242,10 @@ namespace renderer {
                     .offset = {0, 0},
                     .extent = extent};
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-            vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+
+            VkDeviceSize offset = 0;
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offset);
+            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
             vkCmdEndRenderPass(commandBuffer);
 
@@ -230,7 +265,8 @@ namespace renderer {
                               std::vector<VkCommandBuffer> &commandBuffers,
                               std::vector<VkSemaphore> &imageAvailableSemaphores,
                               std::vector<VkSemaphore> &renderFinishedSemaphores,
-                              std::vector<VkFence> &inFlightFences) {
+                              std::vector<VkFence> &inFlightFences,
+                              VkBuffer &vertexBuffer) {
 
             vkWaitForFences(device.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
             vkResetFences(device.getDevice(), 1, &inFlightFences[currentFrame]);
@@ -250,7 +286,7 @@ namespace renderer {
             }
 
             vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-            recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapchain, graphicsPipeline, renderPass);
+            recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapchain, graphicsPipeline, renderPass, vertexBuffer);
 
             VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
             VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};

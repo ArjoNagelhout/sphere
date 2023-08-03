@@ -36,7 +36,7 @@ namespace renderer {
 
     public:
         explicit GraphicsPipeline(Device &device, Swapchain &swapchain, RenderPass &renderPass) : device(device), swapchain(swapchain), renderPass(renderPass) {
-            createGraphicsPipeline(device.getDevice(), swapchain, renderPass.getRenderPass(), graphicsPipeline, graphicsPipelineLayout);
+            createGraphicsPipeline(device, swapchain, renderPass.getRenderPass(), graphicsPipeline, graphicsPipelineLayout);
         }
 
         ~GraphicsPipeline() {
@@ -61,7 +61,7 @@ namespace renderer {
          *
          * Some are fixed and can be set on pipeline creation, and others are done via shaders etc.
          */
-        static void createGraphicsPipeline(const VkDevice &device,
+        static void createGraphicsPipeline(Device &device,
                                            Swapchain &swapchain,
                                            const VkRenderPass &renderPass,
                                            VkPipeline &graphicsPipeline,
@@ -70,8 +70,8 @@ namespace renderer {
             std::vector<char> vertexShaderCode = readFile("shaders/shader_vert.spv");
             std::vector<char> fragmentShaderCode = readFile("shaders/shader_frag.spv");
 
-            VkShaderModule vertexShaderModule = createShaderModule(device, vertexShaderCode);
-            VkShaderModule fragmentShaderModule = createShaderModule(device, fragmentShaderCode);
+            VkShaderModule vertexShaderModule = createShaderModule(device.getDevice(), vertexShaderCode);
+            VkShaderModule fragmentShaderModule = createShaderModule(device.getDevice(), fragmentShaderCode);
 
             VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
             vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -90,13 +90,28 @@ namespace renderer {
                     fragmentShaderStageInfo
             };
 
+            PhysicalDeviceData physicalDeviceData = device.getPhysicalDeviceData();
+
+            VkVertexInputBindingDescription vertexInputBindingDescription{
+                .binding = 0, // binding number (identifier?)
+                .stride = physicalDeviceData.minVertexInputBindingStrideAlignment, // the amount of bytes per item in the vertex buffer
+                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+            };
+
+//            VkVertexInputAttributeDescription vertexInputAttributeDescription{
+//                .location = 0, // is the shader input location number for this attribute
+//                .binding = 0, // binding number
+//                // .format = must contain VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,
+//                .offset = 0
+//            };
+
             // how are vertices input into the pipeline
             VkPipelineVertexInputStateCreateInfo vertexInputState{};
             vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-            vertexInputState.vertexBindingDescriptionCount = 0;
-            vertexInputState.pVertexBindingDescriptions = nullptr; // array of VkVertexInputBindingDescription
-            vertexInputState.vertexAttributeDescriptionCount = 0;
-            vertexInputState.pVertexAttributeDescriptions = nullptr;
+            vertexInputState.vertexBindingDescriptionCount = 1;
+            vertexInputState.pVertexBindingDescriptions = &vertexInputBindingDescription;
+            vertexInputState.vertexAttributeDescriptionCount = 0; // 1;
+            vertexInputState.pVertexAttributeDescriptions = nullptr; //&vertexInputAttributeDescription;
 
             // how do vertices get converted into a primitive (i.e. triangle)
             VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
@@ -198,14 +213,34 @@ namespace renderer {
             dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
             dynamicState.pDynamicStates = dynamicStates.data();
 
+            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding{
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .pImmutableSamplers = nullptr
+            };
+
+            VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+            descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            descriptorSetLayoutInfo.bindingCount = 1;
+            descriptorSetLayoutInfo.pBindings = &descriptorSetLayoutBinding;
+
+            VkDescriptorSetLayout descriptorSetLayout;
+            VkResult descriptorSetLayoutResult = vkCreateDescriptorSetLayout(device.getDevice(), &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout);
+
+            if (descriptorSetLayoutResult != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create descriptor set layout: ") + string_VkResult(descriptorSetLayoutResult));
+            }
+
             VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
             pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipelineLayoutCreateInfo.setLayoutCount = 0;
-            pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+            pipelineLayoutCreateInfo.setLayoutCount = 1;
+            pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
             pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
             pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-            VkResult pipelineLayoutResult = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &graphicsPipelineLayout);
+            VkResult pipelineLayoutResult = vkCreatePipelineLayout(device.getDevice(), &pipelineLayoutCreateInfo, nullptr, &graphicsPipelineLayout);
 
             if (pipelineLayoutResult != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create pipeline layout: ") + string_VkResult(pipelineLayoutResult));
@@ -230,14 +265,14 @@ namespace renderer {
             createInfo.basePipelineHandle = VK_NULL_HANDLE; // / optional, can be used to create a new graphics pipeline by deriving from an existing.pipeline, makes switching quicker.
             createInfo.basePipelineIndex = -1;
 
-            VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &graphicsPipeline);
+            VkResult result = vkCreateGraphicsPipelines(device.getDevice(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &graphicsPipeline);
 
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create graphics pipeline: ") + string_VkResult(result));
             }
 
-            vkDestroyShaderModule(device, vertexShaderModule, nullptr);
-            vkDestroyShaderModule(device, fragmentShaderModule, nullptr);
+            vkDestroyShaderModule(device.getDevice(), vertexShaderModule, nullptr);
+            vkDestroyShaderModule(device.getDevice(), fragmentShaderModule, nullptr);
 
             std::cout << "created graphics pipeline" << std::endl;
         }

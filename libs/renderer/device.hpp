@@ -1,8 +1,10 @@
 #ifndef SPHERE_DEVICE_HPP
 #define SPHERE_DEVICE_HPP
 
-#define GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_NONE
+#define VK_ENABLE_BETA_EXTENSIONS
 
+#include <vulkan/vulkan.h>
 #include <glfw/glfw3.h>
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -18,8 +20,6 @@
 #include <optional>
 
 namespace renderer {
-
-#define VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME "VK_KHR_portability_subset"
 
     const char *ENGINE_NAME = "Sphere";
     const char *APPLICATION_NAME = "Sphere";
@@ -47,6 +47,11 @@ namespace renderer {
         bool isComplete() {
             return graphicsQueueFamilyData.has_value() && presentQueueFamilyData.has_value();
         }
+    };
+
+    struct PhysicalDeviceData {
+        uint32_t minVertexInputBindingStrideAlignment;
+        uint32_t maxVertexInputBindingStride;
     };
 
     /*
@@ -117,6 +122,25 @@ namespace renderer {
 
         QueueFamiliesData getQueueFamiliesData() {
             return queueFamiliesData;
+        }
+
+        PhysicalDeviceData getPhysicalDeviceData() {
+
+            VkPhysicalDeviceProperties2 properties{};
+            properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+            VkPhysicalDevicePortabilitySubsetPropertiesKHR portabilitySubsetProperties{};
+            portabilitySubsetProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
+            properties.pNext = &portabilitySubsetProperties;
+
+            vkGetPhysicalDeviceProperties2(physicalDevice, &properties);
+
+            PhysicalDeviceData physicalDeviceData{
+                .minVertexInputBindingStrideAlignment = portabilitySubsetProperties.minVertexInputBindingStrideAlignment,
+                .maxVertexInputBindingStride = properties.properties.limits.maxVertexInputBindingStride
+            };
+
+            return physicalDeviceData;
         }
 
     private:
