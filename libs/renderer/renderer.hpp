@@ -8,6 +8,12 @@
 #include <iostream>
 #include <memory>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+#pragma clang diagnostic pop
+
 namespace renderer {
 
     /*
@@ -225,9 +231,6 @@ namespace renderer {
             //allocateInfo.allocationSize = bufferSize;
 
             //vkAllocateMemory(device.getDevice(), )
-
-
-
 
             VkDeviceSize offset = 0;
             //vkBindBufferMemory(device.getDevice(), vertexBuffer, offset)

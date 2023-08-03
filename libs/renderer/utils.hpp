@@ -7,7 +7,7 @@ namespace renderer {
 
     // equality operators
     bool operator==(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {
-        return lhs.extensionName == rhs.extensionName
+        return strcmp(lhs.extensionName, rhs.extensionName) == 0
             && lhs.specVersion == rhs.specVersion;
     }
 
@@ -16,7 +16,7 @@ namespace renderer {
     }
 
     bool operator==(VkLayerProperties &lhs, VkLayerProperties &rhs) {
-        return lhs.layerName == rhs.layerName
+        return strcmp(lhs.layerName, rhs.layerName) == 0
             && lhs.specVersion == rhs.specVersion
             && lhs.implementationVersion == rhs.implementationVersion;
     }

@@ -5,7 +5,7 @@
 #define VK_ENABLE_BETA_EXTENSIONS
 
 #include <vulkan/vulkan.h>
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <vulkan/vk_enum_string_helper.h>
 
 #include "utils.hpp"
