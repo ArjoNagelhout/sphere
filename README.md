@@ -52,4 +52,6 @@ Follows the [Pitchfork specification](https://api.csswg.org/bikeshed/?force=1&ur
 - extremely slow shader variants compilation
 - incomplete and poorly written documentation
 - opaque black box; no source code
+- I don't like Unity Hub.
+- No easy runtime importing of assets
 - etc.
