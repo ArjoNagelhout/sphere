@@ -42,7 +42,7 @@ Follows the [Pitchfork specification](https://api.csswg.org/bikeshed/?force=1&ur
 - `/src`: main source code
 - `/tests`: tests
 
-[^1] I have grown incredibly discontent with Unity and all of its stupid engineering decisions; 
+[^1]: I have grown incredibly discontent with Unity and all of its stupid engineering decisions; 
 - inability to support advanced graphics programming techniques
 - ever breaking dependencies between different packages
 - XR Interaction Toolkit is incredibly inefficient with an insane amount of overhead. 
