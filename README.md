@@ -32,7 +32,7 @@ This model allows for true dogfooding, which is desirable in determining which f
 1. For fun and educational purposes.
 2. **Performance**. The ability to fully control every single line of code that is being run. On performance constrained devices such as the Quest, you can only go so far with an existing game engine. There's always overhead. Now the only limiting factor for something not running smoothly is you.  
 3. **Stability**. More stable and well-documented APIs. The lower you go in the technology stack, the more things become an engineering discipline, which should result in better APIs and less breaking changes. 
-4. Fuck Unity[^1]
+4. Fuck Unity [1]
 
 ## Structure
 Follows the [Pitchfork specification](https://api.csswg.org/bikeshed/?force=1&url=https://raw.githubusercontent.com/vector-of-bool/pitchfork/develop/data/spec.bs)
@@ -42,7 +42,7 @@ Follows the [Pitchfork specification](https://api.csswg.org/bikeshed/?force=1&ur
 - `/src`: main source code
 - `/tests`: tests
 
-[^1]: I have grown incredibly discontent with Unity and all of its stupid engineering decisions; 
+[1]: I have grown incredibly discontent with Unity and all of its stupid engineering decisions; 
 - inability to support advanced graphics programming techniques
 - ever breaking dependencies between different packages
 - XR Interaction Toolkit is incredibly inefficient with an insane amount of overhead. 
