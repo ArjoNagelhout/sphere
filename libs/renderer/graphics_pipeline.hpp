@@ -36,7 +36,7 @@ namespace renderer {
 
     public:
         explicit GraphicsPipeline(Device &device, Swapchain &swapchain, RenderPass &renderPass) : device(device), swapchain(swapchain), renderPass(renderPass) {
-            createGraphicsPipeline(device, swapchain, renderPass.getRenderPass(), graphicsPipeline, graphicsPipelineLayout);
+            createGraphicsPipeline(device, swapchain, renderPass.getRenderPass(), graphicsPipeline, graphicsPipelineLayout, descriptorSetLayout, descriptorType);
         }
 
         ~GraphicsPipeline() {
@@ -48,6 +48,16 @@ namespace renderer {
             return graphicsPipeline;
         }
 
+        const VkPipelineLayout &getGraphicsPipelineLayout() {
+            return graphicsPipelineLayout;
+        }
+
+        const VkDescriptorSetLayout &getDescriptorSetLayout() {
+            return descriptorSetLayout;
+        }
+
+        const VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
     private:
         Device &device;
         Swapchain &swapchain;
@@ -55,6 +65,7 @@ namespace renderer {
 
         VkPipeline graphicsPipeline;
         VkPipelineLayout graphicsPipelineLayout;
+        VkDescriptorSetLayout descriptorSetLayout;
 
         /*
          * Graphics pipeline consists of a lot of steps, e.g. vertex input, rasterization
@@ -65,7 +76,9 @@ namespace renderer {
                                            Swapchain &swapchain,
                                            const VkRenderPass &renderPass,
                                            VkPipeline &graphicsPipeline,
-                                           VkPipelineLayout &graphicsPipelineLayout) {
+                                           VkPipelineLayout &graphicsPipelineLayout,
+                                           VkDescriptorSetLayout &descriptorSetLayout,
+                                           const VkDescriptorType &descriptorType) {
 
             std::vector<char> vertexShaderCode = readFile("shaders/shader_vert.spv");
             std::vector<char> fragmentShaderCode = readFile("shaders/shader_frag.spv");
@@ -213,9 +226,10 @@ namespace renderer {
             dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
             dynamicState.pDynamicStates = dynamicStates.data();
 
+
             VkDescriptorSetLayoutBinding descriptorSetLayoutBinding{
                 .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorType = descriptorType,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
                 .pImmutableSamplers = nullptr
@@ -226,7 +240,6 @@ namespace renderer {
             descriptorSetLayoutInfo.bindingCount = 1;
             descriptorSetLayoutInfo.pBindings = &descriptorSetLayoutBinding;
 
-            VkDescriptorSetLayout descriptorSetLayout;
             VkResult descriptorSetLayoutResult = vkCreateDescriptorSetLayout(device.getDevice(), &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout);
 
             if (descriptorSetLayoutResult != VK_SUCCESS) {

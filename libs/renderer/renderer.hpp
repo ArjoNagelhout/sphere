@@ -29,18 +29,22 @@ namespace renderer {
 
             createCommandPool(*device, commandPool);
             createCommandBuffers(device->getDevice(), commandPool, MAX_FRAMES_IN_FLIGHT, commandBuffers);
+            createDescriptorPool(device->getDevice(), graphicsPipeline->descriptorType, descriptorPool);
+            createDescriptorSets(device->getDevice(),
+                                 descriptorPool,
+                                 graphicsPipeline->getDescriptorSetLayout(),
+                                 descriptorSets);
             createSynchronizationPrimitives(device->getDevice(),
                                             imageAvailableSemaphores,
                                             renderFinishedSemaphores,
                                             inFlightFences,
                                             MAX_FRAMES_IN_FLIGHT);
 
-            createVertexBuffer(*device, memoryAllocator->getAllocator(), vertexBuffer);
+            createVertexBuffer(*device, memoryAllocator->getAllocator(), vertexBuffer, vertexBufferAllocation);
         }
 
         ~Renderer() {
-
-            vkDestroyBuffer(device->getDevice(), vertexBuffer, nullptr);
+            vmaDestroyBuffer(memoryAllocator->getAllocator(), vertexBuffer, vertexBufferAllocation);
 
             // destroy synchronization primitives
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -49,6 +53,7 @@ namespace renderer {
                 vkDestroyFence(device->getDevice(), inFlightFences[i], nullptr);
             }
 
+            vkDestroyDescriptorPool(device->getDevice(), descriptorPool, nullptr);
             vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);
         }
 
@@ -64,6 +69,7 @@ namespace renderer {
                           *graphicsPipeline,
                           *renderPass,
                           commandBuffers,
+                          descriptorSets,
                           imageAvailableSemaphores,
                           renderFinishedSemaphores,
                           inFlightFences,
@@ -84,6 +90,8 @@ namespace renderer {
 
         VkCommandPool commandPool;
         std::vector<VkCommandBuffer> commandBuffers;
+        VkDescriptorPool descriptorPool;
+        std::vector<VkDescriptorSet> descriptorSets;
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
@@ -91,6 +99,7 @@ namespace renderer {
         uint32_t currentFrame = 0;
 
         VkBuffer vertexBuffer;
+        VmaAllocation vertexBufferAllocation;
 
         static void createCommandPool(Device &device,
                                       VkCommandPool &commandPool) {
@@ -127,6 +136,49 @@ namespace renderer {
             }
 
             std::cout << "created command buffers" << std::endl;
+        }
+
+        static void createDescriptorPool(const VkDevice &device, const VkDescriptorType &descriptorType, VkDescriptorPool &descriptorPool) {
+
+            VkDescriptorPoolSize poolSize{
+                    .type = descriptorType,
+                    .descriptorCount = 1
+            };
+
+            VkDescriptorPoolCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            createInfo.maxSets = 1;
+            createInfo.poolSizeCount = 1;
+            createInfo.pPoolSizes = &poolSize;
+
+            VkResult result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool);
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create descriptor pool: ") + string_VkResult(result));
+            }
+
+            std::cout << "created descriptor pool" << std::endl;
+        }
+
+        static void createDescriptorSets(const VkDevice &device, const VkDescriptorPool &descriptorPool, const VkDescriptorSetLayout &descriptorSetLayout, std::vector<VkDescriptorSet> &descriptorSets) {
+
+            int descriptorSetsCount = 1;
+            descriptorSets.resize(descriptorSetsCount);
+
+            VkDescriptorSetAllocateInfo allocateInfo{};
+            allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocateInfo.descriptorPool = descriptorPool;
+            allocateInfo.descriptorSetCount = descriptorSetsCount;
+            allocateInfo.pSetLayouts = &descriptorSetLayout;
+
+            VkResult result = vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data());
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create descriptor sets: ") + string_VkResult(result));
+            }
+
+            std::cout << "created descriptor sets" << std::endl;
+
         }
 
         static void createSynchronizationPrimitives(
@@ -172,8 +224,7 @@ namespace renderer {
             std::cout << "created synchronization primitives" << std::endl;
         }
 
-        static void createVertexBuffer(Device &device, const VmaAllocator &allocator, VkBuffer &vertexBuffer) {
-
+        static void createVertexBuffer(Device &device, const VmaAllocator &allocator, VkBuffer &vertexBuffer, VmaAllocation &allocation) {
             PhysicalDeviceData physicalDeviceData = device.getPhysicalDeviceData();
 
             uint32_t vertexStride = physicalDeviceData.minVertexInputBindingStrideAlignment;
@@ -197,7 +248,6 @@ namespace renderer {
             //allocationCreateInfo.pUserData
             //allocationCreateInfo.priority
 
-            VmaAllocation allocation;
             VmaAllocationInfo allocationInfo;
 
             VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &vertexBuffer, &allocation, &allocationInfo);
@@ -211,7 +261,9 @@ namespace renderer {
 
         static void recordCommandBuffer(
                 VkCommandBuffer &commandBuffer,
+                std::vector<VkDescriptorSet> &descriptorSets,
                 uint32_t imageIndex,
+                Device &device,
                 Swapchain &swapchain,
                 GraphicsPipeline &graphicsPipeline,
                 RenderPass &renderPass,
@@ -241,7 +293,38 @@ namespace renderer {
             renderPassInfo.clearValueCount = 1;
             renderPassInfo.pClearValues = &clearColor;
 
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = vertexBuffer;
+            bufferInfo.offset = 0;
+            bufferInfo.range = VK_WHOLE_SIZE;
+
+            VkWriteDescriptorSet writeDescriptorSet;
+            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSet.dstSet = descriptorSets[0];
+            writeDescriptorSet.dstBinding = 0;
+            writeDescriptorSet.dstArrayElement = 0;
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.descriptorType = graphicsPipeline.descriptorType;
+            writeDescriptorSet.pImageInfo = nullptr;
+            writeDescriptorSet.pBufferInfo = &bufferInfo;
+            writeDescriptorSet.pTexelBufferView = nullptr;
+
+            vkUpdateDescriptorSets(
+                    device.getDevice(),
+                    1,
+                    &writeDescriptorSet,
+                    0,
+                    nullptr);
+
             vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBindDescriptorSets(commandBuffer,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    graphicsPipeline.getGraphicsPipelineLayout(),
+                                    0,
+                                    1,
+                                    descriptorSets.data(),
+                                    0,
+                                    nullptr);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getGraphicsPipeline());
 
             VkViewport viewport{
@@ -260,6 +343,7 @@ namespace renderer {
 
             VkDeviceSize offset = 0;
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offset);
+
             vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
             vkCmdEndRenderPass(commandBuffer);
@@ -278,6 +362,7 @@ namespace renderer {
                               GraphicsPipeline &graphicsPipeline,
                               RenderPass &renderPass,
                               std::vector<VkCommandBuffer> &commandBuffers,
+                              std::vector<VkDescriptorSet> &descriptorSets,
                               std::vector<VkSemaphore> &imageAvailableSemaphores,
                               std::vector<VkSemaphore> &renderFinishedSemaphores,
                               std::vector<VkFence> &inFlightFences,
@@ -301,7 +386,14 @@ namespace renderer {
             }
 
             vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-            recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapchain, graphicsPipeline, renderPass, vertexBuffer);
+            recordCommandBuffer(commandBuffers[currentFrame],
+                                descriptorSets,
+                                imageIndex,
+                                device,
+                                swapchain,
+                                graphicsPipeline,
+                                renderPass,
+                                vertexBuffer);
 
             VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
             VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};

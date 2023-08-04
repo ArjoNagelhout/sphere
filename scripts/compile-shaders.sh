@@ -23,9 +23,9 @@ for file in $(find $shaders_input_directory -name "*.vert" -or -name "*.frag"); 
 
   output_file_path="$shaders_output_directory"/"$output_file_name"
 
-  echo $output_file_path
-
   glslc $file -o $output_file_path
+
+  echo "compiled shader to: ${output_file_path}"
 
 done
 unset IFS; set +f
