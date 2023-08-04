@@ -43,15 +43,18 @@ Follows the [Pitchfork specification](https://api.csswg.org/bikeshed/?force=1&ur
 - `/tests`: tests
 
 [1]: I have grown incredibly discontent with Unity and all of its stupid engineering decisions; 
-- inability to support advanced graphics programming techniques
+- inability to support advanced graphics programming techniques due to URP obscuring a lot of the true potential of GPU hardware. 
 - ever breaking dependencies between different packages
-- XR Interaction Toolkit is incredibly inefficient with an insane amount of overhead. 
-- bad and low performance UI systems, there are three different systems which are all bad in their own way. Unity UI, Immediate UI, UI Toolkit / Elements
-- problematic axis conversions
+- XR Interaction Toolkit, MRTK, Oculus SDK are all simply not meant for Unity's scene hierarchy and component system.  
+- bad and low performance UI systems and components, there are three different systems which are all bad in their own way. Unity UI, Immediate UI, UI Toolkit / Elements
+- bad text rendering (using TextMeshPro)
+- problematic axis conversions from different software applications
 - structuring code dependencies using prefabs (never again) and other ways it promotes bad software engineering practices
 - extremely slow shader variants compilation
 - incomplete and poorly written documentation
-- opaque black box; no source code
-- I don't like Unity Hub.
-- No easy runtime importing of assets
-- etc.
+- opaque black box; no source code available unless you're an enterprise willing to pay for it 
+- Unity Hub is an electron application, why?
+- no easy runtime importing of assets, AddressableAssets and AssetBundles are a mess and break between Unity versions
+- coroutines are slow but required because the Unity API does not support multithreading. 
+- asynchronous programming is hard
+- lightmapping
