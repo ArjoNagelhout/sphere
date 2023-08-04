@@ -55,6 +55,4 @@ Follows the [Pitchfork specification](https://api.csswg.org/bikeshed/?force=1&ur
 - opaque black box; no source code available unless you're an enterprise willing to pay for it 
 - Unity Hub is an electron application, why?
 - no easy runtime importing of assets, AddressableAssets and AssetBundles are a mess and break between Unity versions
-- coroutines are slow but required because the Unity API does not support multithreading. 
-- asynchronous programming is hard
-- lightmapping
+- coroutines are slow but required because the Unity API does not support multithreading.
