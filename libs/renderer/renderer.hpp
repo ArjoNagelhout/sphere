@@ -60,8 +60,8 @@ namespace renderer {
         void run() {
             GLFWwindow *glfwWindow = window->getWindow();
 
-            //while (!glfwWindowShouldClose(glfwWindow)) {
-                //glfwPollEvents();
+            while (!glfwWindowShouldClose(glfwWindow)) {
+                glfwPollEvents();
                 drawFrame(currentFrame,
                           MAX_FRAMES_IN_FLIGHT,
                           *device,
@@ -74,7 +74,7 @@ namespace renderer {
                           renderFinishedSemaphores,
                           inFlightFences,
                           vertexBuffer);
-            //}
+            }
             vkDeviceWaitIdle(device->getDevice());
         }
 
@@ -234,7 +234,7 @@ namespace renderer {
             VkBufferCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             createInfo.size = bufferSize; // size in bytes, should be greater than zero
-            createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
             createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             createInfo.queueFamilyIndexCount = 0;
             createInfo.pQueueFamilyIndices = nullptr;
@@ -249,7 +249,6 @@ namespace renderer {
             allocationCreateInfo.priority = 1.0f;
 
             VmaAllocationInfo allocationInfo;
-
             VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &vertexBuffer, &allocation, &allocationInfo);
 
             if (result != VK_SUCCESS) {
@@ -257,6 +256,37 @@ namespace renderer {
             }
 
             std::cout << "created vertex buffer" << std::endl;
+        }
+
+        static void setVertexBufferData(Device &device,
+                                        GraphicsPipeline &graphicsPipeline,
+                                        VkBuffer &vertexBuffer,
+                                        std::vector<VkDescriptorSet> &descriptorSets) {
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = vertexBuffer;
+            bufferInfo.offset = 0;
+            bufferInfo.range = VK_WHOLE_SIZE;
+
+            VkWriteDescriptorSet writeDescriptorSet;
+            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSet.dstSet = descriptorSets[0];
+            writeDescriptorSet.dstBinding = 0;
+            writeDescriptorSet.dstArrayElement = 0;
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.descriptorType = graphicsPipeline.descriptorType;
+            writeDescriptorSet.pImageInfo = nullptr;
+            writeDescriptorSet.pBufferInfo = &bufferInfo;
+            writeDescriptorSet.pTexelBufferView = nullptr;
+
+            vkUpdateDescriptorSets(
+                    device.getDevice(),
+                    1,
+                    &writeDescriptorSet,
+                    0,
+                    nullptr);
+
+            std::cout << "set vertex buffer data" << std::endl;
         }
 
         static void recordCommandBuffer(
@@ -292,29 +322,6 @@ namespace renderer {
             renderPassInfo.renderArea.extent = swapchain.getSwapchainExtent();
             renderPassInfo.clearValueCount = 1;
             renderPassInfo.pClearValues = &clearColor;
-
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = vertexBuffer;
-            bufferInfo.offset = 0;
-            bufferInfo.range = VK_WHOLE_SIZE;
-
-            VkWriteDescriptorSet writeDescriptorSet;
-            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSet.dstSet = descriptorSets[0];
-            writeDescriptorSet.dstBinding = 0;
-            writeDescriptorSet.dstArrayElement = 0;
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.descriptorType = graphicsPipeline.descriptorType;
-            writeDescriptorSet.pImageInfo = nullptr;
-            writeDescriptorSet.pBufferInfo = &bufferInfo;
-            writeDescriptorSet.pTexelBufferView = nullptr;
-
-            vkUpdateDescriptorSets(
-                    device.getDevice(),
-                    1,
-                    &writeDescriptorSet,
-                    0,
-                    nullptr);
 
             vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindDescriptorSets(commandBuffer,
