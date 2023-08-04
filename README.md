@@ -44,15 +44,16 @@ Follows the [Pitchfork specification](https://api.csswg.org/bikeshed/?force=1&ur
 
 [1]: I have grown incredibly discontent with Unity and all of its stupid engineering decisions; 
 - inability to support advanced graphics programming techniques due to URP obscuring a lot of the true potential of GPU hardware. 
-- ever breaking dependencies between different packages
+- ever breaking dependencies between different packages; e.g. XR Interaction Toolkit only works with Input System 1.3
 - XR Interaction Toolkit, MRTK, Oculus SDK are all simply not meant for Unity's scene hierarchy and component system.  
-- bad and low performance UI systems and components, there are three different systems which are all bad in their own way. Unity UI, Immediate UI, UI Toolkit / Elements
+- bad and low performance UI systems and components, there are three different systems which are all bad in their own way; Unity UI, Immediate UI, UI Toolkit / Elements
 - bad text rendering (using TextMeshPro)
 - problematic axis conversions from different software applications
 - structuring code dependencies using prefabs (never again) and other ways it promotes bad software engineering practices
 - extremely slow shader variants compilation
 - incomplete and poorly written documentation
-- opaque black box; no source code available unless you're an enterprise willing to pay for it 
-- Unity Hub is an electron application, why?
+- Unity is an opaque black box. No source code is for the core engine is available unless you're an enterprise willing to pay for it.  
+- Unity Hub is an electron application and takes forever to start up, sometimes breaks. 
 - no easy runtime importing of assets, AddressableAssets and AssetBundles are a mess and break between Unity versions
-- coroutines are slow but required because the Unity API does not support multithreading.
+- coroutines are slow but required because the Unity API does not support multithreading and async await therefore does not provide any benefit. Because of this you also need to use UnityMainThreadDispatcher to go back to the main thread on completing asynchronous code. 
+- Unity treats developers like they're dumb by making all the classes (e.g. from UI Toolkit / UI Elements) you "shouldn't" have to use internal, resulting in having to copy over the entire codebase of the package into your own codebase, and fixing the bug there.
