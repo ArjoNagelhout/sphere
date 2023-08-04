@@ -5,6 +5,7 @@
 #include "swapchain.hpp"
 #include "graphics_pipeline.hpp"
 #include "memory_allocator.hpp"
+#include "vertex_data.hpp"
 
 #include <iostream>
 #include <memory>
@@ -40,7 +41,7 @@ namespace renderer {
                                             inFlightFences,
                                             MAX_FRAMES_IN_FLIGHT);
 
-            createVertexBuffer(*device, memoryAllocator->getAllocator(), vertexBuffer, vertexBufferAllocation);
+            createVertexBuffer(*device, memoryAllocator->getAllocator(), vertexBuffer, vertexBufferAllocation, vertices);
         }
 
         ~Renderer() {
@@ -73,7 +74,8 @@ namespace renderer {
                           imageAvailableSemaphores,
                           renderFinishedSemaphores,
                           inFlightFences,
-                          vertexBuffer);
+                          vertexBuffer,
+                          vertices);
             }
             vkDeviceWaitIdle(device->getDevice());
         }
@@ -97,6 +99,15 @@ namespace renderer {
         std::vector<VkFence> inFlightFences;
 
         uint32_t currentFrame = 0;
+
+        std::vector<VertexData> vertices {
+                {{0.0f, -0.5f, 0}},
+                {{0.5f, 0.5f, 0}},
+                {{-0.5f, 0.2f, 0}},
+                {{0, 0, 0}},
+                {{0.25, 0.25, 0}},
+                {{-0.25, 0.25, 0}}
+        };
 
         VkBuffer vertexBuffer;
         VmaAllocation vertexBufferAllocation;
@@ -224,11 +235,16 @@ namespace renderer {
             std::cout << "created synchronization primitives" << std::endl;
         }
 
-        static void createVertexBuffer(Device &device, const VmaAllocator &allocator, VkBuffer &vertexBuffer, VmaAllocation &allocation) {
-            PhysicalDeviceData physicalDeviceData = device.getPhysicalDeviceData();
+        static void createVertexBuffer(Device &device,
+                                       const VmaAllocator &allocator,
+                                       VkBuffer &vertexBuffer,
+                                       VmaAllocation &allocation,
+                                       std::vector<VertexData> vertices) {
+            //PhysicalDeviceData physicalDeviceData = device.getPhysicalDeviceData();
 
-            uint32_t vertexStride = physicalDeviceData.minVertexInputBindingStrideAlignment;
-            uint32_t vertexCount = 3;
+            //uint32_t vertexStride = physicalDeviceData.minVertexInputBindingStrideAlignment;
+            uint32_t vertexStride = sizeof(vertices[0]);
+            uint32_t vertexCount = vertices.size();
             uint64_t bufferSize = vertexStride * vertexCount;
 
             VkBufferCreateInfo createInfo{};
@@ -236,12 +252,13 @@ namespace renderer {
             createInfo.size = bufferSize; // size in bytes, should be greater than zero
             createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
             createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            createInfo.queueFamilyIndexCount = 0;
-            createInfo.pQueueFamilyIndices = nullptr;
+            //createInfo.queueFamilyIndexCount = 0;
+            //createInfo.pQueueFamilyIndices = nullptr;
 
             VmaAllocationCreateInfo allocationCreateInfo{};
             allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-            //allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
             //allocationCreateInfo.preferredFlags = //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
             //allocationCreateInfo.memoryTypeBits = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
             allocationCreateInfo.pool = VK_NULL_HANDLE;
@@ -255,38 +272,14 @@ namespace renderer {
                 throw std::runtime_error(std::string("failed to create vertex buffer: ") + string_VkResult(result));
             }
 
+            void* mappedData;
+            vmaMapMemory(allocator, allocation, &mappedData);
+            memcpy(mappedData, vertices.data(), (size_t)bufferSize);
+            vmaUnmapMemory(allocator, allocation);
+
+            //vmaFlushAllocation(allocator, allocation);
+
             std::cout << "created vertex buffer" << std::endl;
-        }
-
-        static void setVertexBufferData(Device &device,
-                                        GraphicsPipeline &graphicsPipeline,
-                                        VkBuffer &vertexBuffer,
-                                        std::vector<VkDescriptorSet> &descriptorSets) {
-
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = vertexBuffer;
-            bufferInfo.offset = 0;
-            bufferInfo.range = VK_WHOLE_SIZE;
-
-            VkWriteDescriptorSet writeDescriptorSet;
-            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSet.dstSet = descriptorSets[0];
-            writeDescriptorSet.dstBinding = 0;
-            writeDescriptorSet.dstArrayElement = 0;
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.descriptorType = graphicsPipeline.descriptorType;
-            writeDescriptorSet.pImageInfo = nullptr;
-            writeDescriptorSet.pBufferInfo = &bufferInfo;
-            writeDescriptorSet.pTexelBufferView = nullptr;
-
-            vkUpdateDescriptorSets(
-                    device.getDevice(),
-                    1,
-                    &writeDescriptorSet,
-                    0,
-                    nullptr);
-
-            std::cout << "set vertex buffer data" << std::endl;
         }
 
         static void recordCommandBuffer(
@@ -297,7 +290,8 @@ namespace renderer {
                 Swapchain &swapchain,
                 GraphicsPipeline &graphicsPipeline,
                 RenderPass &renderPass,
-                VkBuffer &vertexBuffer) {
+                VkBuffer &vertexBuffer,
+                std::vector<VertexData> vertices) {
             VkCommandBufferBeginInfo beginInfo{};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = 0;
@@ -324,14 +318,14 @@ namespace renderer {
             renderPassInfo.pClearValues = &clearColor;
 
             vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindDescriptorSets(commandBuffer,
-                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    graphicsPipeline.getGraphicsPipelineLayout(),
-                                    0,
-                                    1,
-                                    descriptorSets.data(),
-                                    0,
-                                    nullptr);
+//            vkCmdBindDescriptorSets(commandBuffer,
+//                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                                    graphicsPipeline.getGraphicsPipelineLayout(),
+//                                    0,
+//                                    1,
+//                                    descriptorSets.data(),
+//                                    0,
+//                                    nullptr);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getGraphicsPipeline());
 
             VkViewport viewport{
@@ -348,10 +342,18 @@ namespace renderer {
                     .extent = extent};
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            VkDeviceSize offset = 0;
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offset);
+            VkBuffer vertexBuffers[] = {vertexBuffer};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+            for (int i = 0; i < vertices.size(); i++) {
+                std::cout << "[" << i << "] "
+                    << "x: " << vertices[i].position.x
+                    << ", y: " << vertices[i].position.y
+                        << ", z: " << vertices[i].position.z << std::endl;
+            }
+
+            vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
             vkCmdEndRenderPass(commandBuffer);
 
@@ -373,7 +375,8 @@ namespace renderer {
                               std::vector<VkSemaphore> &imageAvailableSemaphores,
                               std::vector<VkSemaphore> &renderFinishedSemaphores,
                               std::vector<VkFence> &inFlightFences,
-                              VkBuffer &vertexBuffer) {
+                              VkBuffer &vertexBuffer,
+                              std::vector<VertexData> vertices) {
 
             vkWaitForFences(device.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
             vkResetFences(device.getDevice(), 1, &inFlightFences[currentFrame]);
@@ -400,7 +403,8 @@ namespace renderer {
                                 swapchain,
                                 graphicsPipeline,
                                 renderPass,
-                                vertexBuffer);
+                                vertexBuffer,
+                                vertices);
 
             VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
             VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};

@@ -7,6 +7,7 @@
 #include <device.hpp>
 #include <swapchain.hpp>
 #include <render_pass.hpp>
+#include "vertex_data.hpp"
 
 #include <fstream>
 #include <stdexcept>
@@ -108,24 +109,25 @@ namespace renderer {
 
             VkVertexInputBindingDescription vertexInputBindingDescription{
                 .binding = 0, // binding number (identifier?)
-                .stride = physicalDeviceData.minVertexInputBindingStrideAlignment, // the amount of bytes per item in the vertex buffer
+                .stride = sizeof(VertexData), //physicalDeviceData.minVertexInputBindingStrideAlignment, // the amount of bytes per item in the vertex buffer
                 .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
             };
 
-//            VkVertexInputAttributeDescription vertexInputAttributeDescription{
-//                .location = 0, // is the shader input location number for this attribute
-//                .binding = 0, // binding number
-//                // .format = must contain VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,
-//                .offset = 0
-//            };
+            //must contain VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,
+            VkVertexInputAttributeDescription vertexInputAttributeDescription{
+                .location = 0, // is the shader input location number for this attribute
+                .binding = 0, // binding number
+                .format = VK_FORMAT_R32G32B32_SFLOAT, // super confusing, but vec3 translates to this format
+                .offset = 0
+            };
 
             // how are vertices input into the pipeline
             VkPipelineVertexInputStateCreateInfo vertexInputState{};
             vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
             vertexInputState.vertexBindingDescriptionCount = 1;
             vertexInputState.pVertexBindingDescriptions = &vertexInputBindingDescription;
-            vertexInputState.vertexAttributeDescriptionCount = 0; // 1;
-            vertexInputState.pVertexAttributeDescriptions = nullptr; //&vertexInputAttributeDescription;
+            vertexInputState.vertexAttributeDescriptionCount = 1;
+            vertexInputState.pVertexAttributeDescriptions = &vertexInputAttributeDescription;
 
             // how do vertices get converted into a primitive (i.e. triangle)
             VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
