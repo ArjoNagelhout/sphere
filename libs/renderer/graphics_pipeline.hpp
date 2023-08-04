@@ -40,6 +40,7 @@ namespace renderer {
         }
 
         ~GraphicsPipeline() {
+            vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
             vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
             vkDestroyPipelineLayout(device.getDevice(), graphicsPipelineLayout, nullptr);
         }

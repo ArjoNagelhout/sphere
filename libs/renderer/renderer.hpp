@@ -240,13 +240,13 @@ namespace renderer {
             createInfo.pQueueFamilyIndices = nullptr;
 
             VmaAllocationCreateInfo allocationCreateInfo{};
-            //allocationCreateInfo.usage
-            //allocationCreateInfo.requiredFlags
-            //allocationCreateInfo.preferredFlags
-            //allocationCreateInfo.memoryTypeBits
-            //allocationCreateInfo.pool
+            allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            //allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            //allocationCreateInfo.preferredFlags = //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            //allocationCreateInfo.memoryTypeBits = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            allocationCreateInfo.pool = VK_NULL_HANDLE;
             //allocationCreateInfo.pUserData
-            //allocationCreateInfo.priority
+            allocationCreateInfo.priority = 1.0f;
 
             VmaAllocationInfo allocationInfo;
 
