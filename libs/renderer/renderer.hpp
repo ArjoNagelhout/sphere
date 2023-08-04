@@ -4,15 +4,10 @@
 #include "device.hpp"
 #include "swapchain.hpp"
 #include "graphics_pipeline.hpp"
+#include "memory_allocator.hpp"
 
 #include <iostream>
 #include <memory>
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnullability-completeness"
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
-#pragma clang diagnostic pop
 
 namespace renderer {
 
@@ -30,7 +25,7 @@ namespace renderer {
             renderPass = std::make_unique<RenderPass>(*device, *swapchain);
             swapchain->createSwapchainFramebuffers(renderPass->getRenderPass());
             graphicsPipeline = std::make_unique<GraphicsPipeline>(*device, *swapchain, *renderPass);
-
+            memoryAllocator = std::make_unique<MemoryAllocator>(*device);
 
             createCommandPool(*device, commandPool);
             createCommandBuffers(device->getDevice(), commandPool, MAX_FRAMES_IN_FLIGHT, commandBuffers);
@@ -40,7 +35,7 @@ namespace renderer {
                                             inFlightFences,
                                             MAX_FRAMES_IN_FLIGHT);
 
-            createVertexBuffer(*device, vertexBuffer);
+            createVertexBuffer(*device, memoryAllocator->getAllocator(), vertexBuffer);
         }
 
         ~Renderer() {
@@ -83,6 +78,7 @@ namespace renderer {
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<RenderPass> renderPass;
         std::unique_ptr<GraphicsPipeline> graphicsPipeline;
+        std::unique_ptr<MemoryAllocator> memoryAllocator;
 
         const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -176,7 +172,7 @@ namespace renderer {
             std::cout << "created synchronization primitives" << std::endl;
         }
 
-        static void createVertexBuffer(Device &device, VkBuffer &vertexBuffer) {
+        static void createVertexBuffer(Device &device, const VmaAllocator &allocator, VkBuffer &vertexBuffer) {
 
             PhysicalDeviceData physicalDeviceData = device.getPhysicalDeviceData();
 
@@ -192,48 +188,25 @@ namespace renderer {
             createInfo.queueFamilyIndexCount = 0;
             createInfo.pQueueFamilyIndices = nullptr;
 
-            VkResult result = vkCreateBuffer(device.getDevice(), &createInfo, nullptr, &vertexBuffer);
+            VmaAllocationCreateInfo allocationCreateInfo{};
+            //allocationCreateInfo.usage
+            //allocationCreateInfo.requiredFlags
+            //allocationCreateInfo.preferredFlags
+            //allocationCreateInfo.memoryTypeBits
+            //allocationCreateInfo.pool
+            //allocationCreateInfo.pUserData
+            //allocationCreateInfo.priority
+
+            VmaAllocation allocation;
+            VmaAllocationInfo allocationInfo;
+
+            VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &vertexBuffer, &allocation, &allocationInfo);
 
             if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create vertex buffer") + string_VkResult(result));
+                throw std::runtime_error(std::string("failed to create vertex buffer: ") + string_VkResult(result));
             }
 
             std::cout << "created vertex buffer" << std::endl;
-
-            // now we need to allocate the memory, fill it with the proper data and bind it to the buffer
-            VkPhysicalDeviceMemoryProperties memoryProperties;
-            vkGetPhysicalDeviceMemoryProperties(device.getPhysicalDevice(), &memoryProperties);
-
-            for (uint32_t i = 0; i < memoryProperties.memoryHeapCount; i++) {
-                const VkMemoryHeap &heap = memoryProperties.memoryHeaps[i];
-                std::cout
-                    << "heap [" << i << "] flags: " << string_VkMemoryHeapFlags(heap.flags)
-                    << ", size: " << heap.size << std::endl;
-            }
-
-            for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-                const VkMemoryType &memoryType = memoryProperties.memoryTypes[i];
-
-                std::cout
-                        << "memory type [" << i << "] flags: " << string_VkMemoryPropertyFlags(memoryType.propertyFlags)
-                        << ", heap index: " << memoryType.heapIndex << std::endl;
-            }
-
-//            std::cout << "memory types: " << memoryProperties.memoryTypeCount << std::endl;
-//            for (const auto &memoryType : memoryProperties.memoryTypes) {
-//                std::cout << "heap index: " + memoryType.heapIndex << std::endl;
-//                std::cout << "property flags: " + memoryType.propertyFlags << std::endl;
-//            }
-
-            VkMemoryAllocateInfo allocateInfo{};
-            allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            //allocateInfo.memoryTypeIndex
-            //allocateInfo.allocationSize = bufferSize;
-
-            //vkAllocateMemory(device.getDevice(), )
-
-            VkDeviceSize offset = 0;
-            //vkBindBufferMemory(device.getDevice(), vertexBuffer, offset)
         }
 
         static void recordCommandBuffer(
