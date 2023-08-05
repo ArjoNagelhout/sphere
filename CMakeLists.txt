@@ -7,6 +7,8 @@ set(SPHERE_BUNDLE_DIR ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.app/Contents)
 set(SPHERE_RESOURCES_DIR ${SPHERE_BUNDLE_DIR}/Resources)
 set(SPHERE_FRAMEWORKS_DIR ${SPHERE_BUNDLE_DIR}/Frameworks)
 
+find_package(Vulkan REQUIRED)
+
 # Compile shaders and include in bundle
 set(SPHERE_SHADERS_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/data/shaders)
 set(SPHERE_SHADERS_TARGET ${SPHERE_RESOURCES_DIR}/shaders)

@@ -12,9 +12,14 @@
 #include <math.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
+
 #include <tiny_obj_loader.h>
 
 #include <glm/gtc/matrix_transform.hpp>
+
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
+#include <imgui_impl_glfw.h>
 
 namespace renderer {
 
@@ -45,7 +50,9 @@ namespace renderer {
             createDescriptorPool(device->getDevice(), graphicsPipeline->descriptorType, descriptorPool,
                                  MAX_FRAMES_IN_FLIGHT);
 
-            updateCameraData(cameraData, swapchain->getSwapchainExtent(), glm::vec3(7, 3, 7));
+            updateCameraData(cameraData,
+                             swapchain->getSwapchainExtent(),
+                             cameraPosition);
             createBuffer<CameraData>(memoryAllocator->getAllocator(),
                                      cameraDataBuffer,
                                      cameraDataBufferAllocation,
@@ -84,6 +91,13 @@ namespace renderer {
                                    *indices.data(),
                                    indices.size() * sizeof(indices[0]),
                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+            initializeImgui(window,
+                            *device,
+                            *swapchain,
+                            *renderPass,
+                            commandPool,
+                            commandBuffers[0],
+                            imguiDescriptorPool);
         }
 
         ~Renderer() {
@@ -100,11 +114,19 @@ namespace renderer {
                 vkDestroyFence(device->getDevice(), inFlightFences[i], nullptr);
             }
 
+            vkDestroyDescriptorPool(device->getDevice(), imguiDescriptorPool, nullptr);
             vkDestroyDescriptorPool(device->getDevice(), descriptorPool, nullptr);
             vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);
         }
 
         void update() {
+            bool showDemoWindow = true;
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            ImGui::ShowDemoWindow(&showDemoWindow);
+            ImGui::Render();
+
             updateCamera();
             drawFrame(currentFrame,
                       MAX_FRAMES_IN_FLIGHT,
@@ -122,7 +144,7 @@ namespace renderer {
                       indices);
         }
 
-        glm::vec3 cameraPosition;
+        glm::vec3 cameraPosition{3, 4, -13};
 
     private:
         Window &window;
@@ -132,19 +154,17 @@ namespace renderer {
         std::unique_ptr<GraphicsPipeline> graphicsPipeline;
         std::unique_ptr<MemoryAllocator> memoryAllocator;
 
-        const int MAX_FRAMES_IN_FLIGHT = 2;
-
         VkCommandPool commandPool;
         std::vector<VkCommandBuffer> commandBuffers;
         VkDescriptorPool descriptorPool;
+        VkDescriptorPool imguiDescriptorPool;
         std::vector<VkDescriptorSet> descriptorSets;
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
 
+        const int MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t currentFrame = 0;
-
-        //uint32_t time = 0;
 
         CameraData cameraData;
 
@@ -161,31 +181,109 @@ namespace renderer {
 
         VkBuffer vertexBuffer;
         VmaAllocation vertexBufferAllocation;
-
         VkBuffer indexBuffer;
         VmaAllocation indexBufferAllocation;
-
         VkBuffer cameraDataBuffer;
         VmaAllocation cameraDataBufferAllocation;
 
-//        float getPos(const float &speed, const float &amplitude, const float timeOffset, const uint32_t &time) {
-//            return amplitude * std::sin((float)time * speed + timeOffset);
-//        }
+        static void initializeImgui(Window &window,
+                                    Device &device,
+                                    Swapchain &swapchain,
+                                    RenderPass &renderPass,
+                                    VkCommandPool &commandPool,
+                                    VkCommandBuffer &commandBuffer,
+                                    VkDescriptorPool &imguiDescriptorPool) {
+            //1: create descriptor pool for IMGUI
+            // the size of the pool is very oversize, but it's copied from imgui demo itself.
+            VkDescriptorPoolSize pool_sizes[] =
+                    {
+                            {VK_DESCRIPTOR_TYPE_SAMPLER,                1000},
+                            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1000},
+                            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1000},
+                            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1000},
+                            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1000},
+                            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1000},
+                            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1000},
+                            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1000}
+                    };
+
+            VkDescriptorPoolCreateInfo pool_info = {};
+            pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+            pool_info.maxSets = 1000;
+            pool_info.poolSizeCount = std::size(pool_sizes);
+            pool_info.pPoolSizes = pool_sizes;
+
+            VkResult result = vkCreateDescriptorPool(device.getDevice(), &pool_info, nullptr, &imguiDescriptorPool);
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(
+                        std::string("failed to create descriptor pool for Imgui: ") + string_VkResult(result));
+            }
+
+            // 2: initialize imgui library
+
+            //this initializes the core structures of imgui
+            ImGui::CreateContext();
+
+            // init Imgui
+            uint32_t imageCount = static_cast<uint32_t>(swapchain.getSwapchainImageViews().size());
+
+            ImGui_ImplGlfw_InitForVulkan(window.getWindow(), true);
+            ImGui_ImplVulkan_InitInfo initInfo{};
+            initInfo.Instance = device.getInstance();
+            initInfo.PhysicalDevice = device.getPhysicalDevice();
+            initInfo.Device = device.getDevice();
+            initInfo.Queue = device.getGraphicsQueue();
+            initInfo.DescriptorPool = imguiDescriptorPool;
+            initInfo.MinImageCount = imageCount;
+            initInfo.ImageCount = imageCount;
+            initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+            ImGui_ImplVulkan_Init(&initInfo, renderPass.getRenderPass());
+
+            {
+
+                result = vkResetCommandPool(device.getDevice(), commandPool, 0);
+                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+
+                VkCommandBufferBeginInfo beginInfo = {};
+                beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+                beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+                result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+
+                ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+
+                VkSubmitInfo endInfo = {};
+                endInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+                endInfo.commandBufferCount = 1;
+                endInfo.pCommandBuffers = &commandBuffer;
+                result = vkEndCommandBuffer(commandBuffer);
+                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+
+                result = vkQueueSubmit(device.getGraphicsQueue(), 1, &endInfo, VK_NULL_HANDLE);
+                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+
+                result = vkDeviceWaitIdle(device.getDevice());
+                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+
+                ImGui_ImplVulkan_DestroyFontUploadObjects();
+            }
+        }
 
         void updateCamera() {
             updateCameraData(cameraData,
                              swapchain->getSwapchainExtent(),
                              cameraPosition);
-//                             glm::vec3(
-//                                     7,
-//                                     getPos(0.05f, 10.0f, 1.57f, time),
-//                                      getPos(0.05f, 10.0f, 0.0f, time)));
             updateBuffer<CameraData>(memoryAllocator->getAllocator(),
                                      cameraDataBuffer,
                                      cameraDataBufferAllocation,
                                      cameraData,
                                      sizeof(cameraData));
-            //time++;
         }
 
         static void updateCameraData(CameraData &cameraData, const VkExtent2D &extent, glm::vec3 newPosition) {
@@ -556,6 +654,9 @@ namespace renderer {
             vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
             vkCmdEndRenderPass(commandBuffer);
 
             VkResult endBufferResult = vkEndCommandBuffer(commandBuffer);

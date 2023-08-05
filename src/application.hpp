@@ -17,7 +17,7 @@ namespace sphere {
     public:
 
         Application(const std::string &applicationName) {
-            window = std::make_unique<renderer::Window>(applicationName, 600, 300, 200, 100);
+            window = std::make_unique<renderer::Window>(applicationName, 1000, 600, 200, 100);
             renderer = std::make_unique<renderer::Renderer>(*window, true);
 
             GLFWwindow *glfwWindow = window->getWindow();
