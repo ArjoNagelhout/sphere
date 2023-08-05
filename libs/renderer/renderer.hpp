@@ -122,6 +122,8 @@ namespace renderer {
                       indices);
         }
 
+        glm::vec3 cameraPosition;
+
     private:
         Window &window;
         std::unique_ptr<Device> device;
@@ -142,7 +144,7 @@ namespace renderer {
 
         uint32_t currentFrame = 0;
 
-        uint32_t time = 0;
+        //uint32_t time = 0;
 
         CameraData cameraData;
 
@@ -166,23 +168,24 @@ namespace renderer {
         VkBuffer cameraDataBuffer;
         VmaAllocation cameraDataBufferAllocation;
 
-        float getPos(const float &speed, const float &amplitude, const float timeOffset, const uint32_t &time) {
-            return amplitude * std::sin((float)time * speed + timeOffset);
-        }
+//        float getPos(const float &speed, const float &amplitude, const float timeOffset, const uint32_t &time) {
+//            return amplitude * std::sin((float)time * speed + timeOffset);
+//        }
 
         void updateCamera() {
             updateCameraData(cameraData,
                              swapchain->getSwapchainExtent(),
-                             glm::vec3(
-                                     7,
-                                     getPos(0.05f, 10.0f, 1.57f, time),
-                                      getPos(0.05f, 10.0f, 0.0f, time)));
+                             cameraPosition);
+//                             glm::vec3(
+//                                     7,
+//                                     getPos(0.05f, 10.0f, 1.57f, time),
+//                                      getPos(0.05f, 10.0f, 0.0f, time)));
             updateBuffer<CameraData>(memoryAllocator->getAllocator(),
                                      cameraDataBuffer,
                                      cameraDataBufferAllocation,
                                      cameraData,
                                      sizeof(cameraData));
-            time++;
+            //time++;
         }
 
         static void updateCameraData(CameraData &cameraData, const VkExtent2D &extent, glm::vec3 newPosition) {
