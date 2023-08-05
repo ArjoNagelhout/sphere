@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <memory>
+#include <math.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -42,46 +43,47 @@ namespace renderer {
                                  commandPool,
                                  MAX_FRAMES_IN_FLIGHT,
                                  commandBuffers);
-            createDescriptorPool(device->getDevice(), graphicsPipeline->descriptorType, descriptorPool, MAX_FRAMES_IN_FLIGHT);
+            createDescriptorPool(device->getDevice(), graphicsPipeline->descriptorType, descriptorPool,
+                                 MAX_FRAMES_IN_FLIGHT);
 
-            CameraData cameraData;
-            updateCameraData(cameraData, swapchain->getSwapchainExtent());
+            updateCameraData(cameraData, swapchain->getSwapchainExtent(), glm::vec3(7, 3, 7));
+            createBuffer<CameraData>(memoryAllocator->getAllocator(),
+                                     cameraDataBuffer,
+                                     cameraDataBufferAllocation,
+                                     cameraData,
+                                     sizeof(cameraData),
+                                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-            createBufferGeneric<CameraData>(*device,
-                                            memoryAllocator->getAllocator(),
-                                            cameraDataBuffer,
-                                            cameraDataBufferAllocation,
-                                            cameraData,
-                                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
             createDescriptorSets(device->getDevice(),
                                  descriptorPool,
                                  MAX_FRAMES_IN_FLIGHT,
                                  graphicsPipeline->getDescriptorSetLayout(),
                                  graphicsPipeline->descriptorType,
-                                cameraDataBuffer,
+                                 cameraDataBuffer,
                                  descriptorSets);
             createSynchronizationPrimitives(device->getDevice(),
                                             imageAvailableSemaphores,
                                             renderFinishedSemaphores,
                                             inFlightFences,
                                             MAX_FRAMES_IN_FLIGHT);
-            std::string path = "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/catmark_torus_creases0.obj";
-                    // "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cube.obj";
-                    //"/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cornell_box_multimaterial.obj";
+            std::string path = "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj";
+            //"/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/catmark_torus_creases0.obj";
+            // "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cube.obj";
+            //"/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cornell_box_multimaterial.obj";
             loadObj(path,
                     vertices,
                     indices);
-            createBuffer<VertexData>(*device,
-                                     memoryAllocator->getAllocator(),
+            createBuffer<VertexData>(memoryAllocator->getAllocator(),
                                      vertexBuffer,
                                      vertexBufferAllocation,
-                                     vertices,
+                                     *vertices.data(),
+                                     vertices.size() * sizeof(vertices[0]),
                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-            createBuffer<uint32_t>(*device,
-                                   memoryAllocator->getAllocator(),
+            createBuffer<uint32_t>(memoryAllocator->getAllocator(),
                                    indexBuffer,
                                    indexBufferAllocation,
-                                   indices,
+                                   *indices.data(),
+                                   indices.size() * sizeof(indices[0]),
                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         }
 
@@ -106,6 +108,7 @@ namespace renderer {
 
             while (!glfwWindowShouldClose(glfwWindow)) {
                 glfwPollEvents();
+                updateCamera();
                 drawFrame(currentFrame,
                           MAX_FRAMES_IN_FLIGHT,
                           *device,
@@ -144,15 +147,19 @@ namespace renderer {
 
         uint32_t currentFrame = 0;
 
-        std::vector<VertexData> vertices {
+        uint32_t time = 0;
+
+        CameraData cameraData;
+
+        std::vector<VertexData> vertices{
                 {{-0.5f, -0.5f, 0}},
-                {{0.5f, -0.5f, 0}},
-                {{0.5f, 0.5f, 0}},
-                {{-0.5f, 0.5f, 0}}
+                {{0.5f,  -0.5f, 0}},
+                {{0.5f,  0.5f,  0}},
+                {{-0.5f, 0.5f,  0}}
         };
 
-        std::vector<uint32_t> indices {
-            0, 1, 2, 2, 3, 0
+        std::vector<uint32_t> indices{
+                0, 1, 2, 2, 3, 0
         };
 
         VkBuffer vertexBuffer;
@@ -164,19 +171,48 @@ namespace renderer {
         VkBuffer cameraDataBuffer;
         VmaAllocation cameraDataBufferAllocation;
 
-        static void updateCameraData(CameraData &cameraData, const VkExtent2D &extent) {
+        float getPos(const float &speed, const float &amplitude, const float timeOffset, const uint32_t &time) {
+            return amplitude * std::sin((float)time * speed + timeOffset);
+        }
+
+        void updateCamera() {
+
+            // using a sine wave
+            float speed = 0.05f;
+            float amplitude = 1.0f;
+
+
+            time++;
+
+            updateCameraData(cameraData,
+                             swapchain->getSwapchainExtent(),
+                             glm::vec3(
+                                     7,
+                                     getPos(0.05f, 10.0f, 1.57f, time),
+                                      getPos(0.05f, 10.0f, 0.0f, time)));
+            updateBuffer<CameraData>(memoryAllocator->getAllocator(),
+                                     cameraDataBuffer,
+                                     cameraDataBufferAllocation,
+                                     cameraData,
+                                     sizeof(cameraData));
+
+
+        }
+
+        static void updateCameraData(CameraData &cameraData, const VkExtent2D &extent, glm::vec3 newPosition) {
 
             // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-            glm::mat4 Projection = glm::perspective(glm::radians(60.0f), (float)extent.width / (float)extent.height, 0.1f, 100.0f);
+            glm::mat4 Projection = glm::perspective(glm::radians(60.0f), (float) extent.width / (float) extent.height,
+                                                    0.1f, 100.0f);
 
             // Or, for an ortho camera :
             // glm::mat4 Projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
 
             // Camera matrix
             glm::mat4 View = glm::lookAt(
-                    glm::vec3(2,0,2), // Camera is at (4,3,3), in World Space
-                    glm::vec3(0,0,0), // and looks at the origin
-                    glm::vec3(0,-1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+                    newPosition, // Camera is at (4,3,3), in World Space
+                    glm::vec3(0, 0, 0), // and looks at the origin
+                    glm::vec3(0, -1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
             );
 
             // Model matrix : an identity matrix (model will be at the origin)
@@ -225,7 +261,8 @@ namespace renderer {
             std::cout << "created command buffers" << std::endl;
         }
 
-        static void createDescriptorPool(const VkDevice &device, const VkDescriptorType &descriptorType, VkDescriptorPool &descriptorPool, int maxFramesInFlight) {
+        static void createDescriptorPool(const VkDevice &device, const VkDescriptorType &descriptorType,
+                                         VkDescriptorPool &descriptorPool, int maxFramesInFlight) {
 
             VkDescriptorPoolSize poolSize{
                     .type = descriptorType,
@@ -346,84 +383,51 @@ namespace renderer {
         }
 
         template<typename T>
-        static void createBuffer(Device &device,
-                                 const VmaAllocator &allocator,
-                                 VkBuffer &buffer,
-                                 VmaAllocation &allocation,
-                                 std::vector<T> data,
-                                 VkBufferUsageFlags usageFlags) {
+        static void updateBuffer(const VmaAllocator &allocator,
+                                 const VkBuffer &buffer,
+                                 const VmaAllocation &allocation,
+                                 const T &data,
+                                 const std::size_t &size) {
 
-            uint32_t stride = sizeof(data[0]);
-            uint32_t count = data.size();
-            uint64_t bufferSize = stride * count;
-
-            VkBufferCreateInfo createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            createInfo.size = bufferSize; // size in bytes, should be greater than zero
-            //createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            createInfo.usage = usageFlags;
-            createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            //createInfo.queueFamilyIndexCount = 0;
-            //createInfo.pQueueFamilyIndices = nullptr;
-
-            VmaAllocationCreateInfo allocationCreateInfo{};
-            allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-            allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-            allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            //allocationCreateInfo.memoryTypeBits = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-            allocationCreateInfo.pool = VK_NULL_HANDLE;
-            //allocationCreateInfo.pUserData
-            allocationCreateInfo.priority = 1.0f;
-
-            VmaAllocationInfo allocationInfo;
-            VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation, &allocationInfo);
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create vertex buffer: ") + string_VkResult(result));
-            }
-
-            void* mappedData;
+            void *mappedData;
             vmaMapMemory(allocator, allocation, &mappedData);
-            memcpy(mappedData, data.data(), (size_t)bufferSize);
+            memcpy(mappedData, &data, size);
             vmaUnmapMemory(allocator, allocation);
-
-            // flush not required because we use VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            //vmaFlushAllocation(allocator, allocation);
-
-            std::cout << "created buffer" << std::endl;
         }
 
         template<typename T>
-        static void createBufferGeneric(Device &device,
-                                 const VmaAllocator &allocator,
+        static void createBuffer(const VmaAllocator &allocator,
                                  VkBuffer &buffer,
                                  VmaAllocation &allocation,
-                                 const T& data,
+                                 const T &data,
+                                 std::size_t size,
                                  VkBufferUsageFlags usageFlags) {
 
             VkBufferCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            createInfo.size = sizeof(data); // size in bytes, should be greater than zero
+            createInfo.size = size; // size in bytes, should be greater than zero
             createInfo.usage = usageFlags;
             createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
             VmaAllocationCreateInfo allocationCreateInfo{};
             allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
             allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-            allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            allocationCreateInfo.requiredFlags =
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
             allocationCreateInfo.pool = VK_NULL_HANDLE;
             allocationCreateInfo.priority = 1.0f;
 
             VmaAllocationInfo allocationInfo;
-            VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation, &allocationInfo);
+            VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation,
+                                              &allocationInfo);
 
             if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create vertex buffer: ") + string_VkResult(result));
+                throw std::runtime_error(std::string("failed to create buffer: ") + string_VkResult(result));
             }
 
-            void* mappedData;
+            void *mappedData;
             vmaMapMemory(allocator, allocation, &mappedData);
-            memcpy(mappedData, &data, sizeof(data));
+            memcpy(mappedData, &data, size);
             vmaUnmapMemory(allocator, allocation);
 
             std::cout << "created buffer" << std::endl;
@@ -446,8 +450,9 @@ namespace renderer {
             tinyobj::ObjReader reader;
 
             if (!reader.ParseFromFile(filePath, config)) {
-                if (!reader.Error().empty()){
-                    throw std::runtime_error(std::string("tiny obj reader failed to read from file: ") + reader.Error());
+                if (!reader.Error().empty()) {
+                    throw std::runtime_error(
+                            std::string("tiny obj reader failed to read from file: ") + reader.Error());
                 }
             }
 
@@ -459,13 +464,13 @@ namespace renderer {
             auto &shapes = reader.GetShapes();
             //auto &materials = reader.GetMaterials();
 
-            for (size_t v = 0; v < attributes.vertices.size(); v+=3) {
+            for (size_t v = 0; v < attributes.vertices.size(); v += 3) {
 
                 VertexData vertexData{{
-                    attributes.vertices[v + 0],
-                    attributes.vertices[v + 1],
-                    attributes.vertices[v + 2]
-                }};
+                                              attributes.vertices[v + 0],
+                                              attributes.vertices[v + 1],
+                                              attributes.vertices[v + 2]
+                                      }};
                 vertices.push_back(vertexData);
             }
 
@@ -567,7 +572,8 @@ namespace renderer {
             VkResult endBufferResult = vkEndCommandBuffer(commandBuffer);
 
             if (endBufferResult != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to record command buffer") + string_VkResult(endBufferResult));
+                throw std::runtime_error(
+                        std::string("failed to record command buffer") + string_VkResult(endBufferResult));
             }
         }
 
