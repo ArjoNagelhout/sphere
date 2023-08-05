@@ -176,14 +176,6 @@ namespace renderer {
         }
 
         void updateCamera() {
-
-            // using a sine wave
-            float speed = 0.05f;
-            float amplitude = 1.0f;
-
-
-            time++;
-
             updateCameraData(cameraData,
                              swapchain->getSwapchainExtent(),
                              glm::vec3(
@@ -195,8 +187,7 @@ namespace renderer {
                                      cameraDataBufferAllocation,
                                      cameraData,
                                      sizeof(cameraData));
-
-
+            time++;
         }
 
         static void updateCameraData(CameraData &cameraData, const VkExtent2D &extent, glm::vec3 newPosition) {
