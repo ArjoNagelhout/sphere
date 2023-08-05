@@ -15,7 +15,6 @@ namespace renderer {
     struct VertexData {
         glm::vec3 position;
     };
-
 }
 
 #endif //SPHERE_VERTEX_DATA_HPP
