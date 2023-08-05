@@ -29,10 +29,9 @@ namespace renderer {
     class Renderer {
 
     public:
-        explicit Renderer(const std::string &applicationName, bool debug) {
-            window = std::make_unique<Window>(applicationName, 600, 300, 200, 100);
-            device = std::make_unique<Device>(*window, debug);
-            swapchain = std::make_unique<Swapchain>(*window, *device);
+        explicit Renderer(Window &window, bool debug) : window(window) {
+            device = std::make_unique<Device>(window, debug);
+            swapchain = std::make_unique<Swapchain>(window, *device);
             renderPass = std::make_unique<RenderPass>(*device, *swapchain);
             swapchain->createSwapchainFramebuffers(renderPass->getRenderPass());
             graphicsPipeline = std::make_unique<GraphicsPipeline>(*device, *swapchain, *renderPass);
@@ -88,6 +87,8 @@ namespace renderer {
         }
 
         ~Renderer() {
+            vkDeviceWaitIdle(device->getDevice());
+
             vmaDestroyBuffer(memoryAllocator->getAllocator(), vertexBuffer, vertexBufferAllocation);
             vmaDestroyBuffer(memoryAllocator->getAllocator(), indexBuffer, indexBufferAllocation);
             vmaDestroyBuffer(memoryAllocator->getAllocator(), cameraDataBuffer, cameraDataBufferAllocation);
@@ -103,32 +104,26 @@ namespace renderer {
             vkDestroyCommandPool(device->getDevice(), commandPool, nullptr);
         }
 
-        void run() {
-            GLFWwindow *glfwWindow = window->getWindow();
-
-            while (!glfwWindowShouldClose(glfwWindow)) {
-                glfwPollEvents();
-                updateCamera();
-                drawFrame(currentFrame,
-                          MAX_FRAMES_IN_FLIGHT,
-                          *device,
-                          *swapchain,
-                          *graphicsPipeline,
-                          *renderPass,
-                          commandBuffers,
-                          descriptorSets,
-                          imageAvailableSemaphores,
-                          renderFinishedSemaphores,
-                          inFlightFences,
-                          vertexBuffer,
-                          indexBuffer,
-                          indices);
-            }
-            vkDeviceWaitIdle(device->getDevice());
+        void update() {
+            updateCamera();
+            drawFrame(currentFrame,
+                      MAX_FRAMES_IN_FLIGHT,
+                      *device,
+                      *swapchain,
+                      *graphicsPipeline,
+                      *renderPass,
+                      commandBuffers,
+                      descriptorSets,
+                      imageAvailableSemaphores,
+                      renderFinishedSemaphores,
+                      inFlightFences,
+                      vertexBuffer,
+                      indexBuffer,
+                      indices);
         }
 
     private:
-        std::unique_ptr<Window> window;
+        Window &window;
         std::unique_ptr<Device> device;
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<RenderPass> renderPass;

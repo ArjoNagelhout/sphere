@@ -1,10 +1,9 @@
 #ifndef SPHERE_DEVICE_HPP
 #define SPHERE_DEVICE_HPP
 
-#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_VULKAN
 #define VK_ENABLE_BETA_EXTENSIONS
 
-#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <vulkan/vk_enum_string_helper.h>
 

@@ -2,7 +2,7 @@
 
 int main()
 {
-    sphere::Application application;
+    sphere::Application application("Sphere");
 
     try {
         application.run();

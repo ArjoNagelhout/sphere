@@ -2,6 +2,8 @@
 #define SPHERE_WINDOW_HPP
 
 #define GLFW_INCLUDE_VULKAN
+#define VK_ENABLE_BETA_EXTENSIONS
+
 #include "GLFW/glfw3.h"
 
 #include <iostream>

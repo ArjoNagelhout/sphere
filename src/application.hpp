@@ -1,22 +1,20 @@
 #ifndef SPHERE_APPLICATION_HPP
 #define SPHERE_APPLICATION_HPP
 
+#include <window.hpp>
 #include <renderer.hpp>
+
 #include "scene.hpp"
 
 namespace sphere {
-
-    void printPosition(const glm::vec3 position) {
-        std::cout << "x: " << position.x << ", "
-                  << "y: " << position.y << ", "
-                  << "z: " << position.z << '\n';
-    }
 
     class Application {
 
     public:
 
-        Application() : renderer("Sphere", true) {
+        Application(const std::string &applicationName) {
+            window = std::make_unique<renderer::Window>(applicationName, 600, 300, 200, 100);
+            renderer = std::make_unique<renderer::Renderer>(*window, true);
         }
 
         ~Application() {
@@ -26,34 +24,19 @@ namespace sphere {
         // main loop
         void run() {
 
-            renderer.run();
+            GLFWwindow *glfwWindow = window->getWindow();
 
-//            Scene scene{"test"};
-//
-//            Node test{"Test", &scene.rootNode};
-//            Node child{"Child", &test};
-//            Node child2{"Child 2", &child};
-//            Node child3{"Child 3", &child};
-//            Node grandChild{"GrandChild", &child3};
-//
-//            test.setLocalPosition({3.0f, 0, 0});
-//            child.setLocalPosition({0, 1.0f, 32.0f});
-//
-//            scene.rootNode.print();
-//
-//            std::cout << "test position:\n";
-//            sphere::printPosition(test.getPosition());
-//            sphere::printPosition(test.getLocalPosition());
-//
-//            std::cout << "child position:\n";
-//            sphere::printPosition(child.getPosition());
-//            sphere::printPosition(child.getLocalPosition());
+            while (!glfwWindowShouldClose(glfwWindow)) {
+                glfwPollEvents();
+                renderer->update();
+            }
         }
 
     private:
-        renderer::Renderer renderer;
+        std::unique_ptr<renderer::Window> window;
+        std::unique_ptr<renderer::Renderer> renderer;
     };
 
-} // sphere
+}
 
 #endif //SPHERE_APPLICATION_HPP
