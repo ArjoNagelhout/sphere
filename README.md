@@ -6,7 +6,7 @@ Its main innovation goal is in enabling **full live editing on the target device
 
 ## Iterative approach
 Building a game engine is hard, so we employ the software development model of: 
-- don't try to write everything perfectly from scratch
+- don't try to write everything perfectly from the start
 - build abstractions and refactor as you go
 - make small, measurable goals that can be done in a day
 
