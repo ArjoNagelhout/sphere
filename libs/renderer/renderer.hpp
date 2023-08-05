@@ -10,7 +10,16 @@
 #include <iostream>
 #include <memory>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+#include <glm/gtc/matrix_transform.hpp>
+
 namespace renderer {
+
+    struct CameraData {
+        glm::mat4 MVP;
+    };
 
     /*
      * The Renderer class ties together the different Vulkan objects and
@@ -29,17 +38,39 @@ namespace renderer {
             memoryAllocator = std::make_unique<MemoryAllocator>(*device);
 
             createCommandPool(*device, commandPool);
-            createCommandBuffers(device->getDevice(), commandPool, MAX_FRAMES_IN_FLIGHT, commandBuffers);
-            createDescriptorPool(device->getDevice(), graphicsPipeline->descriptorType, descriptorPool);
+            createCommandBuffers(device->getDevice(),
+                                 commandPool,
+                                 MAX_FRAMES_IN_FLIGHT,
+                                 commandBuffers);
+            createDescriptorPool(device->getDevice(), graphicsPipeline->descriptorType, descriptorPool, MAX_FRAMES_IN_FLIGHT);
+
+            CameraData cameraData;
+            updateCameraData(cameraData, swapchain->getSwapchainExtent());
+
+            createBufferGeneric<CameraData>(*device,
+                                            memoryAllocator->getAllocator(),
+                                            cameraDataBuffer,
+                                            cameraDataBufferAllocation,
+                                            cameraData,
+                                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
             createDescriptorSets(device->getDevice(),
                                  descriptorPool,
+                                 MAX_FRAMES_IN_FLIGHT,
                                  graphicsPipeline->getDescriptorSetLayout(),
+                                 graphicsPipeline->descriptorType,
+                                cameraDataBuffer,
                                  descriptorSets);
             createSynchronizationPrimitives(device->getDevice(),
                                             imageAvailableSemaphores,
                                             renderFinishedSemaphores,
                                             inFlightFences,
                                             MAX_FRAMES_IN_FLIGHT);
+            std::string path = "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/catmark_torus_creases0.obj";
+                    // "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cube.obj";
+                    //"/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cornell_box_multimaterial.obj";
+            loadObj(path,
+                    vertices,
+                    indices);
             createBuffer<VertexData>(*device,
                                      memoryAllocator->getAllocator(),
                                      vertexBuffer,
@@ -57,6 +88,7 @@ namespace renderer {
         ~Renderer() {
             vmaDestroyBuffer(memoryAllocator->getAllocator(), vertexBuffer, vertexBufferAllocation);
             vmaDestroyBuffer(memoryAllocator->getAllocator(), indexBuffer, indexBufferAllocation);
+            vmaDestroyBuffer(memoryAllocator->getAllocator(), cameraDataBuffer, cameraDataBufferAllocation);
 
             // destroy synchronization primitives
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -129,6 +161,33 @@ namespace renderer {
         VkBuffer indexBuffer;
         VmaAllocation indexBufferAllocation;
 
+        VkBuffer cameraDataBuffer;
+        VmaAllocation cameraDataBufferAllocation;
+
+        static void updateCameraData(CameraData &cameraData, const VkExtent2D &extent) {
+
+            // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+            glm::mat4 Projection = glm::perspective(glm::radians(60.0f), (float)extent.width / (float)extent.height, 0.1f, 100.0f);
+
+            // Or, for an ortho camera :
+            // glm::mat4 Projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
+
+            // Camera matrix
+            glm::mat4 View = glm::lookAt(
+                    glm::vec3(2,0,2), // Camera is at (4,3,3), in World Space
+                    glm::vec3(0,0,0), // and looks at the origin
+                    glm::vec3(0,-1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+            );
+
+            // Model matrix : an identity matrix (model will be at the origin)
+            glm::mat4 Model = glm::mat4(1.0f);
+
+            // Our ModelViewProjection : multiplication of our 3 matrices
+            glm::mat4 mvp = Projection * View * Model; // Remember, matrix multiplication is the other way around
+
+            cameraData.MVP = mvp;
+        }
+
         static void createCommandPool(Device &device,
                                       VkCommandPool &commandPool) {
             QueueFamiliesData data = device.getQueueFamiliesData();
@@ -166,16 +225,18 @@ namespace renderer {
             std::cout << "created command buffers" << std::endl;
         }
 
-        static void createDescriptorPool(const VkDevice &device, const VkDescriptorType &descriptorType, VkDescriptorPool &descriptorPool) {
+        static void createDescriptorPool(const VkDevice &device, const VkDescriptorType &descriptorType, VkDescriptorPool &descriptorPool, int maxFramesInFlight) {
 
             VkDescriptorPoolSize poolSize{
                     .type = descriptorType,
-                    .descriptorCount = 1
+                    .descriptorCount = static_cast<uint32_t>(maxFramesInFlight)
             };
+
+            //std::vector<VkDescriptorPoolSize> poolSizes(maxFramesInFlight, poolSizes);
 
             VkDescriptorPoolCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            createInfo.maxSets = 1;
+            createInfo.maxSets = maxFramesInFlight;
             createInfo.poolSizeCount = 1;
             createInfo.pPoolSizes = &poolSize;
 
@@ -188,21 +249,53 @@ namespace renderer {
             std::cout << "created descriptor pool" << std::endl;
         }
 
-        static void createDescriptorSets(const VkDevice &device, const VkDescriptorPool &descriptorPool, const VkDescriptorSetLayout &descriptorSetLayout, std::vector<VkDescriptorSet> &descriptorSets) {
+        static void createDescriptorSets(const VkDevice &device,
+                                         const VkDescriptorPool &descriptorPool,
+                                         int maxFramesInFlight,
+                                         const VkDescriptorSetLayout &descriptorSetLayout,
+                                         const VkDescriptorType &descriptorType,
+                                         const VkBuffer &buffer,
+                                         std::vector<VkDescriptorSet> &descriptorSets) {
+            descriptorSets.resize(maxFramesInFlight);
 
-            int descriptorSetsCount = 1;
-            descriptorSets.resize(descriptorSetsCount);
+            std::vector<VkDescriptorSetLayout> descriptorSetLayouts(maxFramesInFlight, descriptorSetLayout);
 
             VkDescriptorSetAllocateInfo allocateInfo{};
             allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocateInfo.descriptorPool = descriptorPool;
-            allocateInfo.descriptorSetCount = descriptorSetsCount;
-            allocateInfo.pSetLayouts = &descriptorSetLayout;
+            allocateInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
+            allocateInfo.pSetLayouts = descriptorSetLayouts.data();
 
             VkResult result = vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data());
 
             if (result != VK_SUCCESS) {
                 throw std::runtime_error(std::string("failed to create descriptor sets: ") + string_VkResult(result));
+            }
+
+            for (int i = 0; i < maxFramesInFlight; i++) {
+                VkDescriptorBufferInfo bufferInfo{};
+                bufferInfo.buffer = buffer;
+                bufferInfo.offset = 0;
+                bufferInfo.range = VK_WHOLE_SIZE;
+
+                VkWriteDescriptorSet writeDescriptorSet;
+                writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescriptorSet.pNext = nullptr;
+                writeDescriptorSet.dstSet = descriptorSets[i];
+                writeDescriptorSet.dstBinding = 0;
+                writeDescriptorSet.dstArrayElement = 0;
+                writeDescriptorSet.descriptorCount = 1;
+                writeDescriptorSet.descriptorType = descriptorType;
+                writeDescriptorSet.pImageInfo = nullptr;
+                writeDescriptorSet.pBufferInfo = &bufferInfo;
+                writeDescriptorSet.pTexelBufferView = nullptr;
+
+                vkUpdateDescriptorSets(
+                        device,
+                        1,
+                        &writeDescriptorSet,
+                        0,
+                        nullptr);
             }
 
             std::cout << "created descriptor sets" << std::endl;
@@ -300,9 +393,113 @@ namespace renderer {
             std::cout << "created buffer" << std::endl;
         }
 
+        template<typename T>
+        static void createBufferGeneric(Device &device,
+                                 const VmaAllocator &allocator,
+                                 VkBuffer &buffer,
+                                 VmaAllocation &allocation,
+                                 const T& data,
+                                 VkBufferUsageFlags usageFlags) {
+
+            VkBufferCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            createInfo.size = sizeof(data); // size in bytes, should be greater than zero
+            createInfo.usage = usageFlags;
+            createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+            VmaAllocationCreateInfo allocationCreateInfo{};
+            allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            allocationCreateInfo.pool = VK_NULL_HANDLE;
+            allocationCreateInfo.priority = 1.0f;
+
+            VmaAllocationInfo allocationInfo;
+            VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation, &allocationInfo);
+
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error(std::string("failed to create vertex buffer: ") + string_VkResult(result));
+            }
+
+            void* mappedData;
+            vmaMapMemory(allocator, allocation, &mappedData);
+            memcpy(mappedData, &data, sizeof(data));
+            vmaUnmapMemory(allocator, allocation);
+
+            std::cout << "created buffer" << std::endl;
+        }
+
+        /*
+         * Very inefficient
+         * Todo: refactor
+         */
+        static void loadObj(const std::string &filePath,
+                            std::vector<VertexData> &vertices,
+                            std::vector<uint32_t> &indices) {
+
+            vertices.clear();
+            indices.clear();
+
+            tinyobj::ObjReaderConfig config;
+            //config.mtl_search_path = "./";
+
+            tinyobj::ObjReader reader;
+
+            if (!reader.ParseFromFile(filePath, config)) {
+                if (!reader.Error().empty()){
+                    throw std::runtime_error(std::string("tiny obj reader failed to read from file: ") + reader.Error());
+                }
+            }
+
+            if (!reader.Warning().empty()) {
+                std::cout << "tiny obj reader warning: " << reader.Warning() << std::endl;
+            }
+
+            auto &attributes = reader.GetAttrib();
+            auto &shapes = reader.GetShapes();
+            //auto &materials = reader.GetMaterials();
+
+            for (size_t v = 0; v < attributes.vertices.size(); v+=3) {
+
+                VertexData vertexData{{
+                    attributes.vertices[v + 0],
+                    attributes.vertices[v + 1],
+                    attributes.vertices[v + 2]
+                }};
+                vertices.push_back(vertexData);
+            }
+
+            for (size_t s = 0; s < shapes.size(); s++) {
+                const std::vector<tinyobj::index_t> &sourceIndices = shapes[s].mesh.indices;
+
+                for (size_t i = 0; i < sourceIndices.size(); i++) {
+                    const tinyobj::index_t &index = sourceIndices[i];
+                    indices.push_back(index.vertex_index);
+                }
+            }
+
+            std::cout << "loaded 3d model at: " << filePath << std::endl;
+
+//            for (size_t s = 0; s < shapes.size(); s++) {
+//
+//                size_t index_offset = 0;
+//                for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+//                    size_t vertices = size_t(shapes[s].mesh.num_face_vertices[f]);
+//
+//                    for (size_t v = 0; v < vertices; v++) {
+//                        tinyobj::index_t index = shapes[s].mesh.indices[index_offset + v];
+//                        size_t a = 3*size_t(index.vertex_index);
+//                        tinyobj::real_t x = attributes.vertices[a+0];
+//                        tinyobj::real_t y = attributes.vertices[a+1];
+//                        tinyobj::real_t z = attributes.vertices[a+2];
+//                    }
+//                }
+//            }
+        }
+
         static void recordCommandBuffer(
                 VkCommandBuffer &commandBuffer,
-                std::vector<VkDescriptorSet> &descriptorSets,
+                VkDescriptorSet &descriptorSet,
                 uint32_t imageIndex,
                 Device &device,
                 Swapchain &swapchain,
@@ -337,14 +534,14 @@ namespace renderer {
             renderPassInfo.pClearValues = &clearColor;
 
             vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-//            vkCmdBindDescriptorSets(commandBuffer,
-//                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-//                                    graphicsPipeline.getGraphicsPipelineLayout(),
-//                                    0,
-//                                    1,
-//                                    descriptorSets.data(),
-//                                    0,
-//                                    nullptr);
+            vkCmdBindDescriptorSets(commandBuffer,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    graphicsPipeline.getGraphicsPipelineLayout(),
+                                    0,
+                                    1,
+                                    &descriptorSet,
+                                    0,
+                                    nullptr);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getGraphicsPipeline());
 
             VkViewport viewport{
@@ -361,20 +558,9 @@ namespace renderer {
                     .extent = extent};
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            VkBuffer vertexBuffers[] = {vertexBuffer};
-            VkDeviceSize offsets[] = {0};
-            VkDeviceSize indexBufferOffset = 0;
-            vkCmdBindIndexBuffer(commandBuffer, indexBuffer, indexBufferOffset, VK_INDEX_TYPE_UINT32);
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-//
-//            for (int i = 0; i < vertices.size(); i++) {
-//                std::cout << "[" << i << "] "
-//                    << "x: " << vertices[i].position.x
-//                    << ", y: " << vertices[i].position.y
-//                        << ", z: " << vertices[i].position.z << std::endl;
-//            }
-
-            //vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+            VkDeviceSize vertexBufferOffset = 0;
+            vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
             vkCmdEndRenderPass(commandBuffer);
 
@@ -419,7 +605,7 @@ namespace renderer {
 
             vkResetCommandBuffer(commandBuffers[currentFrame], 0);
             recordCommandBuffer(commandBuffers[currentFrame],
-                                descriptorSets,
+                                descriptorSets[currentFrame],
                                 imageIndex,
                                 device,
                                 swapchain,

@@ -10,6 +10,9 @@ add_subdirectory(glm)
 add_library(vma INTERFACE)
 target_include_directories(vma INTERFACE VulkanMemoryAllocator/include)
 
+add_library(tinyobj INTERFACE)
+target_include_directories(tinyobj INTERFACE tinyobjloader)
+
 target_include_directories(sphere
         PRIVATE glfw/include
         PRIVATE glm)

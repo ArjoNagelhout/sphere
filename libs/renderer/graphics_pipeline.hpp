@@ -229,7 +229,6 @@ namespace renderer {
             dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
             dynamicState.pDynamicStates = dynamicStates.data();
 
-
             VkDescriptorSetLayoutBinding descriptorSetLayoutBinding{
                 .binding = 0,
                 .descriptorType = descriptorType,
