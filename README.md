@@ -2,7 +2,13 @@
 
 Sphere is an experimental 3D game engine specifically for creating and authoring AR / VR experiences.
 
-Its main innovation goal is in enabling **full live editing on the target device** (probably at reduced visual quality).  
+Its main innovation goal is in enabling **full live editing on the target device** (probably at reduced visual quality).
+
+## Iterative approach
+Building a game engine is hard, so we employ the software development model of: 
+- don't try to write everything perfectly from scratch
+- build abstractions and refactor as you go
+- make small, measurable goals that can be done in a day
 
 ## Design goals
 - **Cross-platform**, in order of importance: Meta Quest, visionOS, PCVR, iOS, Android
