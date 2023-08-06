@@ -53,12 +53,11 @@ namespace renderer {
             updateCameraData(cameraData,
                              swapchain->getSwapchainExtent(),
                              cameraPosition);
-            createBuffer<CameraData>(memoryAllocator->getAllocator(),
-                                     cameraDataBuffer,
-                                     cameraDataBufferAllocation,
-                                     cameraData,
-                                     sizeof(cameraData),
-                                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+            memoryAllocator->createBuffer<CameraData>(cameraDataBuffer,
+                                                      cameraDataBufferAllocation,
+                                                      cameraData,
+                                                      sizeof(cameraData),
+                                                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
             createDescriptorSets(device->getDevice(),
                                  descriptorPool,
@@ -73,24 +72,19 @@ namespace renderer {
                                             inFlightFences,
                                             MAX_FRAMES_IN_FLIGHT);
             std::string path = "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj";
-            //"/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/catmark_torus_creases0.obj";
-            // "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cube.obj";
-            //"/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/cornell_box_multimaterial.obj";
             loadObj(path,
                     vertices,
                     indices);
-            createBuffer<VertexData>(memoryAllocator->getAllocator(),
-                                     vertexBuffer,
-                                     vertexBufferAllocation,
-                                     *vertices.data(),
-                                     vertices.size() * sizeof(vertices[0]),
-                                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-            createBuffer<uint32_t>(memoryAllocator->getAllocator(),
-                                   indexBuffer,
-                                   indexBufferAllocation,
-                                   *indices.data(),
-                                   indices.size() * sizeof(indices[0]),
-                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+            memoryAllocator->createBuffer<VertexData>(vertexBuffer,
+                                                      vertexBufferAllocation,
+                                                      *vertices.data(),
+                                                      vertices.size() * sizeof(vertices[0]),
+                                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+            memoryAllocator->createBuffer<uint32_t>(indexBuffer,
+                                                    indexBufferAllocation,
+                                                    *indices.data(),
+                                                    indices.size() * sizeof(indices[0]),
+                                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
             initializeImgui(window,
                             *device,
                             *swapchain,
@@ -103,9 +97,9 @@ namespace renderer {
         ~Renderer() {
             vkDeviceWaitIdle(device->getDevice());
 
-            vmaDestroyBuffer(memoryAllocator->getAllocator(), vertexBuffer, vertexBufferAllocation);
-            vmaDestroyBuffer(memoryAllocator->getAllocator(), indexBuffer, indexBufferAllocation);
-            vmaDestroyBuffer(memoryAllocator->getAllocator(), cameraDataBuffer, cameraDataBufferAllocation);
+            ImGui_ImplVulkan_Shutdown();
+            ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
 
             // destroy synchronization primitives
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -244,9 +238,7 @@ namespace renderer {
             initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
             ImGui_ImplVulkan_Init(&initInfo, renderPass.getRenderPass());
-
             {
-
                 result = vkResetCommandPool(device.getDevice(), commandPool, 0);
                 if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
 
@@ -279,11 +271,10 @@ namespace renderer {
             updateCameraData(cameraData,
                              swapchain->getSwapchainExtent(),
                              cameraPosition);
-            updateBuffer<CameraData>(memoryAllocator->getAllocator(),
-                                     cameraDataBuffer,
-                                     cameraDataBufferAllocation,
-                                     cameraData,
-                                     sizeof(cameraData));
+            memoryAllocator->updateBuffer<CameraData>(cameraDataBuffer,
+                                                      cameraDataBufferAllocation,
+                                                      cameraData,
+                                                      sizeof(cameraData));
         }
 
         static void updateCameraData(CameraData &cameraData, const VkExtent2D &extent, glm::vec3 newPosition) {
@@ -469,59 +460,7 @@ namespace renderer {
             std::cout << "created synchronization primitives" << std::endl;
         }
 
-        template<typename T>
-        static void updateBuffer(const VmaAllocator &allocator,
-                                 const VkBuffer &buffer,
-                                 const VmaAllocation &allocation,
-                                 const T &data,
-                                 const std::size_t &size) {
-
-            void *mappedData;
-            vmaMapMemory(allocator, allocation, &mappedData);
-            memcpy(mappedData, &data, size);
-            vmaUnmapMemory(allocator, allocation);
-        }
-
-        template<typename T>
-        static void createBuffer(const VmaAllocator &allocator,
-                                 VkBuffer &buffer,
-                                 VmaAllocation &allocation,
-                                 const T &data,
-                                 std::size_t size,
-                                 VkBufferUsageFlags usageFlags) {
-
-            VkBufferCreateInfo createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            createInfo.size = size; // size in bytes, should be greater than zero
-            createInfo.usage = usageFlags;
-            createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-            VmaAllocationCreateInfo allocationCreateInfo{};
-            allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-            allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-            allocationCreateInfo.requiredFlags =
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            allocationCreateInfo.pool = VK_NULL_HANDLE;
-            allocationCreateInfo.priority = 1.0f;
-
-            VmaAllocationInfo allocationInfo;
-            VkResult result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation,
-                                              &allocationInfo);
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create buffer: ") + string_VkResult(result));
-            }
-
-            void *mappedData;
-            vmaMapMemory(allocator, allocation, &mappedData);
-            memcpy(mappedData, &data, size);
-            vmaUnmapMemory(allocator, allocation);
-
-            std::cout << "created buffer" << std::endl;
-        }
-
         /*
-         * Very inefficient
          * Todo: refactor
          */
         static void loadObj(const std::string &filePath,
@@ -656,7 +595,6 @@ namespace renderer {
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
             ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
             vkCmdEndRenderPass(commandBuffer);
 
             VkResult endBufferResult = vkEndCommandBuffer(commandBuffer);
