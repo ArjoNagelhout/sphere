@@ -33,6 +33,12 @@ namespace renderer {
     bool operator!=(const VkSurfaceFormatKHR &lhs, const VkSurfaceFormatKHR &rhs) {
         return !(lhs == rhs);
     }
+
+    static void checkResult(VkResult result) {
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error(std::string("vulkan command failed: ") + string_VkResult(result));
+        }
+    }
 }
 
 #endif //SPHERE_UTILS_HPP

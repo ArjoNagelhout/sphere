@@ -211,12 +211,7 @@ namespace renderer {
             pool_info.poolSizeCount = std::size(pool_sizes);
             pool_info.pPoolSizes = pool_sizes;
 
-            VkResult result = vkCreateDescriptorPool(device.getDevice(), &pool_info, nullptr, &imguiDescriptorPool);
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(
-                        std::string("failed to create descriptor pool for Imgui: ") + string_VkResult(result));
-            }
+            checkResult(vkCreateDescriptorPool(device.getDevice(), &pool_info, nullptr, &imguiDescriptorPool));
 
             // 2: initialize imgui library
 
@@ -239,14 +234,12 @@ namespace renderer {
 
             ImGui_ImplVulkan_Init(&initInfo, renderPass.getRenderPass());
             {
-                result = vkResetCommandPool(device.getDevice(), commandPool, 0);
-                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+                checkResult(vkResetCommandPool(device.getDevice(), commandPool, 0));
 
                 VkCommandBufferBeginInfo beginInfo = {};
                 beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
                 beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-                result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+                checkResult(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
                 ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 
@@ -254,15 +247,10 @@ namespace renderer {
                 endInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
                 endInfo.commandBufferCount = 1;
                 endInfo.pCommandBuffers = &commandBuffer;
-                result = vkEndCommandBuffer(commandBuffer);
-                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
+                checkResult(vkEndCommandBuffer(commandBuffer));
 
-                result = vkQueueSubmit(device.getGraphicsQueue(), 1, &endInfo, VK_NULL_HANDLE);
-                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
-
-                result = vkDeviceWaitIdle(device.getDevice());
-                if (result != VK_SUCCESS) throw std::runtime_error(string_VkResult(result));
-
+                checkResult(vkQueueSubmit(device.getGraphicsQueue(), 1, &endInfo, VK_NULL_HANDLE));
+                checkResult(vkDeviceWaitIdle(device.getDevice()));
                 ImGui_ImplVulkan_DestroyFontUploadObjects();
             }
         }
@@ -311,12 +299,7 @@ namespace renderer {
             createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             createInfo.queueFamilyIndex = data.graphicsQueueFamilyData->index;
 
-            VkResult result = vkCreateCommandPool(device.getDevice(), &createInfo, nullptr, &commandPool);
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create command pool") + string_VkResult(result));
-            }
-
+            checkResult(vkCreateCommandPool(device.getDevice(), &createInfo, nullptr, &commandPool));
             std::cout << "created command pool" << std::endl;
         }
 
@@ -330,12 +313,7 @@ namespace renderer {
             allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
             allocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-            VkResult result = vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data());
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to allocate command buffers: ") + string_VkResult(result));
-            }
-
+            checkResult(vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data()));
             std::cout << "created command buffers" << std::endl;
         }
 
@@ -355,12 +333,7 @@ namespace renderer {
             createInfo.poolSizeCount = 1;
             createInfo.pPoolSizes = &poolSize;
 
-            VkResult result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool);
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create descriptor pool: ") + string_VkResult(result));
-            }
-
+            checkResult(vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool));
             std::cout << "created descriptor pool" << std::endl;
         }
 
@@ -381,11 +354,7 @@ namespace renderer {
             allocateInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
             allocateInfo.pSetLayouts = descriptorSetLayouts.data();
 
-            VkResult result = vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data());
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create descriptor sets: ") + string_VkResult(result));
-            }
+            checkResult(vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data()));
 
             for (int i = 0; i < maxFramesInFlight; i++) {
                 VkDescriptorBufferInfo bufferInfo{};
@@ -435,28 +404,10 @@ namespace renderer {
             fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
             for (size_t i = 0; i < maxFramesInFlight; i++) {
-                VkResult createImageAvailableSemaphoresResult =
-                        vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &imageAvailableSemaphores[i]);
-                if (createImageAvailableSemaphoresResult != VK_SUCCESS) {
-                    throw std::runtime_error(std::string("failed to create image available semaphores") +
-                                             string_VkResult(createImageAvailableSemaphoresResult));
-                }
-
-                VkResult createRenderFinishedSemaphoresResult =
-                        vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphores[i]);
-                if (createRenderFinishedSemaphoresResult != VK_SUCCESS) {
-                    throw std::runtime_error(std::string("failed to create render finished semaphores") +
-                                             string_VkResult(createRenderFinishedSemaphoresResult));
-                }
-
-                VkResult createInFlightFencesResult =
-                        vkCreateFence(device, &fenceCreateInfo, nullptr, &inFlightFences[i]);
-                if (createInFlightFencesResult != VK_SUCCESS) {
-                    throw std::runtime_error(std::string("failed to create in flight fences") +
-                                             string_VkResult(createInFlightFencesResult));
-                }
+                checkResult(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &imageAvailableSemaphores[i]));
+                checkResult(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphores[i]));
+                checkResult(vkCreateFence(device, &fenceCreateInfo, nullptr, &inFlightFences[i]));
             }
-
             std::cout << "created synchronization primitives" << std::endl;
         }
 
@@ -544,15 +495,9 @@ namespace renderer {
             beginInfo.flags = 0;
             beginInfo.pInheritanceInfo = nullptr;
 
-            VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(
-                        std::string("failed to begin recording command buffer") + string_VkResult(result));
-            }
+            checkResult(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
             VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-
             VkExtent2D extent = swapchain.getSwapchainExtent();
 
             VkRenderPassBeginInfo renderPassInfo{};
@@ -597,12 +542,7 @@ namespace renderer {
             ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
             vkCmdEndRenderPass(commandBuffer);
 
-            VkResult endBufferResult = vkEndCommandBuffer(commandBuffer);
-
-            if (endBufferResult != VK_SUCCESS) {
-                throw std::runtime_error(
-                        std::string("failed to record command buffer") + string_VkResult(endBufferResult));
-            }
+            checkResult(vkEndCommandBuffer(commandBuffer));
         }
 
         static void drawFrame(uint32_t &currentFrame,
@@ -663,12 +603,8 @@ namespace renderer {
             submitInfo.signalSemaphoreCount = 1;
             submitInfo.pSignalSemaphores = signalSemaphores;
 
-            VkResult queueSubmitResult = vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo,
-                                                       inFlightFences[currentFrame]);
-
-            if (queueSubmitResult != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to submit queue") + string_VkResult(queueSubmitResult));
-            }
+            checkResult(vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo,
+                                                       inFlightFences[currentFrame]));
 
             VkSwapchainKHR swapchains[] = {swapchain.getSwapchain()};
 
