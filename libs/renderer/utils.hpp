@@ -34,6 +34,10 @@ namespace renderer {
         return !(lhs == rhs);
     }
 
+    /**
+     * Throws a runtime error when result is not VK_SUCCESS
+     * @param result
+     */
     static void checkResult(VkResult result) {
         if (result != VK_SUCCESS) {
             throw std::runtime_error(std::string("vulkan command failed: ") + string_VkResult(result));

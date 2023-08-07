@@ -9,7 +9,10 @@ vec3 colors[6] = vec3[](
     vec3(0.0, 0.0, 1.0)
 );
 
-layout(location = 0) in vec3 position;
+// vertex attributes:
+layout(location = 0) in vec3 positionAttribute;
+//layout(location = 1) in vec2 uvAtrribute;
+//layout(location = 2) in vec3 normalAttribute;
 
 layout(binding = 0) uniform cameraBuf {
     mat4 MVP;
@@ -18,12 +21,7 @@ layout(binding = 0) uniform cameraBuf {
 layout(location = 0) out vec3 fragColor;
 
 void main() {
-    //gl_Position = cameraData.position[gl_VertexIndex];
-
     // matrix multiplication using model view projection
-    gl_Position = Camera.MVP * vec4(position, 1);
-
-    //gl_Position = vec4(positions[gl_VertexIndex], 0, 1);
+    gl_Position = Camera.MVP * vec4(positionAttribute, 1);
     fragColor = colors[gl_VertexIndex % 6];
-    //fragColor = vec3(1.0f - position.x, position.y, position.z);
 }

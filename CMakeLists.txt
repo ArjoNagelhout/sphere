@@ -72,14 +72,12 @@ add_executable(sphere
         src/commands/undo_stack.hpp
         src/commands/command.hpp
         src/scene.hpp
-        src/camera.hpp
-        src/mesh.hpp
         src/node.hpp
         src/commands/add_nodes_command.hpp
-        src/texture.hpp
         src/selection.hpp
         src/commands/select_nodes_command.hpp
-        src/commands/transform_nodes_command.hpp src/commands/remove_nodes_command.hpp src/shader.hpp src/mesh_renderer_node.hpp src/material.hpp libs/renderer/window.hpp)
+        src/commands/transform_nodes_command.hpp
+        src/commands/remove_nodes_command.hpp)
 
 target_link_libraries(sphere PUBLIC renderer)
 

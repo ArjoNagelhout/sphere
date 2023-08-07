@@ -208,12 +208,7 @@ namespace renderer {
             swapchainCreateInfo.clipped = VK_TRUE;
             swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-            VkResult result = vkCreateSwapchainKHR(device.getDevice(), &swapchainCreateInfo, nullptr, &swapchain);
-
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error(std::string("failed to create swapchain: ") + string_VkResult(result));
-            }
-
+            checkResult(vkCreateSwapchainKHR(device.getDevice(), &swapchainCreateInfo, nullptr, &swapchain));
             std::cout << "created swapchain" << std::endl;
 
             // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
@@ -251,11 +246,7 @@ namespace renderer {
                 // with multiple layers. You could then create multiple image views for each image representing
                 // the views for the left and right eyes by accessing different layers.
 
-                VkResult result = vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i]);
-
-                if (result != VK_SUCCESS) {
-                    throw std::runtime_error(std::string("failed to create image view: ") + string_VkResult(result));
-                }
+                checkResult(vkCreateImageView(device, &createInfo, nullptr, &swapchainImageViews[i]));
             }
         }
 
@@ -284,13 +275,8 @@ namespace renderer {
                 createInfo.height = swapchainExtent.height;
                 createInfo.layers = 1;
 
-                VkResult result = vkCreateFramebuffer(device, &createInfo, nullptr, &swapchainFramebuffers[i]);
-
-                if (result != VK_SUCCESS) {
-                    throw std::runtime_error(std::string("failed to create frame buffer: ") + string_VkResult(result));
-                }
+                checkResult(vkCreateFramebuffer(device, &createInfo, nullptr, &swapchainFramebuffers[i]));
             }
-
             std::cout << "created frame buffers" << std::endl;
         }
 

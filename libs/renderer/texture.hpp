@@ -24,6 +24,22 @@ namespace renderer {
         // pipeline barriers
         // memory barriers
 
+        // samplers should be set in the fragment shader. How?
+        // using descriptor sets
+
+        // how do we bind the graphics pipeline to a given shader?
+        // it seems all rather hard coded.
+        // can we use a written shader as the basis for creating the
+        // pipeline.
+
+        // how many times can we switch between pipelines, do we have to sort them?
+        // we have to use a pipeline cache
+
+        // do we want a texture that is both on the CPU and the GPU?
+        // or do we upload it to the GPU and leave it there?
+
+        // maybe a distinction similar to RenderTextures in Unity.
+
         explicit Texture(Device &device) {
 
             VkImageCreateInfo imageInfo{};
@@ -44,7 +60,7 @@ namespace renderer {
 
             VkImage image;
 
-            VkResult result = vkCreateImage(device.getDevice(), &imageInfo, nullptr, &image);
+            checkResult(vkCreateImage(device.getDevice(), &imageInfo, nullptr, &image));
 
 
         }
