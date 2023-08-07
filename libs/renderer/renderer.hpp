@@ -1,6 +1,7 @@
 #ifndef SPHERE_RENDERER_HPP
 #define SPHERE_RENDERER_HPP
 
+#include "engine.hpp"
 #include "device.hpp"
 #include "swapchain.hpp"
 #include "graphics_pipeline.hpp"
@@ -41,6 +42,12 @@ namespace renderer {
             swapchain->createSwapchainFramebuffers(renderPass->getRenderPass());
             graphicsPipeline = std::make_unique<GraphicsPipeline>(*device, *swapchain, *renderPass);
             memoryAllocator = std::make_unique<MemoryAllocator>(*device);
+
+            initializeEngine();
+            Engine &engine = getEngine();
+            engine.doSomething();
+
+            destroyEngine();
 
             createCommandPool(*device, commandPool);
             createCommandBuffers(device->getDevice(),
