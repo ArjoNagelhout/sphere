@@ -8,20 +8,36 @@ namespace renderer {
 
     std::unique_ptr<Engine> engine;
 
-    Engine::Engine(const std::string &test) {
+    Engine::Engine(const VulkanConfiguration &configuration) : configuration(configuration) {
         std::cout << "created engine" << std::endl;
+
+        std::vector<const char *> allRequiredInstanceExtensions{configuration.requiredInstanceExtensions.begin(), configuration.requiredInstanceExtensions.end()};
+        std::vector<const char *> allRequiredInstanceLayers{configuration.requiredInstanceLayers.begin(), configuration.requiredInstanceLayers.end()};
+
+        if (configuration.debug) {
+            allRequiredInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            allRequiredInstanceLayers.push_back("VK_LAYER_KHRONOS_validation");
+        }
+
+        createInstance(allRequiredInstanceExtensions, allRequiredInstanceLayers);
+        createDebugMessenger();
+        createSurface();
+        pickPhysicalDevice(requiredDeviceExtensions);
+        createLogicalDevice(requiredDeviceExtensions);
     }
 
     Engine::~Engine() {
+        vkDestroyDevice(vulkanData.device, nullptr);
+        vkDestroySurfaceKHR(vulkanData.instance, vulkanData.surface, nullptr);
+        destroyDebugMessenger();
+        vkDestroyInstance(vulkanData.instance, nullptr);
+
         std::cout << "destroyed engine" << std::endl;
     }
 
-    void Engine::doSomething() {
-        std::cout << "do something" << std::endl;
-    }
-
-    void initializeEngine() {
-        engine = std::make_unique<Engine>("test");
+    void initializeEngine(const VulkanConfiguration &configuration) {
+        assert((!engine) && "Engine is already initialized. ");
+        engine = std::make_unique<Engine>(configuration);
     }
 
     void destroyEngine() {
@@ -31,5 +47,10 @@ namespace renderer {
     Engine &getEngine() {
         assert((engine) && "Engine should be initialized before calling this function, did you call initializeEngine()?");
         return *engine;
+    }
+
+    const VulkanData &getVulkanData() {
+        Engine &engine = getEngine();
+        return engine.getVulkanData();
     }
 }

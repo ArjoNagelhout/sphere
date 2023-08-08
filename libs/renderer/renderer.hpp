@@ -45,7 +45,7 @@ namespace renderer {
 
             initializeEngine();
             Engine &engine = getEngine();
-            engine.doSomething();
+            //engine.doSomething();
 
             destroyEngine();
 

@@ -1,5 +1,12 @@
 set(SOURCES
-        device.hpp reference.cpp renderer.hpp swapchain.hpp utils.hpp graphics_pipeline.hpp render_pass.hpp memory_allocator.hpp vertex_data.hpp texture.hpp camera.hpp engine.hpp engine.hpp engine.cpp)
+        window.hpp
+        utils.hpp
+        utils.cpp
+        engine.hpp
+        engine.cpp
+        engine_instance.cpp
+        engine_debug.cpp
+        engine_device.cpp engine_surface.cpp)
 
 add_library(renderer "${SOURCES}")
 
