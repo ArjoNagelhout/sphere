@@ -6,12 +6,9 @@
 #include "render_pass.h"
 #include "graphics_pipeline.h"
 #include "memory_allocator.h"
+#include "camera.h"
 
 namespace renderer {
-
-    struct CameraData {
-        glm::mat4x4 MVP;
-    };
 
     struct RendererConfiguration {
         GLFWwindow *window;
@@ -52,6 +49,7 @@ namespace renderer {
         std::unique_ptr<RenderPass> renderPass;
         std::unique_ptr<GraphicsPipeline> graphicsPipeline;
         std::unique_ptr<MemoryAllocator> memoryAllocator;
+        std::unique_ptr<Camera> camera;
 
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t currentFrameIndex = 0;
@@ -61,11 +59,6 @@ namespace renderer {
         VkDescriptorPool descriptorPool;
 
         // buffers
-
-        CameraData cameraData;
-        VkBuffer cameraDataBuffer;
-        VmaAllocation cameraDataBufferAllocation;
-
         std::vector<VertexAttributes> vertices{
                 {{-0.5f, -0.5f, 0}},
                 {{0.5f,  -0.5f, 0}},

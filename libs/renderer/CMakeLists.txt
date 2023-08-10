@@ -22,7 +22,7 @@ set(SOURCES
 
         renderer.h renderer.cpp
 
-        )
+        camera.h camera.cpp)
 
 add_library(renderer "${SOURCES}")
 

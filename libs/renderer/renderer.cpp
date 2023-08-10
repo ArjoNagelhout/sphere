@@ -1,5 +1,8 @@
 #include "renderer.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 namespace renderer {
 
     void FrameData::initialize() {
@@ -53,6 +56,74 @@ namespace renderer {
         vkUpdateDescriptorSets(engine.device, 1, &writeDescriptorSet, 0, nullptr);
     }
 
+    /*
+     * Todo: refactor
+     */
+    static void loadObj(const std::string &filePath,
+                    std::vector<VertexAttributes> &vertices,
+                    std::vector<uint32_t> &indices) {
+
+    vertices.clear();
+    indices.clear();
+
+    tinyobj::ObjReaderConfig config;
+    //config.mtl_search_path = "./";
+
+    tinyobj::ObjReader reader;
+
+    if (!reader.ParseFromFile(filePath, config)) {
+        if (!reader.Error().empty()) {
+            throw std::runtime_error(
+                    std::string("tiny obj reader failed to read from file: ") + reader.Error());
+        }
+    }
+
+    if (!reader.Warning().empty()) {
+        std::cout << "tiny obj reader warning: " << reader.Warning() << std::endl;
+    }
+
+    auto &attributes = reader.GetAttrib();
+    auto &shapes = reader.GetShapes();
+    //auto &materials = reader.GetMaterials();
+
+    for (size_t v = 0; v < attributes.vertices.size(); v += 3) {
+
+        VertexAttributes vertexData{{
+                                      attributes.vertices[v + 0],
+                                      attributes.vertices[v + 1],
+                                      attributes.vertices[v + 2]
+                              }};
+        vertices.push_back(vertexData);
+    }
+
+    for (size_t s = 0; s < shapes.size(); s++) {
+        const std::vector<tinyobj::index_t> &sourceIndices = shapes[s].mesh.indices;
+
+        for (size_t i = 0; i < sourceIndices.size(); i++) {
+            const tinyobj::index_t &index = sourceIndices[i];
+            indices.push_back(index.vertex_index);
+        }
+    }
+
+    std::cout << "loaded 3d model at: " << filePath << std::endl;
+
+//            for (size_t s = 0; s < shapes.size(); s++) {
+//
+//                size_t index_offset = 0;
+//                for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+//                    size_t vertices = size_t(shapes[s].mesh.num_face_vertices[f]);
+//
+//                    for (size_t v = 0; v < vertices; v++) {
+//                        tinyobj::index_t index = shapes[s].mesh.indices[index_offset + v];
+//                        size_t a = 3*size_t(index.vertex_index);
+//                        tinyobj::real_t x = attributes.vertices[a+0];
+//                        tinyobj::real_t y = attributes.vertices[a+1];
+//                        tinyobj::real_t z = attributes.vertices[a+2];
+//                    }
+//                }
+//            }
+    }
+
     Renderer::Renderer(RendererConfiguration &configuration) {
 
         std::cout << "created renderer" << std::endl;
@@ -74,20 +145,12 @@ namespace renderer {
         };
 
         initializeEngine(vulkanConfiguration);
-
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format);
-
         swapchain->createFramebuffers(renderPass->renderPass);
-
         graphicsPipeline = std::make_unique<GraphicsPipeline>(*swapchain, *renderPass);
         memoryAllocator = std::make_unique<MemoryAllocator>();
-
-        memoryAllocator->createBuffer<CameraData>(cameraDataBuffer,
-                                                  cameraDataBufferAllocation,
-                                                  cameraData,
-                                                  sizeof(cameraData),
-                                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        camera = std::make_unique<Camera>(*memoryAllocator, *swapchain);
 
         createCommandPool();
         createDescriptorPool(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -102,8 +165,13 @@ namespace renderer {
             };
             frameData.initialize();
             frames.push_back(frameData);
-            frameData.updateDescriptorSet(cameraDataBuffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            frameData.updateDescriptorSet(camera->cameraDataBuffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         }
+
+        std::string path = "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj";
+        loadObj(path,
+                vertices,
+                indices);
 
         memoryAllocator->createBuffer<VertexAttributes>(vertexBuffer,
                                                          vertexBufferAllocation,
@@ -138,64 +206,9 @@ namespace renderer {
         std::cout << "destroyed renderer" << std::endl;
     }
 
-    void Renderer::recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer) {
-        VkCommandBuffer &cb = frameData.commandBuffer;
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
-        beginInfo.pInheritanceInfo = nullptr;
-
-        checkResult(vkBeginCommandBuffer(cb, &beginInfo));
-
-        VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-        VkExtent2D extent = swapchain->extent;
-
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass->renderPass;
-        renderPassInfo.framebuffer = framebuffer;
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = extent;
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearColor;
-
-        vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindDescriptorSets(cb,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                graphicsPipeline->graphicsPipelineLayout,
-                                0,
-                                1,
-                                &frameData.descriptorSet,
-                                0,
-                                nullptr);
-        vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->graphicsPipeline);
-
-        VkViewport viewport{
-                .x = 0.0f,
-                .y = 0.0f,
-                .width = static_cast<float>(extent.width),
-                .height = static_cast<float>(extent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f};
-        vkCmdSetViewport(cb, 0, 1, &viewport);
-
-        VkRect2D scissor{
-                .offset = {0, 0},
-                .extent = extent};
-        vkCmdSetScissor(cb, 0, 1, &scissor);
-
-        VkDeviceSize vertexBufferOffset = 0;
-        vkCmdBindIndexBuffer(cb, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdBindVertexBuffers(cb, 0, 1, &vertexBuffer, &vertexBufferOffset);
-        vkCmdDrawIndexed(cb, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
-        //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-        vkCmdEndRenderPass(cb);
-        checkResult(vkEndCommandBuffer(cb));
-    }
-
     void Renderer::render() {
+        camera->position = glm::vec3(10, 3, 3);
+        camera->updateCameraData();
         drawFrame(frames[currentFrameIndex]);
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     }
@@ -266,6 +279,63 @@ namespace renderer {
                         std::string("failed to present swap chain image") + string_VkResult(result));
         }
     }
+
+    void Renderer::recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer) {
+    VkCommandBuffer &cb = frameData.commandBuffer;
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0;
+    beginInfo.pInheritanceInfo = nullptr;
+
+    checkResult(vkBeginCommandBuffer(cb, &beginInfo));
+
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    VkExtent2D extent = swapchain->extent;
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass->renderPass;
+    renderPassInfo.framebuffer = framebuffer;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = extent;
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindDescriptorSets(cb,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            graphicsPipeline->graphicsPipelineLayout,
+                            0,
+                            1,
+                            &frameData.descriptorSet,
+                            0,
+                            nullptr);
+    vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->graphicsPipeline);
+
+    VkViewport viewport{
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = static_cast<float>(extent.width),
+            .height = static_cast<float>(extent.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f};
+    vkCmdSetViewport(cb, 0, 1, &viewport);
+
+    VkRect2D scissor{
+            .offset = {0, 0},
+            .extent = extent};
+    vkCmdSetScissor(cb, 0, 1, &scissor);
+
+    VkDeviceSize vertexBufferOffset = 0;
+    vkCmdBindIndexBuffer(cb, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(cb, 0, 1, &vertexBuffer, &vertexBufferOffset);
+    vkCmdDrawIndexed(cb, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+    //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+    vkCmdEndRenderPass(cb);
+    checkResult(vkEndCommandBuffer(cb));
+}
 
     void Renderer::createCommandPool() {
         Engine &engine = getEngine();
