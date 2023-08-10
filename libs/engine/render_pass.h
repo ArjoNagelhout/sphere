@@ -1,7 +1,7 @@
 #ifndef SPHERE_RENDER_PASS_H
 #define SPHERE_RENDER_PASS_H
 
-#include "vulkan_context.h"
+#include "core/vulkan_context.h"
 
 namespace engine {
 

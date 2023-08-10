@@ -1,7 +1,7 @@
 #ifndef SPHERE_GRAPHICS_PIPELINE_H
 #define SPHERE_GRAPHICS_PIPELINE_H
 
-#include "vulkan_context.h"
+#include "core/vulkan_context.h"
 #include "swapchain.h"
 #include "render_pass.h"
 #include "types.h"

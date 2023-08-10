@@ -1,7 +1,7 @@
 #ifndef SPHERE_CAMERA_H
 #define SPHERE_CAMERA_H
 
-#include "vulkan_context.h"
+#include "core/vulkan_context.h"
 #include "memory_allocator.h"
 #include "swapchain.h"
 

@@ -1,8 +1,8 @@
 #ifndef SPHERE_APPLICATION_H
 #define SPHERE_APPLICATION_H
 
-#include <window.h>
-#include <vulkan_context.h>
+#include <core/window.h>
+#include <core/vulkan_context.h>
 #include <engine.h>
 
 #include <unordered_map>

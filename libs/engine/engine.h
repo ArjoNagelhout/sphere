@@ -1,7 +1,7 @@
 #ifndef SPHERE_ENGINE_H
 #define SPHERE_ENGINE_H
 
-#include "vulkan_context.h"
+#include "core/vulkan_context.h"
 #include "swapchain.h"
 #include "render_pass.h"
 #include "graphics_pipeline.h"
@@ -36,6 +36,13 @@ namespace engine {
         void updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const;
     };
 
+    /*
+     * Engine is the main entry point that draws everything.
+     *
+     * todo: refactor VulkanContext into this
+     *
+     * The current step is going to be the ability to render multiple objects and somehow represent those in a scene
+     */
     class Engine {
 
     public:

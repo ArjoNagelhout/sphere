@@ -1,7 +1,7 @@
 #ifndef SPHERE_TEXTURE_H
 #define SPHERE_TEXTURE_H
 
-#include "vulkan_context.h"
+#include "core/vulkan_context.h"
 
 namespace engine {
 

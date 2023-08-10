@@ -1,7 +1,7 @@
 #ifndef SPHERE_MEMORY_ALLOCATOR_H
 #define SPHERE_MEMORY_ALLOCATOR_H
 
-#include "vulkan_context.h"
+#include "core/vulkan_context.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnullability-completeness"
