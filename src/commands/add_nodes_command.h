@@ -1,8 +1,8 @@
-#ifndef SPHERE_ADD_NODES_COMMAND_HPP
-#define SPHERE_ADD_NODES_COMMAND_HPP
+#ifndef SPHERE_ADD_NODES_COMMAND_H
+#define SPHERE_ADD_NODES_COMMAND_H
 
-#include "command.hpp"
-#include "../scene.hpp"
+#include "command.h"
+#include "../scene.h"
 
 namespace sphere {
 
@@ -24,4 +24,4 @@ namespace sphere {
     };
 }
 
-#endif //SPHERE_ADD_NODES_COMMAND_HPP
+#endif //SPHERE_ADD_NODES_COMMAND_H

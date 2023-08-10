@@ -1,8 +1,8 @@
-#ifndef SPHERE_TRANSFORM_NODES_COMMAND_HPP
-#define SPHERE_TRANSFORM_NODES_COMMAND_HPP
+#ifndef SPHERE_TRANSFORM_NODES_COMMAND_H
+#define SPHERE_TRANSFORM_NODES_COMMAND_H
 
-#include "command.hpp"
-#include "../node.hpp"
+#include "command.h"
+#include "../node.h"
 
 #include <vector>
 #include <glm/mat4x4.hpp>
@@ -85,4 +85,4 @@ namespace sphere {
 
 }
 
-#endif //SPHERE_TRANSFORM_NODES_COMMAND_HPP
+#endif //SPHERE_TRANSFORM_NODES_COMMAND_H

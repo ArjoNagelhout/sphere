@@ -1,7 +1,7 @@
-#ifndef SPHERE_SELECTION_HPP
-#define SPHERE_SELECTION_HPP
+#ifndef SPHERE_SELECTION_H
+#define SPHERE_SELECTION_H
 
-#include "node.hpp"
+#include "node.h"
 
 #include <vector>
 
@@ -20,4 +20,4 @@ namespace sphere {
 
 }
 
-#endif //SPHERE_SELECTION_HPP
+#endif //SPHERE_SELECTION_H

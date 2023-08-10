@@ -1,11 +1,11 @@
-#ifndef SPHERE_SCENE_HPP
-#define SPHERE_SCENE_HPP
+#ifndef SPHERE_SCENE_H
+#define SPHERE_SCENE_H
 
 #include <iostream>
 #include <vector>
 #include <string>
 
-#include "node.hpp"
+#include "node.h"
 
 namespace sphere {
 
@@ -33,4 +33,4 @@ namespace sphere {
     };
 }
 
-#endif //SPHERE_SCENE_HPP
+#endif //SPHERE_SCENE_H

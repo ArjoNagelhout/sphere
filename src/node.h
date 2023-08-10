@@ -1,5 +1,5 @@
-#ifndef SPHERE_NODE_HPP
-#define SPHERE_NODE_HPP
+#ifndef SPHERE_NODE_H
+#define SPHERE_NODE_H
 
 #include <string>
 #include <utility>
@@ -352,4 +352,4 @@ namespace sphere {
     };
 }
 
-#endif //SPHERE_NODE_HPP
+#endif //SPHERE_NODE_H

@@ -1,11 +1,11 @@
-#ifndef SPHERE_REMOVE_NODES_COMMAND_HPP
-#define SPHERE_REMOVE_NODES_COMMAND_HPP
+#ifndef SPHERE_REMOVE_NODES_COMMAND_H
+#define SPHERE_REMOVE_NODES_COMMAND_H
 
 #include <vector>
 #include <stdexcept>
 
-#include "../node.hpp"
-#include "command.hpp"
+#include "../node.h"
+#include "command.h"
 
 
 namespace sphere {
@@ -39,4 +39,4 @@ namespace sphere {
     };
 }
 
-#endif //SPHERE_REMOVE_NODES_COMMAND_HPP
+#endif //SPHERE_REMOVE_NODES_COMMAND_H

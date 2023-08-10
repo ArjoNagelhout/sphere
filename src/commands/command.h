@@ -1,5 +1,5 @@
-#ifndef SPHERE_COMMAND_HPP
-#define SPHERE_COMMAND_HPP
+#ifndef SPHERE_COMMAND_H
+#define SPHERE_COMMAND_H
 
 #include <vector>
 
@@ -23,4 +23,4 @@ namespace sphere {
 
 } // sphere
 
-#endif //SPHERE_COMMAND_HPP
+#endif //SPHERE_COMMAND_H

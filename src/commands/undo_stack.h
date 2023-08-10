@@ -2,8 +2,8 @@
 // Created by Arjo Nagelhout on 2023-07-14.
 //
 
-#ifndef SPHERE_UNDO_STACK_HPP
-#define SPHERE_UNDO_STACK_HPP
+#ifndef SPHERE_UNDO_STACK_H
+#define SPHERE_UNDO_STACK_H
 
 namespace sphere {
 
@@ -34,4 +34,4 @@ namespace sphere {
 
 } // sphere
 
-#endif //SPHERE_UNDO_STACK_HPP
+#endif //SPHERE_UNDO_STACK_H
