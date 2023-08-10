@@ -34,8 +34,8 @@ namespace renderer {
         VkSemaphore imageAvailableSemaphore;
         VkSemaphore renderFinishedSemaphore;
 
-        explicit FrameData(VkCommandBuffer &commandBuffer, VkDescriptorSet &descriptorSet);
-        ~FrameData();
+        void initialize();
+        void destroy();
         void updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const;
     };
 

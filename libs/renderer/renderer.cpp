@@ -2,8 +2,7 @@
 
 namespace renderer {
 
-    FrameData::FrameData(VkCommandBuffer &commandBuffer, VkDescriptorSet &descriptorSet)
-            : commandBuffer(commandBuffer), descriptorSet(descriptorSet) {
+    void FrameData::initialize() {
         Engine &engine = getEngine();
 
         // create synchronization primitives
@@ -21,12 +20,14 @@ namespace renderer {
         std::cout << "created frame data" << std::endl;
     }
 
-    FrameData::~FrameData() {
+    void FrameData::destroy() {
         Engine &engine = getEngine();
 
         vkDestroySemaphore(engine.device, imageAvailableSemaphore, nullptr);
         vkDestroySemaphore(engine.device, renderFinishedSemaphore, nullptr);
         vkDestroyFence(engine.device, inFlightFence, nullptr);
+
+        std::cout << "destroyed frame data" << std::endl;
     }
 
     void FrameData::updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const {
@@ -92,7 +93,11 @@ namespace renderer {
         std::vector<VkDescriptorSet> descriptorSets = allocateDescriptorSets(graphicsPipeline->descriptorSetLayout);
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            FrameData frameData{commandBuffers[i], descriptorSets[i]};
+            FrameData frameData{
+                .commandBuffer = commandBuffers[i],
+                .descriptorSet = descriptorSets[i]
+            };
+            frameData.initialize();
             frames.push_back(frameData);
             frameData.updateDescriptorSet(cameraDataBuffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         }
@@ -111,6 +116,10 @@ namespace renderer {
 
     Renderer::~Renderer() {
         Engine &engine = getEngine();
+
+        for (auto const &frameData : frames) {
+            frameData.destroy();
+        }
 
         vkDestroyCommandPool(engine.device, commandPool, nullptr);
         vkDestroyDescriptorPool(engine.device, descriptorPool, nullptr);
