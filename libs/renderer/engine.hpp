@@ -69,22 +69,6 @@ namespace renderer {
         uint32_t maxVertexInputBindingStride;
     };
 
-    /*
-     * Common storage for all vulkan objects
-     */
-    struct VulkanData {
-        VkInstance instance;
-        VkDebugUtilsMessengerEXT debugMessenger;
-        VkPhysicalDevice physicalDevice;
-        PhysicalDeviceData physicalDeviceData; // cached physical device data
-        QueueFamiliesData queueFamiliesData;
-        SurfaceData surfaceData; // cached data
-        VkDevice device; // logical device
-        VkQueue graphicsQueue;
-        VkQueue presentQueue;
-        VkSurfaceKHR surface;
-    };
-
     /**
      * Data required for each frame that is rendered to
      */
@@ -107,7 +91,19 @@ namespace renderer {
         ~Engine();
 
         const VulkanConfiguration &configuration;
-        VulkanData vulkanData;
+
+        // vulkan data
+        VkInstance instance;
+        VkDebugUtilsMessengerEXT debugMessenger;
+        VkPhysicalDevice physicalDevice;
+        PhysicalDeviceData physicalDeviceData; // cached physical device data
+        QueueFamiliesData queueFamiliesData;
+        SurfaceData surfaceData; // cached data
+        VkDevice device; // logical device
+        VkQueue graphicsQueue;
+        VkQueue presentQueue;
+        VkSurfaceKHR surface;
+
     private:
 
         const std::vector<const char *> requiredDeviceExtensions{
@@ -125,7 +121,6 @@ namespace renderer {
     void initializeEngine(const VulkanConfiguration &configuration);
     void destroyEngine();
     Engine &getEngine();
-    const VulkanData &getVulkanData();
 }
 
 #endif //SPHERE_ENGINE_HPP

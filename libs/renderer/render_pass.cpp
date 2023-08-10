@@ -2,7 +2,7 @@
 
 namespace renderer {
 
-    RenderPass::RenderPass(Engine &engine, const VkFormat &format) : engine(engine) {
+    RenderPass::RenderPass(const VkFormat &format) : engine(getEngine()) {
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = format;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // for multisampling
@@ -47,11 +47,11 @@ namespace renderer {
         createInfo.dependencyCount = 1;
         createInfo.pDependencies = &subpassDependency;
 
-        checkResult(vkCreateRenderPass(engine.vulkanData.device, &createInfo, nullptr, &renderPass));
+        checkResult(vkCreateRenderPass(engine.device, &createInfo, nullptr, &renderPass));
         std::cout << "created render pass" << std::endl;
     }
 
     RenderPass::~RenderPass() {
-        vkDestroyRenderPass(engine.vulkanData.device, renderPass, nullptr);
+        vkDestroyRenderPass(engine.device, renderPass, nullptr);
     }
 }

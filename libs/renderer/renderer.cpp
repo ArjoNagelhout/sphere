@@ -23,9 +23,17 @@ namespace renderer {
         };
 
         initializeEngine(vulkanConfiguration);
+
+        swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
+        renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format);
+        graphicsPipeline = std::make_unique<GraphicsPipeline>(*swapchain, *renderPass);
     }
 
     Renderer::~Renderer() {
+        graphicsPipeline.reset();
+        renderPass.reset();
+        swapchain.reset();
+
         destroyEngine();
 
         std::cout << "destroyed renderer" << std::endl;

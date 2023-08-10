@@ -56,14 +56,14 @@ namespace renderer {
                 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
 
-        checkResult(createDebugUtilsMessengerEXT(vulkanData.instance, &createInfo, nullptr, &vulkanData.debugMessenger));
+        checkResult(createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger));
         std::cout << "created debug messenger" << std::endl;
     }
 
     void Engine::destroyDebugMessenger() {
-        if (vulkanData.debugMessenger == nullptr) {
+        if (debugMessenger == nullptr) {
             return;
         }
-        destroyDebugUtilsMessengerEXT(vulkanData.instance, vulkanData.debugMessenger, nullptr);
+        destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
 }

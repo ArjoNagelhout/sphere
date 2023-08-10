@@ -27,10 +27,10 @@ namespace renderer {
     }
 
     Engine::~Engine() {
-        vkDestroyDevice(vulkanData.device, nullptr);
-        vkDestroySurfaceKHR(vulkanData.instance, vulkanData.surface, nullptr);
+        vkDestroyDevice(device, nullptr);
+        vkDestroySurfaceKHR(instance, surface, nullptr);
         destroyDebugMessenger();
-        vkDestroyInstance(vulkanData.instance, nullptr);
+        vkDestroyInstance(instance, nullptr);
 
         std::cout << "destroyed engine" << std::endl;
     }

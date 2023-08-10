@@ -8,7 +8,7 @@ namespace renderer {
      * A VkSurfaceKHR can be used to present images to the screen.
      */
     void Engine::createSurface() {
-        checkResult(glfwCreateWindowSurface(vulkanData.instance, configuration.window, nullptr, &vulkanData.surface));
+        checkResult(glfwCreateWindowSurface(instance, configuration.window, nullptr, &surface));
 
         std::cout << "created surface" << std::endl;
     }

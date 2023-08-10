@@ -5,6 +5,10 @@
 
 namespace renderer {
 
+    const std::vector<VkSurfaceFormatKHR> preferredSurfaceFormats{
+            {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
+    };
+
     /*
      * A swapchain provides the ability to present rendering results to a surface.
      *
@@ -28,20 +32,18 @@ namespace renderer {
     class Swapchain{
 
     public:
-        explicit Swapchain(Engine &engine, const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats);
+        explicit Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats);
         ~Swapchain();
+
+        VkSurfaceFormatKHR surfaceFormat;
+        VkExtent2D extent;
 
     private:
         Engine &engine;
         VkSwapchainKHR swapchain;
-        VkSurfaceFormatKHR surfaceFormat;
-        VkExtent2D swapchainExtent;
+
         std::vector<VkImage> swapchainImages;
         std::vector<VkImageView> swapchainImageViews;
-
-        const std::vector<VkSurfaceFormatKHR> preferredSurfaceFormats{
-                {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
-        };
     };
 }
 

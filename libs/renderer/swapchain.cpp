@@ -2,7 +2,7 @@
 
 namespace renderer {
 
-    static VkPresentModeKHR pickSwapchainPresentMode(std::vector<VkPresentModeKHR> surfacePresentModes) {
+    static VkPresentModeKHR pickSwapchainPresentMode(std::vector<VkPresentModeKHR> &surfacePresentModes) {
         return VK_PRESENT_MODE_FIFO_KHR; // high performance, default
     }
 
@@ -13,7 +13,7 @@ namespace renderer {
     static VkSurfaceFormatKHR pickSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &surfaceFormats,
                                                          const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats = {}) {
         // iterate over preferred surface formats and see if they are supported, if so pick that one
-        for (const VkSurfaceFormatKHR &preferredSurfaceFormat : preferredSurfaceFormats) {
+        for (const VkSurfaceFormatKHR &preferredSurfaceFormat: preferredSurfaceFormats) {
             if (*std::find_if(surfaceFormats.begin(),
                               surfaceFormats.end(),
                               [&preferredSurfaceFormat](const VkSurfaceFormatKHR surfaceFormat) -> bool {
@@ -56,36 +56,39 @@ namespace renderer {
         }
     }
 
-    Swapchain::Swapchain(Engine &engine, const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) : engine(engine) {
-        SurfaceData surfaceData = engine.vulkanData.surfaceData;
+    Swapchain::Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) : engine(getEngine()) {
+        SurfaceData surfaceData = engine.surfaceData;
         surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
-        swapchainExtent = pickSwapchainExtent(engine.configuration.window, surfaceData.surfaceCapabilities);
+        extent = pickSwapchainExtent(engine.configuration.window, surfaceData.surfaceCapabilities);
 
         // from vulkan-tutorial.com
         // Sticking to this minimum means that we may sometimes have to wait on the driver to complete internal
         // operations before we can acquire another image to render to. Therefore, it is recommended to request
         // at least one more image than the minimum:
-        uint32_t imageCount = surfaceData.surfaceCapabilities.minImageCount + 1; // minImageCount is guaranteed to be at least 1
+        uint32_t imageCount =
+                surfaceData.surfaceCapabilities.minImageCount + 1; // minImageCount is guaranteed to be at least 1
 
         // limit image count
         // if maxImageCount is 0, that means there is no hard limit for the amount of images.
-        if (surfaceData.surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceData.surfaceCapabilities.maxImageCount) {
+        if (surfaceData.surfaceCapabilities.maxImageCount > 0 &&
+            imageCount > surfaceData.surfaceCapabilities.maxImageCount) {
             imageCount = surfaceData.surfaceCapabilities.maxImageCount;
         }
 
         VkSwapchainCreateInfoKHR swapchainCreateInfo{};
         swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreateInfo.surface = engine.vulkanData.surface;
+        swapchainCreateInfo.surface = engine.surface;
         swapchainCreateInfo.minImageCount = imageCount;
         swapchainCreateInfo.imageFormat = surfaceFormat.format;
         swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
-        swapchainCreateInfo.imageExtent = swapchainExtent;
+        swapchainCreateInfo.imageExtent = extent;
         swapchainCreateInfo.imageArrayLayers = 1; // for stereoscopic rendering should be more than 1
         swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // listed in surfaceCapabilities.supportedUsageFlags, but VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT is guaranteed to always exist
 
         // determine if the graphics queue family and the present queue family share the same index
-        QueueFamiliesData queueFamiliesData = engine.vulkanData.queueFamiliesData;
-        uint32_t queueFamilyIndices[]{queueFamiliesData.graphicsQueueFamilyData->index, queueFamiliesData.presentQueueFamilyData->index};
+        QueueFamiliesData queueFamiliesData = engine.queueFamiliesData;
+        uint32_t queueFamilyIndices[]{queueFamiliesData.graphicsQueueFamilyData->index,
+                                      queueFamiliesData.presentQueueFamilyData->index};
 
         if (queueFamilyIndices[0] == queueFamilyIndices[1]) {
             // This option offers the best performance.
@@ -106,19 +109,19 @@ namespace renderer {
         swapchainCreateInfo.clipped = VK_TRUE;
         swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        checkResult(vkCreateSwapchainKHR(engine.vulkanData.device, &swapchainCreateInfo, nullptr, &swapchain));
+        checkResult(vkCreateSwapchainKHR(engine.device, &swapchainCreateInfo, nullptr, &swapchain));
         std::cout << "created swapchain" << std::endl;
 
         // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
         // in order to perform any rendering operations, create a VkImageView from a VkImage.
         uint32_t swapchainImagesCount;
-        vkGetSwapchainImagesKHR(engine.vulkanData.device, swapchain, &swapchainImagesCount, nullptr);
+        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, nullptr);
         swapchainImages.resize(swapchainImagesCount);
-        vkGetSwapchainImagesKHR(engine.vulkanData.device, swapchain, &swapchainImagesCount, swapchainImages.data());
+        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, swapchainImages.data());
     }
 
     Swapchain::~Swapchain() {
-        vkDestroySwapchainKHR(engine.vulkanData.device, swapchain, nullptr);
+        vkDestroySwapchainKHR(engine.device, swapchain, nullptr);
     }
 
 }

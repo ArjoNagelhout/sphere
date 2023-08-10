@@ -169,9 +169,9 @@ namespace renderer {
      */
     void Engine::pickPhysicalDevice(const std::vector<const char *> &requiredExtensions) {
         uint32_t physicalDeviceCount;
-        vkEnumeratePhysicalDevices(vulkanData.instance, &physicalDeviceCount, nullptr);
+        vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
         std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-        vkEnumeratePhysicalDevices(vulkanData.instance, &physicalDeviceCount, physicalDevices.data());
+        vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
 
         if (physicalDeviceCount == 0) {
             throw std::runtime_error("no device found with Vulkan support");
@@ -197,7 +197,7 @@ namespace renderer {
         std::string physicalDeviceErrorMessage{"Physical device does not support required extensions and features"};
         for (auto const &physicalDevice : physicalDevices) {
 
-            int score = getPhysicalDeviceScore(physicalDevice, vulkanData.surface, physicalDeviceErrorMessage, requiredExtensions);
+            int score = getPhysicalDeviceScore(physicalDevice, surface, physicalDeviceErrorMessage, requiredExtensions);
             if (score > 0 && score > bestScore) {
                 bestScore = score;
                 bestPhysicalDevice = physicalDevice;
@@ -208,16 +208,16 @@ namespace renderer {
             throw std::runtime_error(physicalDeviceErrorMessage);
         }
 
-        vulkanData.physicalDevice = bestPhysicalDevice;
+        physicalDevice = bestPhysicalDevice;
 
         // cache data
-        vulkanData.queueFamiliesData = getQueueFamiliesData(vulkanData.physicalDevice, vulkanData.surface);
-        vulkanData.surfaceData = getSurfaceData(vulkanData.physicalDevice, vulkanData.surface);
-        vulkanData.physicalDeviceData = getPhysicalDeviceData(vulkanData.physicalDevice);
+        queueFamiliesData = getQueueFamiliesData(physicalDevice, surface);
+        surfaceData = getSurfaceData(physicalDevice, surface);
+        physicalDeviceData = getPhysicalDeviceData(physicalDevice);
 
         // print picked device
         VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(vulkanData.physicalDevice, &properties);
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
         std::cout << "picked device: " << properties.deviceName << std::endl;
     }
 
@@ -267,8 +267,6 @@ namespace renderer {
         // first create a queue create info for each queue family
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
 
-        QueueFamiliesData &queueFamiliesData = vulkanData.queueFamiliesData;
-
         // uses a map so that no duplicate entries can exist.
         std::map<uint32_t, QueueFamilyData> queueFamilyDataMap = {
                 {queueFamiliesData.presentQueueFamilyData.value().index, queueFamiliesData.presentQueueFamilyData.value()},
@@ -289,7 +287,7 @@ namespace renderer {
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        std::vector<const char *> enabledDeviceExtensions = getEnabledDeviceExtensions(vulkanData.physicalDevice, requiredDeviceExtensions);
+        std::vector<const char *> enabledDeviceExtensions = getEnabledDeviceExtensions(physicalDevice, requiredDeviceExtensions);
 
         // print enabled device extensions
         for (const auto &enabledDeviceExtension : enabledDeviceExtensions) {
@@ -304,15 +302,15 @@ namespace renderer {
         deviceCreateInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
         // deviceCreateInfo.ppEnabledLayerNames and deviceCreateInfo.enabledLayerCount are deprecated. layers are now specified when creating the vulkan instance.
 
-        VkResult result = vkCreateDevice(vulkanData.physicalDevice,&deviceCreateInfo, nullptr, &vulkanData.device);
+        VkResult result = vkCreateDevice(physicalDevice,&deviceCreateInfo, nullptr, &device);
 
         if (result != VK_SUCCESS) {
             throw std::runtime_error(std::string("failed to create logical device: ") + string_VkResult(result));
         }
 
         // get the first queues of the queue families for now.
-        vkGetDeviceQueue(vulkanData.device, vulkanData.queueFamiliesData.graphicsQueueFamilyData->index, 0, &vulkanData.graphicsQueue);
-        vkGetDeviceQueue(vulkanData.device, vulkanData.queueFamiliesData.presentQueueFamilyData->index, 0, &vulkanData.presentQueue);
+        vkGetDeviceQueue(device, queueFamiliesData.graphicsQueueFamilyData->index, 0, &graphicsQueue);
+        vkGetDeviceQueue(device, queueFamiliesData.presentQueueFamilyData->index, 0, &presentQueue);
 
         std::cout << "created logical device" << std::endl;
     }

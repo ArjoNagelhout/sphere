@@ -108,12 +108,7 @@ namespace renderer {
         instanceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
         instanceCreateInfo.flags = flags;
 
-        VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &vulkanData.instance);
-
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error(std::string("failed to create instance: ") + string_VkResult(result));
-        }
-
+        checkResult(vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
         std::cout << "created instance" << std::endl;
     }
 }

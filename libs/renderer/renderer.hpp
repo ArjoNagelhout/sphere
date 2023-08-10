@@ -3,6 +3,8 @@
 
 #include "engine.hpp"
 #include "swapchain.hpp"
+#include "render_pass.hpp"
+#include "graphics_pipeline.hpp"
 
 namespace renderer {
 
@@ -23,6 +25,8 @@ namespace renderer {
 
     private:
         std::unique_ptr<Swapchain> swapchain;
+        std::unique_ptr<RenderPass> renderPass;
+        std::unique_ptr<GraphicsPipeline> graphicsPipeline;
     };
 }
 

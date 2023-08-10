@@ -16,12 +16,13 @@ namespace renderer {
     class RenderPass {
 
     public:
-        explicit RenderPass(Engine &engine, const VkFormat &format);
+        explicit RenderPass(const VkFormat &format);
         ~RenderPass();
+
+        VkRenderPass renderPass;
 
     private:
         Engine &engine;
-        VkRenderPass renderPass;
     };
 }
 
