@@ -114,10 +114,10 @@ namespace renderer {
 
         // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
         // in order to perform any rendering operations, create a VkImageView from a VkImage.
-        uint32_t swapchainImagesCount;
-        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, nullptr);
-        swapchainImages.resize(swapchainImagesCount);
-        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, swapchainImages.data());
+//        uint32_t swapchainImagesCount;
+//        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, nullptr);
+//        swapchainImages.resize(swapchainImagesCount);
+//        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, swapchainImages.data());
     }
 
     Swapchain::~Swapchain() {

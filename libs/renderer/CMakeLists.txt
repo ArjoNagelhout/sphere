@@ -18,6 +18,8 @@ set(SOURCES
 
         graphics_pipeline.hpp graphics_pipeline.cpp
 
+        memory_allocator.hpp memory_allocator.cpp
+
         renderer.hpp renderer.cpp
 
         )

@@ -37,14 +37,14 @@ namespace sphere {
         }
 
         // main loop
-//        void run() {
-//            GLFWwindow *glfwWindow = window->getWindow();
-//            while (!glfwWindowShouldClose(glfwWindow)) {
-//                glfwPollEvents();
-//                //updateCameraPosition();
-//                //renderer->update();
-//            }
-//        }
+        void run() {
+            GLFWwindow *glfwWindow = window->glfwWindow;
+            while (!glfwWindowShouldClose(glfwWindow)) {
+                glfwPollEvents();
+                //updateCameraPosition();
+                renderer->render();
+            }
+        }
 
     private:
         std::unique_ptr<renderer::Window> window;

@@ -10,15 +10,7 @@
 #include <string>
 #include <iostream>
 
-#include <utils.hpp>
-
-// the architectural design for the engine is to have a core with data that can be accessed by
-// certain abstractions, such as a Texture.
-
-// abstractions should emerge from usage and when there is too much code duplication.
-// we shouldn't make arbitrary boundaries between pieces of code, because this can make it
-// harder to rewrite into the right abstractions once they become evident.
-
+#include "utils.hpp"
 
 namespace renderer {
 
@@ -67,21 +59,6 @@ namespace renderer {
     struct PhysicalDeviceData {
         uint32_t minVertexInputBindingStrideAlignment;
         uint32_t maxVertexInputBindingStride;
-    };
-
-    /**
-     * Data required for each frame that is rendered to
-     */
-    struct VulkanFrameData {
-        VkImage swapchainImage;
-        VkImageView swapchainImageView;
-        VkFramebuffer swapchainFramebuffer;
-        VkFence fence;
-    };
-
-    struct VulkanFrameSemaphores {
-        VkSemaphore imageAcquiredSemaphore;
-        VkSemaphore renderFinishedSemaphore;
     };
 
     class Engine {

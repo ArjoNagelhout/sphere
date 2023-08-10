@@ -35,15 +35,16 @@ namespace renderer {
         explicit Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats);
         ~Swapchain();
 
+        VkSwapchainKHR swapchain;
         VkSurfaceFormatKHR surfaceFormat;
         VkExtent2D extent;
+        std::vector<VkFramebuffer> framebuffers;
 
     private:
         Engine &engine;
-        VkSwapchainKHR swapchain;
 
-        std::vector<VkImage> swapchainImages;
-        std::vector<VkImageView> swapchainImageViews;
+        std::vector<VkImage> images;
+        std::vector<VkImageView> imageViews;
     };
 }
 

@@ -33,14 +33,14 @@ namespace renderer {
         explicit GraphicsPipeline(Swapchain &swapchain, RenderPass &renderPass);
         ~GraphicsPipeline();
 
+        VkPipeline graphicsPipeline;
+        VkPipelineLayout graphicsPipelineLayout;
+        VkDescriptorSetLayout descriptorSetLayout;
+
     private:
         Engine &engine;
         Swapchain &swapchain;
         RenderPass &renderPass;
-
-        VkPipeline graphicsPipeline;
-        VkPipelineLayout graphicsPipelineLayout;
-        VkDescriptorSetLayout descriptorSetLayout;
 
         void createGraphicsPipeline();
         void destroyGraphicsPipeline();
