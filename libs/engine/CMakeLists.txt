@@ -15,7 +15,12 @@ set(SOURCES
         graphics_pipeline.h graphics_pipeline.cpp
         memory_allocator.h memory_allocator.cpp
         engine.h engine.cpp
-        camera.h camera.cpp)
+        camera.h camera.cpp
+
+        scene/scene.h
+        scene/mesh.h
+        scene/object.h
+        scene/material.h scene/material.cpp scene/mesh.cpp scene/object.cpp scene/scene.cpp)
 
 add_library(engine "${SOURCES}")
 

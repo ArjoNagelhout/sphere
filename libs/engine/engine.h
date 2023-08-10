@@ -7,6 +7,7 @@
 #include "graphics_pipeline.h"
 #include "memory_allocator.h"
 #include "camera.h"
+#include "scene/scene.h"
 
 namespace engine {
 
@@ -57,6 +58,7 @@ namespace engine {
         std::unique_ptr<GraphicsPipeline> graphicsPipeline;
         std::unique_ptr<MemoryAllocator> memoryAllocator;
         std::unique_ptr<Camera> camera;
+        std::unique_ptr<Scene> scene;
 
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t currentFrameIndex = 0;

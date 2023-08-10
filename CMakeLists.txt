@@ -50,7 +50,7 @@ if (APPLE)
         # Generate macOS icons file
         set(SPHERE_ICON_NAME icon.icns)
         set(SPHERE_ICON_SOURCE ${CMAKE_SOURCE_DIR}/data/icons/icon.png)
-        set(SPHERE_ICON_TARGET ${SPHERE_RESOURCES_DIR}/${SPHERE_ICON_NAME})
+        set(SPHERE_ICON_TARGET ${SPHERE_RESOURCES_DIR}/${SPHERE_ICON_NAME} libs/mesh.h)
 
         add_custom_command(OUTPUT ${SPHERE_ICON_TARGET}
                 COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/generate-icons.sh
