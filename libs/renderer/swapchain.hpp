@@ -40,11 +40,16 @@ namespace renderer {
         VkExtent2D extent;
         std::vector<VkFramebuffer> framebuffers;
 
+        void createFramebuffers(const VkRenderPass &renderPass);
+
     private:
         Engine &engine;
 
         std::vector<VkImage> images;
         std::vector<VkImageView> imageViews;
+
+        void createSwapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats);
+        void createImageViews();
     };
 }
 

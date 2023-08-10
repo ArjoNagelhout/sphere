@@ -77,6 +77,9 @@ namespace renderer {
 
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format);
+
+        swapchain->createFramebuffers(renderPass->renderPass);
+
         graphicsPipeline = std::make_unique<GraphicsPipeline>(*swapchain, *renderPass);
         memoryAllocator = std::make_unique<MemoryAllocator>();
 
@@ -116,6 +119,7 @@ namespace renderer {
 
     Renderer::~Renderer() {
         Engine &engine = getEngine();
+        vkDeviceWaitIdle(engine.device);
 
         for (auto const &frameData : frames) {
             frameData.destroy();

@@ -57,6 +57,23 @@ namespace renderer {
     }
 
     Swapchain::Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) : engine(getEngine()) {
+        createSwapchain(preferredSurfaceFormats);
+        createImageViews();
+    }
+
+    Swapchain::~Swapchain() {
+        for (auto const &framebuffer: framebuffers) {
+            vkDestroyFramebuffer(engine.device, framebuffer, nullptr);
+        }
+
+        for (auto const &imageView: imageViews) {
+            vkDestroyImageView(engine.device, imageView, nullptr);
+        }
+
+        vkDestroySwapchainKHR(engine.device, swapchain, nullptr);
+    }
+
+    void Swapchain::createSwapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) {
         SurfaceData surfaceData = engine.surfaceData;
         surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
         extent = pickSwapchainExtent(engine.configuration.window, surfaceData.surfaceCapabilities);
@@ -114,14 +131,60 @@ namespace renderer {
 
         // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
         // in order to perform any rendering operations, create a VkImageView from a VkImage.
-//        uint32_t swapchainImagesCount;
-//        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, nullptr);
-//        swapchainImages.resize(swapchainImagesCount);
-//        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, swapchainImages.data());
+        uint32_t swapchainImagesCount;
+        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, nullptr);
+        images.resize(swapchainImagesCount);
+        vkGetSwapchainImagesKHR(engine.device, swapchain, &swapchainImagesCount, images.data());
     }
 
-    Swapchain::~Swapchain() {
-        vkDestroySwapchainKHR(engine.device, swapchain, nullptr);
+    void Swapchain::createImageViews() {
+        imageViews.resize(images.size());
+
+        for (size_t i = 0; i < images.size(); i++) {
+
+            VkImageViewCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            createInfo.image = images[i];
+            createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            createInfo.format = surfaceFormat.format;
+            createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            createInfo.subresourceRange.baseMipLevel = 0;
+            createInfo.subresourceRange.levelCount = 1;
+            createInfo.subresourceRange.baseArrayLayer = 0;
+            createInfo.subresourceRange.layerCount = 1;
+
+            // If you were working on a stereographic 3D application, then you would create a swap chain
+            // with multiple layers. You could then create multiple image views for each image representing
+            // the views for the left and right eyes by accessing different layers.
+
+            checkResult(vkCreateImageView(engine.device, &createInfo, nullptr, &imageViews[i]));
+        }
+
     }
 
+    void Swapchain::createFramebuffers(const VkRenderPass &renderPass) {
+        framebuffers.resize(images.size());
+
+        for (size_t i = 0; i < imageViews.size(); i++) {
+            std::vector<VkImageView> attachments{
+                    imageViews[i]
+            };
+
+            VkFramebufferCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            createInfo.renderPass = renderPass;
+            createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            createInfo.pAttachments = attachments.data();
+            createInfo.width = extent.width;
+            createInfo.height = extent.height;
+            createInfo.layers = 1;
+
+            checkResult(vkCreateFramebuffer(engine.device, &createInfo, nullptr, &framebuffers[i]));
+        }
+        std::cout << "created frame buffers" << std::endl;
+    }
 }
