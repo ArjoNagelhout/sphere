@@ -68,18 +68,18 @@ add_executable(sphere
         ${SPHERE_SHADERS_TARGET}
         ${SPHERE_ICD_TARGET}
         src/main.cpp
-        src/application.hpp
-        src/commands/undo_stack.hpp
-        src/commands/command.hpp
-        src/scene.hpp
-        src/node.hpp
-        src/commands/add_nodes_command.hpp
-        src/selection.hpp
-        src/commands/select_nodes_command.hpp
-        src/commands/transform_nodes_command.hpp
-        src/commands/remove_nodes_command.hpp)
+        src/application.h
+        src/commands/undo_stack.h
+        src/commands/command.h
+        src/scene.h
+        src/node.h
+        src/commands/add_nodes_command.h
+        src/selection.h
+        src/commands/select_nodes_command.h
+        src/commands/transform_nodes_command.h
+        src/commands/remove_nodes_command.h)
 
-target_link_libraries(sphere PUBLIC renderer)
+target_link_libraries(sphere PUBLIC engine)
 
 add_subdirectory(external)
 add_subdirectory(libs)
