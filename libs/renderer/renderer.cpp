@@ -20,7 +20,7 @@ namespace renderer {
         std::cout << "created frame data" << std::endl;
     }
 
-    void FrameData::destroy() {
+    void FrameData::destroy() const {
         Engine &engine = getEngine();
 
         vkDestroySemaphore(engine.device, imageAvailableSemaphore, nullptr);

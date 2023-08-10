@@ -35,7 +35,7 @@ namespace renderer {
         VkSemaphore renderFinishedSemaphore;
 
         void initialize();
-        void destroy();
+        void destroy() const;
         void updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const;
     };
 
