@@ -1,5 +1,5 @@
-#ifndef SPHERE_ENGINE_HPP
-#define SPHERE_ENGINE_HPP
+#ifndef SPHERE_ENGINE_H
+#define SPHERE_ENGINE_H
 
 #define GLFW_INCLUDE_VULKAN
 #define VK_ENABLE_BETA_EXTENSIONS
@@ -10,7 +10,7 @@
 #include <string>
 #include <iostream>
 
-#include "utils.hpp"
+#include "utils.h"
 
 namespace renderer {
 
@@ -100,4 +100,4 @@ namespace renderer {
     Engine &getEngine();
 }
 
-#endif //SPHERE_ENGINE_HPP
+#endif //SPHERE_ENGINE_H

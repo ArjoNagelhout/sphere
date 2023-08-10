@@ -1,7 +1,7 @@
-#ifndef SPHERE_MEMORY_ALLOCATOR_HPP
-#define SPHERE_MEMORY_ALLOCATOR_HPP
+#ifndef SPHERE_MEMORY_ALLOCATOR_H
+#define SPHERE_MEMORY_ALLOCATOR_H
 
-#include "engine.hpp"
+#include "engine.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnullability-completeness"
@@ -87,4 +87,4 @@ namespace renderer {
     };
 }
 
-#endif //SPHERE_MEMORY_ALLOCATOR_HPP
+#endif //SPHERE_MEMORY_ALLOCATOR_H

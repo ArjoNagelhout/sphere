@@ -1,26 +1,26 @@
 set(SOURCES
-        window.hpp window.cpp
+        window.h window.cpp
 
-        types.hpp
+        types.h
 
-        utils.hpp utils.cpp
+        utils.h utils.cpp
 
-        engine.hpp
+        engine.h
         engine.cpp
         engine_instance.cpp
         engine_debug.cpp
         engine_device.cpp
         engine_surface.cpp
 
-        swapchain.hpp swapchain.cpp
+        swapchain.h swapchain.cpp
 
-        render_pass.hpp render_pass.cpp
+        render_pass.h render_pass.cpp
 
-        graphics_pipeline.hpp graphics_pipeline.cpp
+        graphics_pipeline.h graphics_pipeline.cpp
 
-        memory_allocator.hpp memory_allocator.cpp
+        memory_allocator.h memory_allocator.cpp
 
-        renderer.hpp renderer.cpp
+        renderer.h renderer.cpp
 
         )
 

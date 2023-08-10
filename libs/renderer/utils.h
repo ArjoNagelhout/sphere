@@ -1,5 +1,5 @@
-#ifndef SPHERE_UTILS_HPP
-#define SPHERE_UTILS_HPP
+#ifndef SPHERE_UTILS_H
+#define SPHERE_UTILS_H
 
 #include <vulkan/vulkan.h>
 
@@ -20,4 +20,4 @@ namespace renderer {
     void checkResult(VkResult result);
 }
 
-#endif //SPHERE_UTILS_HPP
+#endif //SPHERE_UTILS_H

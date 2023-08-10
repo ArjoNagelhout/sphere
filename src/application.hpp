@@ -1,9 +1,9 @@
 #ifndef SPHERE_APPLICATION_HPP
 #define SPHERE_APPLICATION_HPP
 
-#include <window.hpp>
-#include <engine.hpp>
-#include <renderer.hpp>
+#include <window.h>
+#include <engine.h>
+#include <renderer.h>
 
 #include <unordered_map>
 

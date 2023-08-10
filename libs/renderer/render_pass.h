@@ -1,7 +1,7 @@
-#ifndef SPHERE_RENDER_PASS_HPP
-#define SPHERE_RENDER_PASS_HPP
+#ifndef SPHERE_RENDER_PASS_H
+#define SPHERE_RENDER_PASS_H
 
-#include "engine.hpp"
+#include "engine.h"
 
 namespace renderer {
 
@@ -26,4 +26,4 @@ namespace renderer {
     };
 }
 
-#endif //SPHERE_RENDER_PASS_HPP
+#endif //SPHERE_RENDER_PASS_H

@@ -1,4 +1,4 @@
-#include "render_pass.hpp"
+#include "render_pass.h"
 
 namespace renderer {
 

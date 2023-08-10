@@ -1,4 +1,4 @@
-#include "utils.hpp"
+#include "utils.h"
 
 #include <vulkan/vk_enum_string_helper.h>
 

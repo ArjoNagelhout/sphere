@@ -1,5 +1,5 @@
 #define VMA_IMPLEMENTATION
-#include "memory_allocator.hpp"
+#include "memory_allocator.h"
 
 namespace renderer {
 

@@ -1,10 +1,10 @@
-#ifndef SPHERE_GRAPHICS_PIPELINE_HPP
-#define SPHERE_GRAPHICS_PIPELINE_HPP
+#ifndef SPHERE_GRAPHICS_PIPELINE_H
+#define SPHERE_GRAPHICS_PIPELINE_H
 
-#include "engine.hpp"
-#include "swapchain.hpp"
-#include "render_pass.hpp"
-#include "types.hpp"
+#include "engine.h"
+#include "swapchain.h"
+#include "render_pass.h"
+#include "types.h"
 
 namespace renderer {
 
@@ -49,4 +49,4 @@ namespace renderer {
 
 }
 
-#endif //SPHERE_GRAPHICS_PIPELINE_HPP
+#endif //SPHERE_GRAPHICS_PIPELINE_H

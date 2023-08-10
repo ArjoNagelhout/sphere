@@ -1,7 +1,7 @@
-#ifndef SPHERE_SWAPCHAIN_HPP
-#define SPHERE_SWAPCHAIN_HPP
+#ifndef SPHERE_SWAPCHAIN_H
+#define SPHERE_SWAPCHAIN_H
 
-#include "engine.hpp"
+#include "engine.h"
 
 namespace renderer {
 
@@ -53,4 +53,4 @@ namespace renderer {
     };
 }
 
-#endif //SPHERE_SWAPCHAIN_HPP
+#endif //SPHERE_SWAPCHAIN_H

@@ -1,11 +1,11 @@
-#ifndef SPHERE_RENDERER_HPP
-#define SPHERE_RENDERER_HPP
+#ifndef SPHERE_RENDERER_H
+#define SPHERE_RENDERER_H
 
-#include "engine.hpp"
-#include "swapchain.hpp"
-#include "render_pass.hpp"
-#include "graphics_pipeline.hpp"
-#include "memory_allocator.hpp"
+#include "engine.h"
+#include "swapchain.h"
+#include "render_pass.h"
+#include "graphics_pipeline.h"
+#include "memory_allocator.h"
 
 namespace renderer {
 
@@ -90,4 +90,4 @@ namespace renderer {
     };
 }
 
-#endif //SPHERE_RENDERER_HPP
+#endif //SPHERE_RENDERER_H

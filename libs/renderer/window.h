@@ -1,5 +1,5 @@
-#ifndef SPHERE_WINDOW_HPP
-#define SPHERE_WINDOW_HPP
+#ifndef SPHERE_WINDOW_H
+#define SPHERE_WINDOW_H
 
 #define GLFW_INCLUDE_VULKAN
 #define VK_ENABLE_BETA_EXTENSIONS
@@ -23,4 +23,4 @@ namespace renderer {
     };
 }
 
-#endif //SPHERE_WINDOW_HPP
+#endif //SPHERE_WINDOW_H

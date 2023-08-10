@@ -5,8 +5,8 @@
 #include <vulkan/vk_enum_string_helper.h>
 
 #include <device.hpp>
-#include <swapchain.hpp>
-#include <render_pass.hpp>
+#include <swapchain.h>
+#include <render_pass.h>
 #include "old/vertex_data.hpp"
 
 #include <fstream>

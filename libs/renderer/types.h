@@ -1,5 +1,5 @@
-#ifndef SPHERE_TYPES_HPP
-#define SPHERE_TYPES_HPP
+#ifndef SPHERE_TYPES_H
+#define SPHERE_TYPES_H
 
 #include <glm/glm.hpp>
 
@@ -10,4 +10,4 @@ namespace renderer {
     };
 }
 
-#endif //SPHERE_TYPES_HPP
+#endif //SPHERE_TYPES_H

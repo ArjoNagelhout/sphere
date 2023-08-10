@@ -1,9 +1,9 @@
 #ifndef SPHERE_RENDERER_HPP
 #define SPHERE_RENDERER_HPP
 
-#include "engine.hpp"
+#include "engine.h"
 #include "device.hpp"
-#include "swapchain.hpp"
+#include "swapchain.h"
 #include "graphics_pipeline.hpp"
 #include "old/memory_allocator.hpp"
 #include "vertex_data.hpp"
