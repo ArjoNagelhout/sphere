@@ -6,7 +6,7 @@ set(SOURCES
         engine.cpp
         engine_instance.cpp
         engine_debug.cpp
-        engine_device.cpp engine_surface.cpp)
+        engine_device.cpp engine_surface.cpp window.cpp render_pass.cpp swapchain.cpp swapchain.hpp renderer.hpp renderer.cpp)
 
 add_library(renderer "${SOURCES}")
 

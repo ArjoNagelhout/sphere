@@ -262,7 +262,7 @@ namespace renderer {
      * Creates a logical device based on the chosen physical device.
      * This is the end of the responsibilities of the device class.
      */
-    void Engine::createLogicalDevice(const std::vector<const char *> &requiredExtensions) {
+    void Engine::createDevice(const std::vector<const char *> &requiredExtensions) {
 
         // first create a queue create info for each queue family
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};

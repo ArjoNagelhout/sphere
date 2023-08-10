@@ -12,7 +12,18 @@
 
 #include <utils.hpp>
 
+// the architectural design for the engine is to have a core with data that can be accessed by
+// certain abstractions, such as a Texture.
+
+// abstractions should emerge from usage and when there is too much code duplication.
+// we shouldn't make arbitrary boundaries between pieces of code, because this can make it
+// harder to rewrite into the right abstractions once they become evident.
+
+
 namespace renderer {
+
+    const std::string ENGINE_NAME = "Sphere";
+    const uint32_t ENGINE_VERSION = VK_MAKE_VERSION(1, 0, 0);
 
     struct VulkanConfiguration {
         GLFWwindow *window;
@@ -58,6 +69,9 @@ namespace renderer {
         uint32_t maxVertexInputBindingStride;
     };
 
+    /*
+     * Common storage for all vulkan objects
+     */
     struct VulkanData {
         VkInstance instance;
         VkDebugUtilsMessengerEXT debugMessenger;
@@ -69,8 +83,6 @@ namespace renderer {
         VkQueue graphicsQueue;
         VkQueue presentQueue;
         VkSurfaceKHR surface;
-        VkSwapchainKHR swapchain;
-        VkSurfaceFormatKHR surfaceFormat;
     };
 
     /**
@@ -94,13 +106,9 @@ namespace renderer {
         explicit Engine(const VulkanConfiguration &configuration);
         ~Engine();
 
-        const VulkanData &getVulkanData() {
-            return vulkanData;
-        }
-
-    private:
         const VulkanConfiguration &configuration;
         VulkanData vulkanData;
+    private:
 
         const std::vector<const char *> requiredDeviceExtensions{
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -111,7 +119,7 @@ namespace renderer {
         void destroyDebugMessenger();
         void createSurface();
         void pickPhysicalDevice(const std::vector<const char *> &requiredExtensions);
-        void createLogicalDevice(const std::vector<const char *> &requiredExtensions);
+        void createDevice(const std::vector<const char *> &requiredExtensions);
     };
 
     void initializeEngine(const VulkanConfiguration &configuration);

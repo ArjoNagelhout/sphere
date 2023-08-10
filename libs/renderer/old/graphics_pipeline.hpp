@@ -7,7 +7,7 @@
 #include <device.hpp>
 #include <swapchain.hpp>
 #include <render_pass.hpp>
-#include "vertex_data.hpp"
+#include "old/vertex_data.hpp"
 
 #include <fstream>
 #include <stdexcept>

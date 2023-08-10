@@ -23,7 +23,7 @@ namespace renderer {
         createDebugMessenger();
         createSurface();
         pickPhysicalDevice(requiredDeviceExtensions);
-        createLogicalDevice(requiredDeviceExtensions);
+        createDevice(requiredDeviceExtensions);
     }
 
     Engine::~Engine() {
@@ -47,10 +47,5 @@ namespace renderer {
     Engine &getEngine() {
         assert((engine) && "Engine should be initialized before calling this function, did you call initializeEngine()?");
         return *engine;
-    }
-
-    const VulkanData &getVulkanData() {
-        Engine &engine = getEngine();
-        return engine.getVulkanData();
     }
 }

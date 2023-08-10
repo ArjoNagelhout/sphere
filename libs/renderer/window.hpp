@@ -14,32 +14,12 @@ namespace renderer {
 
     public:
         explicit Window(std::string title,
-               uint32_t width,
-               uint32_t height,
-               uint32_t minWidth = GLFW_DONT_CARE,
-               uint32_t minHeight = GLFW_DONT_CARE) {
-
-            // create window
-            glfwInit();
-            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-            glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-            window = glfwCreateWindow(width, height, title.data(), nullptr, nullptr);
-            glfwSetWindowSizeLimits(window, minWidth, minHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
-
-            std::cout << "created window" << std::endl;
-        }
-
-        ~Window() {
-            glfwDestroyWindow(window);
-            glfwTerminate();
-        }
-
-        GLFWwindow *getWindow() {
-            return window;
-        }
-
-    private:
-        GLFWwindow *window;
+                        int width,
+                        int height,
+                        int minWidth = GLFW_DONT_CARE,
+                        int minHeight = GLFW_DONT_CARE);
+        ~Window();
+        GLFWwindow *glfwWindow;
     };
 }
 

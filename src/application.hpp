@@ -3,8 +3,7 @@
 
 #include <window.hpp>
 #include <engine.hpp>
-
-//#include "scene.hpp"
+#include <renderer.hpp>
 
 #include <unordered_map>
 
@@ -16,25 +15,25 @@ namespace sphere {
 
     public:
 
-        Application(const std::string &applicationName) {
+        explicit Application(const std::string &applicationName) {
 
             window = std::make_unique<renderer::Window>(applicationName, 1000, 600, 200, 100);
 
-            renderer::VulkanConfiguration configuration{
-                .engineName = "Test",
+            renderer::RendererConfiguration configuration{
+                .window = window->glfwWindow,
                 .debug = true,
-                .window = window->getWindow()
+                .applicationName = "Sphere",
+                .applicationVersion = VK_MAKE_VERSION(1, 0, 0)
             };
-            renderer::initializeEngine(configuration);
 
-            //GLFWwindow *glfwWindow = window->getWindow();
+            renderer = std::make_unique<renderer::Renderer>(configuration);
+
             //glfwSetWindowUserPointer(glfwWindow, this);
             //glfwSetKeyCallback(glfwWindow, keyCallback);
         }
 
         ~Application() {
 
-            renderer::destroyEngine();
         }
 
         // main loop
@@ -49,6 +48,7 @@ namespace sphere {
 
     private:
         std::unique_ptr<renderer::Window> window;
+        std::unique_ptr<renderer::Renderer> renderer;
 
         //bool keys[GLFW_KEY_LAST];
 
