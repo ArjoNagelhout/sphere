@@ -52,12 +52,13 @@ namespace engine {
 
         void render();
 
+        std::unique_ptr<Camera> camera;
+
     private:
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<RenderPass> renderPass;
         std::unique_ptr<GraphicsPipeline> graphicsPipeline;
         std::unique_ptr<MemoryAllocator> memoryAllocator;
-        std::unique_ptr<Camera> camera;
         std::unique_ptr<Scene> scene;
 
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;

@@ -154,17 +154,21 @@ namespace engine {
         multisampleState.alphaToCoverageEnable = VK_FALSE;
         multisampleState.alphaToOneEnable = VK_FALSE;
 
-        //VkPipelineDepthStencilStateCreateInfo depthStencilState{};
-        //depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        //depthStencilState.depthTestEnable
-        //depthStencilState.depthWriteEnable
-        //depthStencilState.depthCompareOp
-        //depthStencilState.depthBoundsTestEnable
-        //depthStencilState.stencilTestEnable
-        //depthStencilState.front
-        //depthStencilState.back
-        //depthStencilState.minDepthBounds
-        //depthStencilState.maxDepthBounds
+//        VkStencilOpState frontState{
+//            .failOp
+//        };
+
+        VkPipelineDepthStencilStateCreateInfo depthStencilState{};
+        depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilState.depthTestEnable = VK_TRUE;
+        depthStencilState.depthWriteEnable = VK_TRUE;
+        depthStencilState.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
+        depthStencilState.depthBoundsTestEnable = VK_TRUE;
+        depthStencilState.stencilTestEnable = VK_FALSE;
+        depthStencilState.front = {};
+        depthStencilState.back = {};
+        depthStencilState.minDepthBounds = 0.0f;
+        depthStencilState.maxDepthBounds = 1000.0f;
 
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.blendEnable = VK_TRUE;
@@ -236,7 +240,7 @@ namespace engine {
         createInfo.pViewportState = &viewportState;
         createInfo.pRasterizationState = &rasterizationState;
         createInfo.pMultisampleState = &multisampleState;
-        createInfo.pDepthStencilState = nullptr; //&depthStencilState;
+        createInfo.pDepthStencilState = &depthStencilState;
         createInfo.pColorBlendState = &colorBlendState;
         createInfo.pDynamicState = &dynamicState;
         createInfo.layout = graphicsPipelineLayout;

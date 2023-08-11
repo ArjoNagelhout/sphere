@@ -28,20 +28,18 @@ namespace sphere {
 
             engine = std::make_unique<engine::Engine>(configuration);
 
-            //glfwSetWindowUserPointer(glfwWindow, this);
-            //glfwSetKeyCallback(glfwWindow, keyCallback);
+            glfwSetWindowUserPointer(window->glfwWindow, this);
+            glfwSetKeyCallback(window->glfwWindow, keyCallback);
         }
 
-        ~Application() {
-
-        }
+        ~Application() = default;
 
         // main loop
         void run() {
             GLFWwindow *glfwWindow = window->glfwWindow;
             while (!glfwWindowShouldClose(glfwWindow)) {
                 glfwPollEvents();
-                //updateCameraPosition();
+                updateCameraPosition();
                 engine->render();
             }
         }
@@ -50,36 +48,36 @@ namespace sphere {
         std::unique_ptr<engine::Window> window;
         std::unique_ptr<engine::Engine> engine;
 
-        //bool keys[GLFW_KEY_LAST];
+        bool keys[GLFW_KEY_LAST+1];
 
-//        void updateCameraPosition() {
-//            glm::vec3 &cameraPosition = renderer->cameraPosition;
-//
-//            int forward = (int)keys[GLFW_KEY_W] - (int)keys[GLFW_KEY_S];
-//            int right = (int)keys[GLFW_KEY_D] - (int)keys[GLFW_KEY_A];
-//            int up = (int)keys[GLFW_KEY_E] - (int)keys[GLFW_KEY_Q];
-//
-//            cameraPosition.x += right;
-//            cameraPosition.y += up;
-//            cameraPosition.z += forward;
-//        }
+        void updateCameraPosition() {
+            glm::vec3 &cameraPosition = engine->camera->position;
 
-//        static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-//            Application *application = static_cast<Application*>(glfwGetWindowUserPointer(window));
-//
-//            // ensure it is a key
-//            if (key < 0 || key > GLFW_KEY_LAST) {
-//                return;
-//            }
-//
-//            bool &isPressed = application->keys[key];
-//
-//            if (action == GLFW_PRESS) {
-//                isPressed = true;
-//            } else if (action == GLFW_RELEASE) {
-//                isPressed = false;
-//            }
-//        }
+            int forward = (int)keys[GLFW_KEY_W] - (int)keys[GLFW_KEY_S];
+            int right = (int)keys[GLFW_KEY_D] - (int)keys[GLFW_KEY_A];
+            int up = (int)keys[GLFW_KEY_E] - (int)keys[GLFW_KEY_Q];
+
+            cameraPosition.x += (float)right;
+            cameraPosition.y += (float)up;
+            cameraPosition.z += (float)forward;
+        }
+
+        static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+            Application *application = static_cast<Application*>(glfwGetWindowUserPointer(window));
+
+            // ensure it is a key
+            if (key < 0 || key > GLFW_KEY_LAST) {
+                return;
+            }
+
+            bool &isPressed = application->keys[key];
+
+            if (action == GLFW_PRESS) {
+                isPressed = true;
+            } else if (action == GLFW_RELEASE) {
+                isPressed = false;
+            }
+        }
     };
 }
 

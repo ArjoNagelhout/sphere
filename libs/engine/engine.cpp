@@ -207,7 +207,6 @@ namespace engine {
     }
 
     void Engine::render() {
-        camera->position = glm::vec3(10, 3, 3);
         camera->updateCameraData();
         drawFrame(frames[currentFrameIndex]);
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
