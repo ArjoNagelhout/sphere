@@ -1,7 +1,8 @@
 #ifndef SPHERE_SWAPCHAIN_H
 #define SPHERE_SWAPCHAIN_H
 
-#include "core/vulkan_context.h"
+#include <vulkan/vulkan.h>
+#include <vector>
 
 namespace engine {
 
@@ -43,8 +44,6 @@ namespace engine {
         void createFramebuffers(const VkRenderPass &renderPass);
 
     private:
-        VulkanContext &context;
-
         std::vector<VkImage> images;
         std::vector<VkImageView> imageViews;
 

@@ -5,9 +5,9 @@
 
 namespace engine {
 
-    void FrameData::initialize() {
-        VulkanContext &context = getContext();
+    Engine *engine;
 
+    void FrameData::initialize() {
         // create synchronization primitives
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
         semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -16,26 +16,22 @@ namespace engine {
         fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        checkResult(vkCreateSemaphore(context.device, &semaphoreCreateInfo, nullptr, &imageAvailableSemaphore));
-        checkResult(vkCreateSemaphore(context.device, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphore));
-        checkResult(vkCreateFence(context.device, &fenceCreateInfo, nullptr, &inFlightFence));
+        checkResult(vkCreateSemaphore(engine->device, &semaphoreCreateInfo, nullptr, &imageAvailableSemaphore));
+        checkResult(vkCreateSemaphore(engine->device, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphore));
+        checkResult(vkCreateFence(engine->device, &fenceCreateInfo, nullptr, &inFlightFence));
 
         std::cout << "created frame data" << std::endl;
     }
 
     void FrameData::destroy() const {
-        VulkanContext &context = getContext();
-
-        vkDestroySemaphore(context.device, imageAvailableSemaphore, nullptr);
-        vkDestroySemaphore(context.device, renderFinishedSemaphore, nullptr);
-        vkDestroyFence(context.device, inFlightFence, nullptr);
+        vkDestroySemaphore(engine->device, imageAvailableSemaphore, nullptr);
+        vkDestroySemaphore(engine->device, renderFinishedSemaphore, nullptr);
+        vkDestroyFence(engine->device, inFlightFence, nullptr);
 
         std::cout << "destroyed frame data" << std::endl;
     }
 
     void FrameData::updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const {
-        VulkanContext &context = getContext();
-
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = buffer;
         bufferInfo.offset = 0;
@@ -53,104 +49,118 @@ namespace engine {
         writeDescriptorSet.pBufferInfo = &bufferInfo;
         writeDescriptorSet.pTexelBufferView = nullptr;
 
-        vkUpdateDescriptorSets(context.device, 1, &writeDescriptorSet, 0, nullptr);
+        vkUpdateDescriptorSets(engine->device, 1, &writeDescriptorSet, 0, nullptr);
     }
 
     /*
      * Todo: refactor
      */
-    static void loadObj(const std::string &filePath,
-                    std::vector<VertexAttributes> &vertices,
-                    std::vector<uint32_t> &indices) {
+    static void loadObj(const std::string &filePath, std::vector<VertexAttributes> &vertices, std::vector<uint32_t> &indices) {
 
-    vertices.clear();
-    indices.clear();
+        vertices.clear();
+        indices.clear();
 
-    tinyobj::ObjReaderConfig config;
-    //config.mtl_search_path = "./";
+        tinyobj::ObjReaderConfig config;
+        //config.mtl_search_path = "./";
 
-    tinyobj::ObjReader reader;
+        tinyobj::ObjReader reader;
 
-    if (!reader.ParseFromFile(filePath, config)) {
-        if (!reader.Error().empty()) {
-            throw std::runtime_error(
-                    std::string("tiny obj reader failed to read from file: ") + reader.Error());
+        if (!reader.ParseFromFile(filePath, config)) {
+            if (!reader.Error().empty()) {
+                throw std::runtime_error(
+                        std::string("tiny obj reader failed to read from file: ") + reader.Error());
+            }
         }
-    }
 
-    if (!reader.Warning().empty()) {
-        std::cout << "tiny obj reader warning: " << reader.Warning() << std::endl;
-    }
-
-    auto &attributes = reader.GetAttrib();
-    auto &shapes = reader.GetShapes();
-    //auto &materials = reader.GetMaterials();
-
-    for (size_t v = 0; v < attributes.vertices.size(); v += 3) {
-
-        VertexAttributes vertexData{{
-                                      attributes.vertices[v + 0],
-                                      attributes.vertices[v + 1],
-                                      attributes.vertices[v + 2]
-                              }};
-        vertices.push_back(vertexData);
-    }
-
-    for (size_t s = 0; s < shapes.size(); s++) {
-        const std::vector<tinyobj::index_t> &sourceIndices = shapes[s].mesh.indices;
-
-        for (size_t i = 0; i < sourceIndices.size(); i++) {
-            const tinyobj::index_t &index = sourceIndices[i];
-            indices.push_back(index.vertex_index);
+        if (!reader.Warning().empty()) {
+            std::cout << "tiny obj reader warning: " << reader.Warning() << std::endl;
         }
+
+        auto &attributes = reader.GetAttrib();
+        auto &shapes = reader.GetShapes();
+        //auto &materials = reader.GetMaterials();
+
+        for (size_t v = 0; v < attributes.vertices.size(); v += 3) {
+
+            VertexAttributes vertexData{{
+                                          attributes.vertices[v + 0],
+                                          attributes.vertices[v + 1],
+                                          attributes.vertices[v + 2]
+                                  }};
+            vertices.push_back(vertexData);
+        }
+
+        for (size_t s = 0; s < shapes.size(); s++) {
+            const std::vector<tinyobj::index_t> &sourceIndices = shapes[s].mesh.indices;
+
+            for (size_t i = 0; i < sourceIndices.size(); i++) {
+                const tinyobj::index_t &index = sourceIndices[i];
+                indices.push_back(index.vertex_index);
+            }
+        }
+
+        std::cout << "loaded 3d model at: " << filePath << std::endl;
+
+    //            for (size_t s = 0; s < shapes.size(); s++) {
+    //
+    //                size_t index_offset = 0;
+    //                for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+    //                    size_t vertices = size_t(shapes[s].mesh.num_face_vertices[f]);
+    //
+    //                    for (size_t v = 0; v < vertices; v++) {
+    //                        tinyobj::index_t index = shapes[s].mesh.indices[index_offset + v];
+    //                        size_t a = 3*size_t(index.vertex_index);
+    //                        tinyobj::real_t x = attributes.vertices[a+0];
+    //                        tinyobj::real_t y = attributes.vertices[a+1];
+    //                        tinyobj::real_t z = attributes.vertices[a+2];
+    //                    }
+    //                }
+    //            }
     }
 
-    std::cout << "loaded 3d model at: " << filePath << std::endl;
+    Engine::Engine(EngineConfiguration &engineConfiguration) {
 
-//            for (size_t s = 0; s < shapes.size(); s++) {
-//
-//                size_t index_offset = 0;
-//                for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-//                    size_t vertices = size_t(shapes[s].mesh.num_face_vertices[f]);
-//
-//                    for (size_t v = 0; v < vertices; v++) {
-//                        tinyobj::index_t index = shapes[s].mesh.indices[index_offset + v];
-//                        size_t a = 3*size_t(index.vertex_index);
-//                        tinyobj::real_t x = attributes.vertices[a+0];
-//                        tinyobj::real_t y = attributes.vertices[a+1];
-//                        tinyobj::real_t z = attributes.vertices[a+2];
-//                    }
-//                }
-//            }
-    }
-
-    Engine::Engine(EngineConfiguration &configuration) {
+        assert((engine == nullptr) && "Only one engine can exist at one time");
+        engine = this;
 
         std::cout << "created engine" << std::endl;
 
-        VulkanConfiguration vulkanConfiguration{
-                .window = configuration.window,
+        configuration = {
+                .window = engineConfiguration.window,
 
                 .engineName = ENGINE_NAME,
-                .applicationName = configuration.applicationName,
+                .applicationName = engineConfiguration.applicationName,
                 .engineVersion = ENGINE_VERSION,
-                .applicationVersion = configuration.applicationVersion,
+                .applicationVersion = engineConfiguration.applicationVersion,
 
-                .debug = configuration.debug,
+                .debug = engineConfiguration.debug,
 
                 .preferredSurfaceFormats = {},
                 .requiredInstanceExtensions = {},
                 .requiredInstanceLayers = {},
-                .requiredDeviceExtensions = {}
+                .requiredDeviceExtensions = {},
         };
 
-        initializeContext(vulkanConfiguration);
+        std::vector<const char *> allRequiredInstanceExtensions{configuration.requiredInstanceExtensions.begin(), configuration.requiredInstanceExtensions.end()};
+        std::vector<const char *> allRequiredInstanceLayers{configuration.requiredInstanceLayers.begin(), configuration.requiredInstanceLayers.end()};
+
+        if (configuration.debug) {
+            allRequiredInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            allRequiredInstanceLayers.push_back("VK_LAYER_KHRONOS_validation");
+        }
+
+        createInstance(allRequiredInstanceExtensions, allRequiredInstanceLayers);
+        createDebugMessenger();
+        createSurface();
+        pickPhysicalDevice(requiredDeviceExtensions);
+        createDevice(requiredDeviceExtensions);
+
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format);
         swapchain->createFramebuffers(renderPass->renderPass);
         graphicsPipeline = std::make_unique<GraphicsPipeline>(*swapchain, *renderPass);
-        memoryAllocator = std::make_unique<MemoryAllocator>();
-        camera = std::make_unique<Camera>(*memoryAllocator, *swapchain);
+        allocator = std::make_unique<MemoryAllocator>();
+        camera = std::make_unique<Camera>(*allocator, *swapchain);
 
         createCommandPool();
         createDescriptorPool(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -173,35 +183,36 @@ namespace engine {
                 vertices,
                 indices);
 
-        memoryAllocator->createBuffer<VertexAttributes>(vertexBuffer,
-                                                         vertexBufferAllocation,
-                                                         *vertices.data(),
+        allocator->createBuffer<VertexAttributes>(vertexBuffer,
+                                                  vertexBufferAllocation,
+                                                  *vertices.data(),
                                                          vertices.size() * sizeof(vertices[0]),
-                                                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        memoryAllocator->createBuffer<uint32_t>(indexBuffer,
-                                                indexBufferAllocation,
-                                                *indices.data(),
+                                                  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        allocator->createBuffer<uint32_t>(indexBuffer,
+                                          indexBufferAllocation,
+                                          *indices.data(),
                                                 indices.size() * sizeof(indices[0]),
-                                                VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+                                          VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     }
 
     Engine::~Engine() {
-        VulkanContext &context = getContext();
-        vkDeviceWaitIdle(context.device);
+        vkDeviceWaitIdle(device);
 
         for (auto const &frameData : frames) {
             frameData.destroy();
         }
 
-        vkDestroyCommandPool(context.device, commandPool, nullptr);
-        vkDestroyDescriptorPool(context.device, descriptorPool, nullptr);
+        vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
-        memoryAllocator.reset();
         graphicsPipeline.reset();
         renderPass.reset();
         swapchain.reset();
 
-        destroyContext();
+        vkDestroyDevice(device, nullptr);
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        destroyDebugMessenger();
+        vkDestroyInstance(instance, nullptr);
 
         std::cout << "destroyed engine" << std::endl;
     }
@@ -213,14 +224,13 @@ namespace engine {
     }
 
     void Engine::drawFrame(FrameData frameData) {
-        VulkanContext &context = getContext();
         VkResult result;
 
-        vkWaitForFences(context.device, 1, &frameData.inFlightFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(context.device, 1, &frameData.inFlightFence);
+        vkWaitForFences(device, 1, &frameData.inFlightFence, VK_TRUE, UINT64_MAX);
+        vkResetFences(device, 1, &frameData.inFlightFence);
 
         uint32_t imageIndex;
-        result = vkAcquireNextImageKHR(context.device,
+        result = vkAcquireNextImageKHR(device,
                                        swapchain->swapchain,
                                        UINT64_MAX,
                                        frameData.imageAvailableSemaphore,
@@ -255,7 +265,7 @@ namespace engine {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        checkResult(vkQueueSubmit(context.graphicsQueue, 1, &submitInfo, frameData.inFlightFence));
+        checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, frameData.inFlightFence));
 
         VkSwapchainKHR swapchains[] = {swapchain->swapchain};
 
@@ -268,7 +278,7 @@ namespace engine {
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.pResults = nullptr;
 
-        result = vkQueuePresentKHR(context.presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(presentQueue, &presentInfo);
         switch (result) {
             case VK_SUCCESS:
             case VK_SUBOPTIMAL_KHR:
@@ -280,78 +290,75 @@ namespace engine {
     }
 
     void Engine::recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer) {
-    VkCommandBuffer &cmd = frameData.commandBuffer;
+        VkCommandBuffer &cmd = frameData.commandBuffer;
 
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
-    beginInfo.pInheritanceInfo = nullptr;
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
 
-    checkResult(vkBeginCommandBuffer(cmd, &beginInfo));
+        checkResult(vkBeginCommandBuffer(cmd, &beginInfo));
 
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    VkExtent2D extent = swapchain->extent;
+        VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        VkExtent2D extent = swapchain->extent;
 
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass->renderPass;
-    renderPassInfo.framebuffer = framebuffer;
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = extent;
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass->renderPass;
+        renderPassInfo.framebuffer = framebuffer;
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = extent;
+        renderPassInfo.clearValueCount = 2;
+        renderPassInfo.pClearValues = &clearColor;
 
-    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindDescriptorSets(cmd,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            graphicsPipeline->graphicsPipelineLayout,
-                            0,
-                            1,
-                            &frameData.descriptorSet,
-                            0,
-                            nullptr);
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->graphicsPipeline);
+        vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindDescriptorSets(cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                graphicsPipeline->graphicsPipelineLayout,
+                                0,
+                                1,
+                                &frameData.descriptorSet,
+                                0,
+                                nullptr);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->graphicsPipeline);
 
-    VkViewport viewport{
-            .x = 0.0f,
-            .y = 0.0f,
-            .width = static_cast<float>(extent.width),
-            .height = static_cast<float>(extent.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f};
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
+        VkViewport viewport{
+                .x = 0.0f,
+                .y = 0.0f,
+                .width = static_cast<float>(extent.width),
+                .height = static_cast<float>(extent.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f};
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
 
-    VkRect2D scissor{
-            .offset = {0, 0},
-            .extent = extent};
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
+        VkRect2D scissor{
+                .offset = {0, 0},
+                .extent = extent};
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    VkDeviceSize vertexBufferOffset = 0;
-    vkCmdBindIndexBuffer(cmd, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffer, &vertexBufferOffset);
-    vkCmdDrawIndexed(cmd, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        VkDeviceSize vertexBufferOffset = 0;
+        vkCmdBindIndexBuffer(cmd, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffer, &vertexBufferOffset);
+        vkCmdDrawIndexed(cmd, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
-    //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-    vkCmdEndRenderPass(cmd);
-    checkResult(vkEndCommandBuffer(cmd));
-}
+        //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+        vkCmdEndRenderPass(cmd);
+        checkResult(vkEndCommandBuffer(cmd));
+    }
 
     void Engine::createCommandPool() {
-        VulkanContext &context = getContext();
-
-        QueueFamiliesData data = context.queueFamiliesData;
+        QueueFamiliesData data = queueFamiliesData;
 
         VkCommandPoolCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         createInfo.queueFamilyIndex = data.graphicsQueueFamilyData->index;
 
-        checkResult(vkCreateCommandPool(context.device, &createInfo, nullptr, &commandPool));
+        checkResult(vkCreateCommandPool(device, &createInfo, nullptr, &commandPool));
         std::cout << "created command pool" << std::endl;
     }
 
     void Engine::createDescriptorPool(const VkDescriptorType &descriptorType) {
-        VulkanContext &context = getContext();
 
         VkDescriptorPoolSize poolSize{
                 .type = descriptorType,
@@ -364,12 +371,11 @@ namespace engine {
         createInfo.poolSizeCount = 1;
         createInfo.pPoolSizes = &poolSize;
 
-        checkResult(vkCreateDescriptorPool(context.device, &createInfo, nullptr, &descriptorPool));
+        checkResult(vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool));
         std::cout << "created descriptor pool" << std::endl;
     }
 
     std::vector<VkCommandBuffer> Engine::allocateCommandBuffers() {
-        VulkanContext &context = getContext();
         std::vector<VkCommandBuffer> commandBuffers(MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocateInfo{};
@@ -378,14 +384,13 @@ namespace engine {
         allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-        checkResult(vkAllocateCommandBuffers(context.device, &allocateInfo, commandBuffers.data()));
+        checkResult(vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data()));
         std::cout << "created command buffers" << std::endl;
 
         return commandBuffers;
     }
 
     std::vector<VkDescriptorSet> Engine::allocateDescriptorSets(VkDescriptorSetLayout &descriptorSetLayout) {
-        VulkanContext &context = getContext();
         std::vector<VkDescriptorSet> descriptorSets(MAX_FRAMES_IN_FLIGHT);
 
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -396,9 +401,51 @@ namespace engine {
         allocateInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
         allocateInfo.pSetLayouts = descriptorSetLayouts.data();
 
-        checkResult(vkAllocateDescriptorSets(context.device, &allocateInfo, descriptorSets.data()));
+        checkResult(vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data()));
         std::cout << "created descriptor sets" << std::endl;
 
         return descriptorSets;
     }
+
+//    void Engine::createImage() {
+//        VkImage image;
+//        VkImageView imageView;
+//
+//        VkImageCreateInfo imageInfo{};
+//        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+//        //imageInfo.format
+//        //imageInfo.extent
+//        imageInfo.mipLevels = 0;
+//        //imageInfo.arrayLayers
+//        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+//        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+//        //imageInfo.usage
+//        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+//        //imageInfo.queueFamilyIndexCount
+//        //imageInfo.pQueueFamilyIndices
+//
+//        checkResult(vkCreateImage(context->device, &imageInfo, nullptr, &image));
+//
+//        VkImageViewCreateInfo imageViewInfo{};
+//        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+//        imageViewInfo.image = image;
+//        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+//        //imageViewInfo.format
+//        //imageViewInfo.components.r
+//        //imageViewInfo.components.g
+//        //imageViewInfo.components.b
+//        //imageViewInfo.components.a
+//        //imageViewInfo.subresourceRange.layerCount
+//        //imageViewInfo.subresourceRange.baseArrayLayer
+//        //imageViewInfo.subresourceRange.levelCount
+//        //imageViewInfo.subresourceRange.baseMipLevel
+//        //imageViewInfo.subresourceRange.aspectMask
+//
+//        checkResult(vkCreateImageView(context->device, &imageViewInfo, nullptr, &imageView));
+//
+//        VmaAllocator &a = context->allocator->allocator;
+//
+//        vkDestroyImageView(context->device, imageView, nullptr);
+//        vkDestroyImage(context->device, image, nullptr);
+//    }
 }

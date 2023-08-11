@@ -1,7 +1,7 @@
 #ifndef SPHERE_RENDER_PASS_H
 #define SPHERE_RENDER_PASS_H
 
-#include "core/vulkan_context.h"
+#include <vulkan/vulkan.h>
 
 namespace engine {
 
@@ -22,7 +22,7 @@ namespace engine {
         VkRenderPass renderPass;
 
     private:
-        VulkanContext &context;
+
     };
 }
 

@@ -1,12 +1,6 @@
 set(SOURCES
-        core/window.h core/window.cpp
-        core/utils.h core/utils.cpp
-        core/vulkan_context.h
-        core/vulkan_context.cpp
-        core/vulkan_context_instance.cpp
-        core/vulkan_context_debug.cpp
-        core/vulkan_context_device.cpp
-        core/vulkan_context_surface.cpp
+        window.h window.cpp
+        utils.h utils.cpp
 
         types.h
 
@@ -14,8 +8,10 @@ set(SOURCES
         render_pass.h render_pass.cpp
         graphics_pipeline.h graphics_pipeline.cpp
         memory_allocator.h memory_allocator.cpp
-        engine.h engine.cpp
+
         camera.h camera.cpp
+
+        engine.h engine.cpp vulkan_setup.cpp
 
         scene/scene.h
         scene/mesh.h

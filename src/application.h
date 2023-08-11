@@ -1,8 +1,7 @@
 #ifndef SPHERE_APPLICATION_H
 #define SPHERE_APPLICATION_H
 
-#include <core/window.h>
-#include <core/vulkan_context.h>
+#include "window.h"
 #include <engine.h>
 
 #include <unordered_map>
@@ -45,8 +44,8 @@ namespace sphere {
         }
 
     private:
-        std::unique_ptr<engine::Window> window;
         std::unique_ptr<engine::Engine> engine;
+        std::unique_ptr<engine::Window> window;
 
         bool keys[GLFW_KEY_LAST+1];
 

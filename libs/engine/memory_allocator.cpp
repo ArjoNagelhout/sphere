@@ -1,19 +1,20 @@
 #define VMA_IMPLEMENTATION
 #include "memory_allocator.h"
+#include "engine.h"
 
 namespace engine {
 
-    MemoryAllocator::MemoryAllocator() : context(getContext()) {
+    MemoryAllocator::MemoryAllocator() {
 
         VmaAllocatorCreateInfo allocatorInfo{};
-        allocatorInfo.physicalDevice = context.physicalDevice;
-        allocatorInfo.device = context.device;
+        allocatorInfo.physicalDevice = engine->physicalDevice;
+        allocatorInfo.device = engine->device;
         //allocatorInfo.preferredLargeHeapBlockSize
         //allocatorInfo.pAllocationCallbacks
         //allocatorInfo.pDeviceMemoryCallbacks
         allocatorInfo.pHeapSizeLimit = nullptr;
         allocatorInfo.pVulkanFunctions = nullptr;
-        allocatorInfo.instance = context.instance;
+        allocatorInfo.instance = engine->instance;
 
         checkResult(vmaCreateAllocator(&allocatorInfo, &allocator));
         std::cout << "created memory allocator" << std::endl;

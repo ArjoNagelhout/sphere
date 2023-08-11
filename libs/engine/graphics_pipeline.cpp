@@ -1,10 +1,10 @@
+#include "engine.h"
 #include "graphics_pipeline.h"
 
 #include <fstream>
 
 namespace engine {
-    GraphicsPipeline::GraphicsPipeline(Swapchain &swapchain, RenderPass &renderPass) : context(getContext()),
-                                                                                       swapchain(swapchain),
+    GraphicsPipeline::GraphicsPipeline(Swapchain &swapchain, RenderPass &renderPass) : swapchain(swapchain),
                                                                                        renderPass(renderPass) {
         createGraphicsPipeline();
     }
@@ -41,7 +41,7 @@ namespace engine {
         createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
         VkShaderModule shaderModule;
-        checkResult(vkCreateShaderModule(context.device, &createInfo, nullptr, &shaderModule));
+        checkResult(vkCreateShaderModule(engine->device, &createInfo, nullptr, &shaderModule));
 
         std::cout << "created shader module" << std::endl;
         return shaderModule;
@@ -77,7 +77,7 @@ namespace engine {
                 fragmentShaderStageInfo
         };
 
-        PhysicalDeviceData physicalDeviceData = context.physicalDeviceData;
+        PhysicalDeviceData physicalDeviceData = engine->physicalDeviceData;
 
         VkVertexInputBindingDescription vertexInputBindingDescription{
                 .binding = 0, // binding number (identifier?)
@@ -136,7 +136,7 @@ namespace engine {
         rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizationState.depthClampEnable = VK_FALSE;
         rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-        rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;// VK_POLYGON_MODE_LINE for wireframe
         rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
         rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
         rasterizationState.depthBiasEnable = VK_FALSE;
@@ -162,8 +162,8 @@ namespace engine {
         depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencilState.depthTestEnable = VK_TRUE;
         depthStencilState.depthWriteEnable = VK_TRUE;
-        depthStencilState.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
-        depthStencilState.depthBoundsTestEnable = VK_TRUE;
+        depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+        depthStencilState.depthBoundsTestEnable = VK_FALSE;
         depthStencilState.stencilTestEnable = VK_FALSE;
         depthStencilState.front = {};
         depthStencilState.back = {};
@@ -219,7 +219,7 @@ namespace engine {
         descriptorSetLayoutInfo.pBindings = &descriptorSetLayoutBinding;
 
         checkResult(
-                vkCreateDescriptorSetLayout(context.device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
+                vkCreateDescriptorSetLayout(engine->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -228,7 +228,7 @@ namespace engine {
         pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
         pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-        checkResult(vkCreatePipelineLayout(context.device, &pipelineLayoutCreateInfo, nullptr, &graphicsPipelineLayout));
+        checkResult(vkCreatePipelineLayout(engine->device, &pipelineLayoutCreateInfo, nullptr, &graphicsPipelineLayout));
 
         VkGraphicsPipelineCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -249,17 +249,17 @@ namespace engine {
         createInfo.basePipelineHandle = VK_NULL_HANDLE; // / optional, can be used to create a new graphics pipeline by deriving from an existing.pipeline, makes switching quicker.
         createInfo.basePipelineIndex = -1;
 
-        checkResult(vkCreateGraphicsPipelines(context.device, VK_NULL_HANDLE, 1, &createInfo, nullptr,
+        checkResult(vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &createInfo, nullptr,
                                               &graphicsPipeline));
         std::cout << "created graphics pipeline" << std::endl;
 
-        vkDestroyShaderModule(context.device, vertexShaderModule, nullptr);
-        vkDestroyShaderModule(context.device, fragmentShaderModule, nullptr);
+        vkDestroyShaderModule(engine->device, vertexShaderModule, nullptr);
+        vkDestroyShaderModule(engine->device, fragmentShaderModule, nullptr);
     }
 
     void GraphicsPipeline::destroyGraphicsPipeline() {
-        vkDestroyDescriptorSetLayout(context.device, descriptorSetLayout, nullptr);
-        vkDestroyPipeline(context.device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(context.device, graphicsPipelineLayout, nullptr);
+        vkDestroyDescriptorSetLayout(engine->device, descriptorSetLayout, nullptr);
+        vkDestroyPipeline(engine->device, graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(engine->device, graphicsPipelineLayout, nullptr);
     }
 }

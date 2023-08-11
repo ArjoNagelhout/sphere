@@ -1,3 +1,4 @@
+#include "engine.h"
 #include "swapchain.h"
 
 namespace engine {
@@ -56,27 +57,27 @@ namespace engine {
         }
     }
 
-    Swapchain::Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) : context(getContext()) {
+    Swapchain::Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) {
         createSwapchain(preferredSurfaceFormats);
         createImageViews();
     }
 
     Swapchain::~Swapchain() {
         for (auto const &framebuffer: framebuffers) {
-            vkDestroyFramebuffer(context.device, framebuffer, nullptr);
+            vkDestroyFramebuffer(engine->device, framebuffer, nullptr);
         }
 
         for (auto const &imageView: imageViews) {
-            vkDestroyImageView(context.device, imageView, nullptr);
+            vkDestroyImageView(engine->device, imageView, nullptr);
         }
 
-        vkDestroySwapchainKHR(context.device, swapchain, nullptr);
+        vkDestroySwapchainKHR(engine->device, swapchain, nullptr);
     }
 
     void Swapchain::createSwapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) {
-        SurfaceData surfaceData = context.surfaceData;
+        SurfaceData surfaceData = engine->surfaceData;
         surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
-        extent = pickSwapchainExtent(context.configuration.window, surfaceData.surfaceCapabilities);
+        extent = pickSwapchainExtent(engine->configuration.window, surfaceData.surfaceCapabilities);
 
         // from vulkan-tutorial.com
         // Sticking to this minimum means that we may sometimes have to wait on the driver to complete internal
@@ -94,7 +95,7 @@ namespace engine {
 
         VkSwapchainCreateInfoKHR swapchainCreateInfo{};
         swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreateInfo.surface = context.surface;
+        swapchainCreateInfo.surface = engine->surface;
         swapchainCreateInfo.minImageCount = imageCount;
         swapchainCreateInfo.imageFormat = surfaceFormat.format;
         swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -103,7 +104,7 @@ namespace engine {
         swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // listed in surfaceCapabilities.supportedUsageFlags, but VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT is guaranteed to always exist
 
         // determine if the graphics queue family and the present queue family share the same index
-        QueueFamiliesData queueFamiliesData = context.queueFamiliesData;
+        QueueFamiliesData queueFamiliesData = engine->queueFamiliesData;
         uint32_t queueFamilyIndices[]{queueFamiliesData.graphicsQueueFamilyData->index,
                                       queueFamiliesData.presentQueueFamilyData->index};
 
@@ -126,15 +127,15 @@ namespace engine {
         swapchainCreateInfo.clipped = VK_TRUE;
         swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        checkResult(vkCreateSwapchainKHR(context.device, &swapchainCreateInfo, nullptr, &swapchain));
+        checkResult(vkCreateSwapchainKHR(engine->device, &swapchainCreateInfo, nullptr, &swapchain));
         std::cout << "created swapchain" << std::endl;
 
         // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
         // in order to perform any rendering operations, create a VkImageView from a VkImage.
         uint32_t swapchainImagesCount;
-        vkGetSwapchainImagesKHR(context.device, swapchain, &swapchainImagesCount, nullptr);
+        vkGetSwapchainImagesKHR(engine->device, swapchain, &swapchainImagesCount, nullptr);
         images.resize(swapchainImagesCount);
-        vkGetSwapchainImagesKHR(context.device, swapchain, &swapchainImagesCount, images.data());
+        vkGetSwapchainImagesKHR(engine->device, swapchain, &swapchainImagesCount, images.data());
     }
 
     void Swapchain::createImageViews() {
@@ -161,9 +162,8 @@ namespace engine {
             // with multiple layers. You could then create multiple image views for each image representing
             // the views for the left and right eyes by accessing different layers.
 
-            checkResult(vkCreateImageView(context.device, &createInfo, nullptr, &imageViews[i]));
+            checkResult(vkCreateImageView(engine->device, &createInfo, nullptr, &imageViews[i]));
         }
-
     }
 
     void Swapchain::createFramebuffers(const VkRenderPass &renderPass) {
@@ -183,7 +183,7 @@ namespace engine {
             createInfo.height = extent.height;
             createInfo.layers = 1;
 
-            checkResult(vkCreateFramebuffer(context.device, &createInfo, nullptr, &framebuffers[i]));
+            checkResult(vkCreateFramebuffer(engine->device, &createInfo, nullptr, &framebuffers[i]));
         }
         std::cout << "created frame buffers" << std::endl;
     }

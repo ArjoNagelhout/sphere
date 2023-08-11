@@ -1,7 +1,8 @@
 #ifndef SPHERE_GRAPHICS_PIPELINE_H
 #define SPHERE_GRAPHICS_PIPELINE_H
 
-#include "core/vulkan_context.h"
+#include <vulkan/vulkan.h>
+
 #include "swapchain.h"
 #include "render_pass.h"
 #include "types.h"
@@ -38,7 +39,6 @@ namespace engine {
         VkDescriptorSetLayout descriptorSetLayout;
 
     private:
-        VulkanContext &context;
         Swapchain &swapchain;
         RenderPass &renderPass;
 

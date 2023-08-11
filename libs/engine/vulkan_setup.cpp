@@ -1,8 +1,190 @@
-#include "vulkan_context.h"
+#include "engine.h"
 
 #include <map>
 
 namespace engine {
+
+    /////////////////////////////////////////// INSTANCE //////////////////////////////////////
+
+    /*
+     * Returns the enabled instance extension names based on the required glfw extensions
+     * and custom supplied extensions
+     *
+     * Also sets flags
+     */
+    static std::vector<const char *> getEnabledInstanceExtensions(const std::vector<const char *> &requiredExtensions,
+                                                                  VkInstanceCreateFlags &flags) {
+        std::vector<const char *> enabledExtensions(0);
+
+        uint32_t extensionsCount;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr);
+        std::vector<VkExtensionProperties> extensions(extensionsCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, extensions.data());
+
+        // vulkan instance extensions required for creating vulkan surfaces for glfw windows.
+        uint32_t glfwRequiredExtensionsCount;
+        const char **glfwRequiredExtensionsArray = glfwGetRequiredInstanceExtensions(&glfwRequiredExtensionsCount);
+
+        std::vector<const char *> allRequiredExtensions;
+        allRequiredExtensions.reserve(requiredExtensions.size() + glfwRequiredExtensionsCount);
+        allRequiredExtensions.insert(allRequiredExtensions.end(), requiredExtensions.begin(), requiredExtensions.end());
+        allRequiredExtensions.insert(allRequiredExtensions.end(), glfwRequiredExtensionsArray, glfwRequiredExtensionsArray + glfwRequiredExtensionsCount); // we can use pointers as an iterator
+
+        // add required extensions to the enabled extensions if they exist
+        for (auto const &requiredExtension: allRequiredExtensions) {
+
+            if (*std::find_if(extensions.begin(),
+                              extensions.end(),
+                              [&requiredExtension](const VkExtensionProperties extension) -> bool {
+                                  return (strcmp(extension.extensionName, requiredExtension) == 0);
+                              }) != *(extensions.end())) {
+                enabledExtensions.push_back(requiredExtension);
+            } else {
+                throw std::runtime_error("could not add required instance extension: " + std::string(requiredExtension));
+            }
+        }
+
+        // if on macOS, we need to enable the portability subset extension
+        if (*std::find_if(extensions.begin(),
+                          extensions.end(),
+                          [](VkExtensionProperties extension) -> bool {
+                              return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0);
+                          }) != *extensions.end()) {
+            enabledExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+            enabledExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // needs to be enabled as well
+            flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        }
+
+        return enabledExtensions;
+    }
+
+    static std::vector<const char *> getEnabledInstanceLayers(const std::vector<const char *> &requiredLayers) {
+        std::vector<const char *> enabledLayers(0);
+
+        uint32_t layersCount;
+        vkEnumerateInstanceLayerProperties(&layersCount, nullptr);
+        std::vector<VkLayerProperties> layers(layersCount);
+        vkEnumerateInstanceLayerProperties(&layersCount, layers.data());
+
+        for (auto requiredLayer : requiredLayers) {
+            if (*std::find_if(layers.begin(),
+                              layers.end(),
+                              [&requiredLayer](const VkLayerProperties layer) -> bool {
+                                  return strcmp(layer.layerName, requiredLayer) == 0;
+                              }) != *layers.end()) {
+                enabledLayers.push_back(requiredLayer);
+            } else {
+                // couldn't find required layer
+                throw std::runtime_error(std::string("device does not support required layer: ") + std::string(requiredLayer));
+            }
+        }
+
+        return enabledLayers;
+    }
+
+    void Engine::createInstance(const std::vector<const char *> &requiredExtensions, const std::vector<const char *> &requiredLayers) {
+        VkApplicationInfo appInfo{};
+        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        appInfo.apiVersion = VK_API_VERSION_1_0;
+        appInfo.applicationVersion = configuration.applicationVersion;
+        appInfo.engineVersion = configuration.engineVersion;
+        appInfo.pEngineName = configuration.engineName.data();
+        appInfo.pApplicationName = configuration.applicationName.data();
+
+        VkInstanceCreateFlags flags{};
+        std::vector<const char *> enabledExtensions = getEnabledInstanceExtensions(requiredExtensions, flags);
+        std::vector<const char *> enabledLayers = getEnabledInstanceLayers(requiredLayers);
+
+        for (const auto &enabledLayer : enabledLayers) {
+            std::cout << "enabled instance layer: " << enabledLayer << std::endl;
+        }
+
+        for (auto const &enabledExtension : enabledExtensions) {
+            std::cout << "enabled instance extension: " << enabledExtension << std::endl;
+        }
+
+        VkInstanceCreateInfo instanceCreateInfo{};
+        instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        instanceCreateInfo.pApplicationInfo = &appInfo;
+        instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
+        instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
+        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(enabledLayers.size());
+        instanceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
+        instanceCreateInfo.flags = flags;
+
+        checkResult(vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
+        std::cout << "created instance" << std::endl;
+    }
+
+    /////////////////////////////////////////// DEBUG CALLBACK //////////////////////////////////////
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT messageType,
+            const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+            void *pUserData) {
+
+        std::cerr << "validation layer output: "
+                  << pCallbackData->pMessage
+                  << ", severity:" << string_VkDebugUtilsMessageSeverityFlagBitsEXT(messageSeverity)
+                  << ", type: " << string_VkDebugUtilsMessageTypeFlagsEXT(messageType)
+                  << std::endl;
+
+        return VK_FALSE;
+    }
+
+    // Proxy function that looks up the address of the function, because it's part of an extension
+    VkResult createDebugUtilsMessengerEXT(VkInstance instance,
+                                          const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+                                          const VkAllocationCallbacks *pAllocator,
+                                          VkDebugUtilsMessengerEXT *pDebugMessenger) {
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,"vkCreateDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+        } else {
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
+    }
+
+    // Again, a proxy function because it's part of an extension and can't be directly called
+    void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                       const VkAllocationCallbacks *pAllocator) {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
+                                                                                "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            func(instance, debugMessenger, pAllocator);
+        }
+    }
+
+    void Engine::createDebugMessenger() {
+        if (!configuration.debug) {
+            return;
+        }
+
+        VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        createInfo.messageSeverity =
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        createInfo.messageType =
+                VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        createInfo.pfnUserCallback = debugCallback;
+
+        checkResult(createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger));
+        std::cout << "created debug messenger" << std::endl;
+    }
+
+    void Engine::destroyDebugMessenger() {
+        if (debugMessenger == nullptr) {
+            return;
+        }
+        destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+    }
+
+    /////////////////////////////////////////// DEVICE //////////////////////////////////////
 
     /*
      * Enumerates over the existing queue families that are available on the GPU and populates
@@ -167,7 +349,7 @@ namespace engine {
      * Picks the physical device with the highest score and one that is valid.
      * Sets the physicalDevice and queueFamiliesData (i.e. caches the queueFamiliesData in this class)
      */
-    void VulkanContext::pickPhysicalDevice(const std::vector<const char *> &requiredExtensions) {
+    void Engine::pickPhysicalDevice(const std::vector<const char *> &requiredExtensions) {
         uint32_t physicalDeviceCount;
         vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
         std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
@@ -262,7 +444,7 @@ namespace engine {
      * Creates a logical device based on the chosen physical device.
      * This is the end of the responsibilities of the device class.
      */
-    void VulkanContext::createDevice(const std::vector<const char *> &requiredExtensions) {
+    void Engine::createDevice(const std::vector<const char *> &requiredExtensions) {
 
         // first create a queue create info for each queue family
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
@@ -313,5 +495,19 @@ namespace engine {
         vkGetDeviceQueue(device, queueFamiliesData.presentQueueFamilyData->index, 0, &presentQueue);
 
         std::cout << "created logical device" << std::endl;
+    }
+
+    /////////////////////////////////////////// SURFACE //////////////////////////////////////
+
+    /*
+     * we use glfw to create a surface, because otherwise we need to call platform specific functions such as
+     * vkCreateAndroidSurfaceKHR and vkCreateWaylandSurfaceKHR.
+     *
+     * A VkSurfaceKHR can be used to present images to the screen.
+     */
+    void Engine::createSurface() {
+        checkResult(glfwCreateWindowSurface(instance, configuration.window, nullptr, &surface));
+
+        std::cout << "created surface" << std::endl;
     }
 }

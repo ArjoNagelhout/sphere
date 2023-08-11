@@ -1,7 +1,12 @@
 #ifndef SPHERE_MEMORY_ALLOCATOR_H
 #define SPHERE_MEMORY_ALLOCATOR_H
 
-#include "core/vulkan_context.h"
+#define VK_ENABLE_BETA_EXTENSIONS
+#include "vulkan/vulkan.h"
+#include "utils.h"
+#include <memory>
+#include <vector>
+#include <iostream>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnullability-completeness"
@@ -27,7 +32,7 @@ namespace engine {
         VmaAllocator allocator;
 
         template<typename T>
-        void createBuffer(VkBuffer &buffer, VmaAllocation &allocation, const T &data, std::size_t size,
+        void createBuffer(VkBuffer &buffer, VmaAllocation &allocation, const T &data, size_t size,
                                            VkBufferUsageFlags usageFlags) {
             VkBufferCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -65,7 +70,7 @@ namespace engine {
         void updateBuffer(const VkBuffer &buffer,
                                            const VmaAllocation &allocation,
                                            const T &data,
-                                           const std::size_t &size) {
+                                           const size_t &size) {
 
             void *mappedData;
             vmaMapMemory(allocator, allocation, &mappedData);
@@ -76,13 +81,12 @@ namespace engine {
         template<typename T>
         void updateBuffer(const VkBuffer &buffer,
                                            const T &data,
-                                           const std::size_t &size) {
+                                           const size_t &size) {
             VmaAllocation &allocation = allocatedBuffers[buffer].allocation;
             updateBuffer(buffer, allocation, data, size);
         }
 
     private:
-        VulkanContext &context;
         std::unordered_map<VkBuffer, AllocatedBufferData> allocatedBuffers;
     };
 }
