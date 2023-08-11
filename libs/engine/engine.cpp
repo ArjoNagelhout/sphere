@@ -208,6 +208,7 @@ namespace engine {
         graphicsPipeline.reset();
         renderPass.reset();
         swapchain.reset();
+        allocator.reset();
 
         vkDestroyDevice(device, nullptr);
         vkDestroySurfaceKHR(instance, surface, nullptr);
