@@ -41,7 +41,7 @@ namespace engine {
         VkExtent2D extent;
         std::vector<VkFramebuffer> framebuffers;
 
-        void createFramebuffers(const VkRenderPass &renderPass);
+        void createFramebuffers(const VkRenderPass &renderPass, const VkImageView &depthImageView);
 
     private:
         std::vector<VkImage> images;

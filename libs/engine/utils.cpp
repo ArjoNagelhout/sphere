@@ -45,4 +45,12 @@ namespace engine {
             throw std::runtime_error(std::string("vulkan command failed: ") + string_VkResult(result));
         }
     }
+
+    VkExtent3D toExtent3D(const VkExtent2D &extent2D) {
+        return {
+            .width = extent2D.width,
+            .height = extent2D.height,
+            .depth = 1
+        };
+    }
 }

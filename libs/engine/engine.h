@@ -158,6 +158,7 @@ namespace engine {
         VkBuffer indexBuffer;
         VmaAllocation indexBufferAllocation;
 
+        const VkFormat depthImageFormat = VK_FORMAT_D16_UNORM;
         VkImage depthImage;
         VkImageView depthImageView;
         VmaAllocation depthImageAllocation;
@@ -177,6 +178,9 @@ namespace engine {
         std::vector<VkDescriptorSet> allocateDescriptorSets(VkDescriptorSetLayout &descriptorSetLayout);
         void drawFrame(FrameData frameData);
         void recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer);
+
+        // to be refactored
+        void createDepthImage();
     };
 
     extern Engine *engine;

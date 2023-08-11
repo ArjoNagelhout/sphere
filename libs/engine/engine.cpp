@@ -155,11 +155,14 @@ namespace engine {
         pickPhysicalDevice(requiredDeviceExtensions);
         createDevice(requiredDeviceExtensions);
 
-        swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
-        renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format);
-        swapchain->createFramebuffers(renderPass->renderPass);
-        graphicsPipeline = std::make_unique<GraphicsPipeline>(*swapchain, *renderPass);
         allocator = std::make_unique<MemoryAllocator>();
+        swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
+        renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
+
+        createDepthImage();
+        swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
+
+        graphicsPipeline = std::make_unique<GraphicsPipeline>(*swapchain, *renderPass);
         camera = std::make_unique<Camera>(*allocator, *swapchain);
 
         createCommandPool();
@@ -204,6 +207,10 @@ namespace engine {
 
         vkDestroyCommandPool(device, commandPool, nullptr);
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
+        // destroy depth image
+        vkDestroyImageView(device, depthImageView, nullptr);
+        vmaDestroyImage(allocator->allocator, depthImage, depthImageAllocation);
 
         graphicsPipeline.reset();
         renderPass.reset();
@@ -300,7 +307,12 @@ namespace engine {
 
         checkResult(vkBeginCommandBuffer(cmd, &beginInfo));
 
-        VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        VkClearValue clearColor = {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}};
+        VkClearValue clearDepth = {.depthStencil{.depth = 1.0f}};
+        VkClearValue clearValues[] = {
+                clearColor,
+                clearDepth
+        };
         VkExtent2D extent = swapchain->extent;
 
         VkRenderPassBeginInfo renderPassInfo{};
@@ -310,7 +322,7 @@ namespace engine {
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = extent;
         renderPassInfo.clearValueCount = 2;
-        renderPassInfo.pClearValues = &clearColor;
+        renderPassInfo.pClearValues = clearValues;
 
         vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindDescriptorSets(cmd,
@@ -408,45 +420,54 @@ namespace engine {
         return descriptorSets;
     }
 
-//    void Engine::createImage() {
-//        VkImage image;
-//        VkImageView imageView;
-//
-//        VkImageCreateInfo imageInfo{};
-//        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-//        //imageInfo.format
-//        //imageInfo.extent
-//        imageInfo.mipLevels = 0;
-//        //imageInfo.arrayLayers
-//        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-//        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-//        //imageInfo.usage
-//        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//        //imageInfo.queueFamilyIndexCount
-//        //imageInfo.pQueueFamilyIndices
-//
-//        checkResult(vkCreateImage(context->device, &imageInfo, nullptr, &image));
-//
-//        VkImageViewCreateInfo imageViewInfo{};
-//        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-//        imageViewInfo.image = image;
-//        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-//        //imageViewInfo.format
-//        //imageViewInfo.components.r
-//        //imageViewInfo.components.g
-//        //imageViewInfo.components.b
-//        //imageViewInfo.components.a
-//        //imageViewInfo.subresourceRange.layerCount
-//        //imageViewInfo.subresourceRange.baseArrayLayer
-//        //imageViewInfo.subresourceRange.levelCount
-//        //imageViewInfo.subresourceRange.baseMipLevel
-//        //imageViewInfo.subresourceRange.aspectMask
-//
-//        checkResult(vkCreateImageView(context->device, &imageViewInfo, nullptr, &imageView));
-//
-//        VmaAllocator &a = context->allocator->allocator;
-//
-//        vkDestroyImageView(context->device, imageView, nullptr);
-//        vkDestroyImage(context->device, image, nullptr);
-//    }
+    void Engine::createDepthImage() {
+
+        VkExtent3D extent = toExtent3D(swapchain->extent);
+
+        VkImageCreateInfo imageInfo{};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.pNext = nullptr;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.format = depthImageFormat;
+        imageInfo.extent = extent;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        //imageInfo.queueFamilyIndexCount
+        //imageInfo.pQueueFamilyIndices
+
+        VmaAllocationCreateInfo allocationInfo{};
+        allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        allocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+        allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        allocationInfo.pool = VK_NULL_HANDLE;
+        allocationInfo.priority = 1.0f;
+
+        checkResult(vmaCreateImage(allocator->allocator,
+                                   &imageInfo, &allocationInfo,
+                                   &depthImage, &depthImageAllocation, nullptr));
+
+        VkImageViewCreateInfo imageViewInfo{};
+        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewInfo.pNext = nullptr;
+        imageViewInfo.image = depthImage;
+        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewInfo.format = depthImageFormat;
+        //imageViewInfo.components.r
+        //imageViewInfo.components.g
+        //imageViewInfo.components.b
+        //imageViewInfo.components.a
+        imageViewInfo.subresourceRange.layerCount = 1;
+        imageViewInfo.subresourceRange.baseArrayLayer = 0;
+        imageViewInfo.subresourceRange.levelCount = 1;
+        imageViewInfo.subresourceRange.baseMipLevel = 0;
+        imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+        checkResult(vkCreateImageView(device, &imageViewInfo, nullptr, &depthImageView));
+
+        std::cout << "created depth image" << std::endl;
+    }
 }

@@ -166,12 +166,13 @@ namespace engine {
         }
     }
 
-    void Swapchain::createFramebuffers(const VkRenderPass &renderPass) {
+    void Swapchain::createFramebuffers(const VkRenderPass &renderPass, const VkImageView &depthImageView) {
         framebuffers.resize(images.size());
 
         for (size_t i = 0; i < imageViews.size(); i++) {
             std::vector<VkImageView> attachments{
-                    imageViews[i]
+                    imageViews[i],
+                    depthImageView
             };
 
             VkFramebufferCreateInfo createInfo{};

@@ -16,7 +16,7 @@ namespace engine {
     class RenderPass {
 
     public:
-        explicit RenderPass(const VkFormat &format);
+        explicit RenderPass(const VkFormat &format, const VkFormat &depthFormat);
         ~RenderPass();
 
         VkRenderPass renderPass;

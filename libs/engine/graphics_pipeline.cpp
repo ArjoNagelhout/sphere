@@ -162,13 +162,13 @@ namespace engine {
         depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencilState.depthTestEnable = VK_TRUE;
         depthStencilState.depthWriteEnable = VK_TRUE;
-        depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+        depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencilState.depthBoundsTestEnable = VK_FALSE;
         depthStencilState.stencilTestEnable = VK_FALSE;
         depthStencilState.front = {};
         depthStencilState.back = {};
         depthStencilState.minDepthBounds = 0.0f;
-        depthStencilState.maxDepthBounds = 1000.0f;
+        depthStencilState.maxDepthBounds = 1.0f;
 
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.blendEnable = VK_TRUE;

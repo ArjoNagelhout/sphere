@@ -18,6 +18,8 @@ namespace engine {
      * @param result
      */
     void checkResult(VkResult result);
+
+    VkExtent3D toExtent3D(const VkExtent2D &extent2D);
 }
 
 #endif //SPHERE_UTILS_H
