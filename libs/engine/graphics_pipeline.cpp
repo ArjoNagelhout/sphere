@@ -154,7 +154,7 @@ namespace engine {
         rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizationState.depthClampEnable = VK_FALSE;
         rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-        rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;// VK_POLYGON_MODE_LINE for wireframe
+        rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;// VK_POLYGON_MODE_FILL;// VK_POLYGON_MODE_LINE for wireframe
         rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
         rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
         rasterizationState.depthBiasEnable = VK_FALSE;
