@@ -143,26 +143,11 @@ namespace engine {
 
         for (size_t i = 0; i < images.size(); i++) {
 
-            VkImageViewCreateInfo createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            createInfo.image = images[i];
-            createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            createInfo.format = surfaceFormat.format;
-            createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            createInfo.subresourceRange.baseMipLevel = 0;
-            createInfo.subresourceRange.levelCount = 1;
-            createInfo.subresourceRange.baseArrayLayer = 0;
-            createInfo.subresourceRange.layerCount = 1;
-
             // If you were working on a stereographic 3D application, then you would create a swap chain
             // with multiple layers. You could then create multiple image views for each image representing
             // the views for the left and right eyes by accessing different layers.
-
-            checkResult(vkCreateImageView(engine->device, &createInfo, nullptr, &imageViews[i]));
+            VkImageViewCreateInfo viewInfo = vk_create::imageView(images[i], surfaceFormat.format);
+            checkResult(vkCreateImageView(engine->device, &viewInfo, nullptr, &imageViews[i]));
         }
     }
 
@@ -174,17 +159,8 @@ namespace engine {
                     imageViews[i],
                     depthImageView
             };
-
-            VkFramebufferCreateInfo createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            createInfo.renderPass = renderPass;
-            createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            createInfo.pAttachments = attachments.data();
-            createInfo.width = extent.width;
-            createInfo.height = extent.height;
-            createInfo.layers = 1;
-
-            checkResult(vkCreateFramebuffer(engine->device, &createInfo, nullptr, &framebuffers[i]));
+            VkFramebufferCreateInfo framebufferInfo = vk_create::framebuffer(renderPass, attachments, extent);
+            checkResult(vkCreateFramebuffer(engine->device, &framebufferInfo, nullptr, &framebuffers[i]));
         }
         std::cout << "created frame buffers" << std::endl;
     }

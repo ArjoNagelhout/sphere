@@ -24,6 +24,6 @@ void main() {
     // matrix multiplication using model view projection
     gl_Position = Camera.MVP * vec4(positionAttribute, 1);
     //gl_Position = vec4(positionAttribute, 1);
-    //fragColor = colors[gl_VertexIndex % 6];
-    fragColor = vec3(1, 1, 1) - normalAttribute;
+    fragColor = colors[gl_VertexIndex % 6];
+    //fragColor = vec3(1, 1, 1) - normalAttribute;
 }

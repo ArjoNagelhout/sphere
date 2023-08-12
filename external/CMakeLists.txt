@@ -35,6 +35,8 @@ add_library(tinyobj INTERFACE)
 target_include_directories(tinyobj INTERFACE tinyobjloader)
 
 target_include_directories(sphere
-        PRIVATE glfw/include
-        PRIVATE glm)
+#        PRIVATE glfw/include
+#        PRIVATE glm
+        PRIVATE stb)
+
 target_link_libraries(sphere PUBLIC glfw glm) #shaderc)

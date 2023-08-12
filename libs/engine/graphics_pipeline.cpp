@@ -154,7 +154,7 @@ namespace engine {
         rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizationState.depthClampEnable = VK_FALSE;
         rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-        rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;// VK_POLYGON_MODE_FILL;// VK_POLYGON_MODE_LINE for wireframe
+        rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;// VK_POLYGON_MODE_LINE for wireframe
         rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
         rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
         rasterizationState.depthBiasEnable = VK_FALSE;
@@ -236,8 +236,7 @@ namespace engine {
         descriptorSetLayoutInfo.bindingCount = 1;
         descriptorSetLayoutInfo.pBindings = &descriptorSetLayoutBinding;
 
-        checkResult(
-                vkCreateDescriptorSetLayout(engine->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
+        checkResult(vkCreateDescriptorSetLayout(engine->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -248,25 +247,25 @@ namespace engine {
 
         checkResult(vkCreatePipelineLayout(engine->device, &pipelineLayoutCreateInfo, nullptr, &graphicsPipelineLayout));
 
-        VkGraphicsPipelineCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        createInfo.stageCount = static_cast<uint32_t>(shaderStageInfos.size());
-        createInfo.pStages = shaderStageInfos.data();
-        createInfo.pVertexInputState = &vertexInputState;
-        createInfo.pInputAssemblyState = &inputAssemblyState;
-        createInfo.pTessellationState = nullptr;
-        createInfo.pViewportState = &viewportState;
-        createInfo.pRasterizationState = &rasterizationState;
-        createInfo.pMultisampleState = &multisampleState;
-        createInfo.pDepthStencilState = &depthStencilState;
-        createInfo.pColorBlendState = &colorBlendState;
-        createInfo.pDynamicState = &dynamicState;
-        createInfo.layout = graphicsPipelineLayout;
-        createInfo.renderPass = renderPass.renderPass;
-        createInfo.subpass = 0;
-        createInfo.basePipelineHandle = VK_NULL_HANDLE; // / optional, can be used to create a new graphics pipeline by deriving from an existing.pipeline, makes switching quicker.
-        createInfo.basePipelineIndex = -1;
-
+        VkGraphicsPipelineCreateInfo createInfo{
+                .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                .stageCount = static_cast<uint32_t>(shaderStageInfos.size()),
+                .pStages = shaderStageInfos.data(),
+                .pVertexInputState = &vertexInputState,
+                .pInputAssemblyState = &inputAssemblyState,
+                .pTessellationState = nullptr,
+                .pViewportState = &viewportState,
+                .pRasterizationState = &rasterizationState,
+                .pMultisampleState = &multisampleState,
+                .pDepthStencilState = &depthStencilState,
+                .pColorBlendState = &colorBlendState,
+                .pDynamicState = &dynamicState,
+                .layout = graphicsPipelineLayout,
+                .renderPass = renderPass.renderPass,
+                .subpass = 0,
+                .basePipelineHandle = VK_NULL_HANDLE, // / optional, can be used to create a new graphics pipeline by deriving from an existing.pipeline, makes switching quicker
+                .basePipelineIndex = -1
+        };
         checkResult(vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &createInfo, nullptr,
                                               &graphicsPipeline));
         std::cout << "created graphics pipeline" << std::endl;

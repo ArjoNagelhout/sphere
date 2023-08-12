@@ -53,10 +53,12 @@ namespace engine {
     class Texture {
 
     public:
-        explicit Texture(const std::string &filePath, const VkFormat &format, const VkExtent2D &extent);
+        explicit Texture(const std::string &filePath);
         ~Texture();
 
     private:
+        VmaAllocator &allocator;
+        unsigned char *data;
         VkImage image;
         VkImageView imageView;
         VmaAllocation allocation;

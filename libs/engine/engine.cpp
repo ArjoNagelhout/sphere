@@ -1,7 +1,8 @@
 #include "engine.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
+#include "texture.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 namespace engine {
@@ -243,6 +244,9 @@ namespace engine {
                                           *indices.data(),
                                           indices.size() * sizeof(indices[0]),
                                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+        // load image
+        //Texture texture{"/Users/arjonagelhout/Desktop/Screenshot 2023-08-12 at 01.18.16.png"};
     }
 
     Engine::~Engine() {
@@ -468,30 +472,13 @@ namespace engine {
     }
 
     void Engine::createDepthImage() {
-
         VkExtent3D extent = toExtent3D(swapchain->extent);
-
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.pNext = nullptr;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.format = depthImageFormat;
-        imageInfo.extent = extent;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        //imageInfo.queueFamilyIndexCount
-        //imageInfo.pQueueFamilyIndices
+        VkImageCreateInfo imageInfo = vk_create::image(depthImageFormat, extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
         VmaAllocationCreateInfo allocationInfo{};
         allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
         allocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
         allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        allocationInfo.pool = VK_NULL_HANDLE;
-        allocationInfo.priority = 1.0f;
 
         checkResult(vmaCreateImage(allocator->allocator,
                                    &imageInfo, &allocationInfo,

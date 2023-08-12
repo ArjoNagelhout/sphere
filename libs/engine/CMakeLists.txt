@@ -16,7 +16,7 @@ set(SOURCES
         scene/scene.h
         scene/mesh.h
         scene/object.h
-        scene/material.h scene/material.cpp scene/mesh.cpp scene/object.cpp scene/scene.cpp descriptor_set_manager.h scene/material_system.h texture.cpp)
+        scene/material.h scene/material.cpp scene/mesh.cpp scene/object.cpp scene/scene.cpp descriptor_set_manager.h scene/material_system.h texture.cpp vulkan_create.h vulkan_create.cpp pipeline_builder.h pipeline_builder.cpp)
 
 add_library(engine "${SOURCES}")
 
