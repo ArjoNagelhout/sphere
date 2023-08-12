@@ -1,7 +1,8 @@
 #ifndef SPHERE_TEXTURE_H
 #define SPHERE_TEXTURE_H
 
-#include "core/vulkan_context.h"
+#include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 
 namespace engine {
 
@@ -32,34 +33,33 @@ namespace engine {
      * or do we upload it to the GPU and leave it there?
      *
      * maybe a distinction similar to RenderTextures in Unity.
+     *
+     * We need some way of converting the input data: .png, .jpg, .tif, .bmp
+     * to the output data: a binary representation in RAM.
+     *
+     * we then want to upload it to the gpu.
+     *
+     * we should also store a cached version on disk that is already in a binary format
+     * so that we don't have incredibly slow load times each time we open the scene.
+     *
+     * this way we can have both quick startup times, and the ability to manipulate / change textures
+     * at runtime by modifying the source files (.png, .jpg etc)
+     *
+     * the only issue is that it's quite hard to manage these different representations, while not increasing memory usage
+     * for each representation of the image.
+     *
+     * we start with the simplest implementation, with a file path as the argument
      */
     class Texture {
-        explicit Texture(Device &device) {
 
-            VkImageCreateInfo imageInfo{};
-            imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-            //imageInfo.flags
-            imageInfo.imageType = VK_IMAGE_TYPE_2D;
-            imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-            //imageInfo.extent
-            imageInfo.mipLevels = 1;
-            imageInfo.arrayLayers = 1;
-            imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-            imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-            imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            //imageInfo.queueFamilyIndexCount
-            //imageInfo.pQueueFamilyIndices
-            imageInfo.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    public:
+        explicit Texture(const std::string &filePath, const VkFormat &format, const VkExtent2D &extent);
+        ~Texture();
 
-            VkImage image;
-
-            checkResult(vkCreateImage(device.getDevice(), &imageInfo, nullptr, &image));
-        }
-
-        ~Texture() {
-            // deallocate buffer
-        }
+    private:
+        VkImage image;
+        VkImageView imageView;
+        VmaAllocation allocation;
     };
 
 }

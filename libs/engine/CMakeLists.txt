@@ -16,7 +16,7 @@ set(SOURCES
         scene/scene.h
         scene/mesh.h
         scene/object.h
-        scene/material.h scene/material.cpp scene/mesh.cpp scene/object.cpp scene/scene.cpp descriptor_set_manager.h scene/material_system.h)
+        scene/material.h scene/material.cpp scene/mesh.cpp scene/object.cpp scene/scene.cpp descriptor_set_manager.h scene/material_system.h texture.cpp)
 
 add_library(engine "${SOURCES}")
 
