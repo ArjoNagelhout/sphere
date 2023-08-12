@@ -44,7 +44,7 @@ namespace engine {
 
         void createGraphicsPipeline();
         void destroyGraphicsPipeline();
-        VkShaderModule createShaderModule(const std::vector<char> &code);
+        static VkShaderModule createShaderModule(const std::vector<char> &code);
     };
 
 }

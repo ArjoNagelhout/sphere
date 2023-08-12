@@ -34,23 +34,24 @@ namespace engine {
     }
 
     void FrameData::updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = buffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = VK_WHOLE_SIZE;
+        VkDescriptorBufferInfo bufferInfo{
+                .buffer = buffer,
+                .offset = 0,
+                .range = VK_WHOLE_SIZE,
+        };
 
-        VkWriteDescriptorSet writeDescriptorSet;
-        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSet.pNext = nullptr;
-        writeDescriptorSet.dstSet = descriptorSet;
-        writeDescriptorSet.dstBinding = 0;
-        writeDescriptorSet.dstArrayElement = 0;
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType = descriptorType;
-        writeDescriptorSet.pImageInfo = nullptr;
-        writeDescriptorSet.pBufferInfo = &bufferInfo;
-        writeDescriptorSet.pTexelBufferView = nullptr;
-
+        VkWriteDescriptorSet writeDescriptorSet{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = nullptr,
+                .dstSet = descriptorSet,
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = descriptorType,
+                .pImageInfo = nullptr,
+                .pBufferInfo = &bufferInfo,
+                .pTexelBufferView = nullptr,
+        };
         vkUpdateDescriptorSets(engine->device, 1, &writeDescriptorSet, 0, nullptr);
     }
 
@@ -314,29 +315,29 @@ namespace engine {
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         VkSemaphore signalSemaphores[] = {frameData.renderFinishedSemaphore};
 
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &frameData.commandBuffer;
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
-
+        VkSubmitInfo submitInfo{
+                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .waitSemaphoreCount = 1,
+                .pWaitSemaphores = waitSemaphores,
+                .pWaitDstStageMask = waitStages,
+                .commandBufferCount = 1,
+                .pCommandBuffers = &frameData.commandBuffer,
+                .signalSemaphoreCount = 1,
+                .pSignalSemaphores = signalSemaphores,
+        };
         checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, frameData.inFlightFence));
 
         VkSwapchainKHR swapchains[] = {swapchain->swapchain};
 
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapchains;
-        presentInfo.pImageIndices = &imageIndex;
-        presentInfo.pResults = nullptr;
-
+        VkPresentInfoKHR presentInfo{
+                .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                .waitSemaphoreCount = 1,
+                .pWaitSemaphores = signalSemaphores,
+                .swapchainCount = 1,
+                .pSwapchains = swapchains,
+                .pImageIndices = &imageIndex,
+                .pResults = nullptr,
+        };
         result = vkQueuePresentKHR(presentQueue, &presentInfo);
         switch (result) {
             case VK_SUCCESS:
@@ -366,14 +367,17 @@ namespace engine {
         };
         VkExtent2D extent = swapchain->extent;
 
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass->renderPass;
-        renderPassInfo.framebuffer = framebuffer;
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = extent;
-        renderPassInfo.clearValueCount = 2;
-        renderPassInfo.pClearValues = clearValues;
+        VkRenderPassBeginInfo renderPassInfo{
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .renderPass = renderPass->renderPass,
+                .framebuffer = framebuffer,
+                .renderArea = {
+                        .offset = {0, 0},
+                        .extent = extent
+                },
+                .clearValueCount = 2,
+                .pClearValues = clearValues,
+        };
 
         vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindDescriptorSets(cmd,
@@ -413,41 +417,40 @@ namespace engine {
     void Engine::createCommandPool() {
         QueueFamiliesData data = queueFamiliesData;
 
-        VkCommandPoolCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        createInfo.queueFamilyIndex = data.graphicsQueueFamilyData->index;
-
-        checkResult(vkCreateCommandPool(device, &createInfo, nullptr, &commandPool));
+        VkCommandPoolCreateInfo info{
+                .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                .queueFamilyIndex = data.graphicsQueueFamilyData->index,
+        };
+        checkResult(vkCreateCommandPool(device, &info, nullptr, &commandPool));
         std::cout << "created command pool" << std::endl;
     }
 
     void Engine::createDescriptorPool(const VkDescriptorType &descriptorType) {
-
         VkDescriptorPoolSize poolSize{
                 .type = descriptorType,
                 .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
         };
 
-        VkDescriptorPoolCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        createInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
-        createInfo.poolSizeCount = 1;
-        createInfo.pPoolSizes = &poolSize;
-
-        checkResult(vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool));
+        VkDescriptorPoolCreateInfo info{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                .maxSets = MAX_FRAMES_IN_FLIGHT,
+                .poolSizeCount = 1,
+                .pPoolSizes = &poolSize,
+        };
+        checkResult(vkCreateDescriptorPool(device, &info, nullptr, &descriptorPool));
         std::cout << "created descriptor pool" << std::endl;
     }
 
     std::vector<VkCommandBuffer> Engine::allocateCommandBuffers() {
         std::vector<VkCommandBuffer> commandBuffers(MAX_FRAMES_IN_FLIGHT);
 
-        VkCommandBufferAllocateInfo allocateInfo{};
-        allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocateInfo.commandPool = commandPool;
-        allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
-
+        VkCommandBufferAllocateInfo allocateInfo{
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                .commandPool = commandPool,
+                .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                .commandBufferCount = static_cast<uint32_t>(commandBuffers.size()),
+        };
         checkResult(vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data()));
         std::cout << "created command buffers" << std::endl;
 
@@ -459,12 +462,12 @@ namespace engine {
 
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
-        VkDescriptorSetAllocateInfo allocateInfo{};
-        allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocateInfo.descriptorPool = descriptorPool;
-        allocateInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
-        allocateInfo.pSetLayouts = descriptorSetLayouts.data();
-
+        VkDescriptorSetAllocateInfo allocateInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = descriptorPool,
+                .descriptorSetCount = static_cast<uint32_t>(descriptorSets.size()),
+                .pSetLayouts = descriptorSetLayouts.data(),
+        };
         checkResult(vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data()));
         std::cout << "created descriptor sets" << std::endl;
 
@@ -475,31 +478,16 @@ namespace engine {
         VkExtent3D extent = toExtent3D(swapchain->extent);
         VkImageCreateInfo imageInfo = vk_create::image(depthImageFormat, extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-        VmaAllocationCreateInfo allocationInfo{};
-        allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        allocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-        allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
+        VmaAllocationCreateInfo allocationInfo{
+                .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+                .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        };
         checkResult(vmaCreateImage(allocator->allocator,
                                    &imageInfo, &allocationInfo,
                                    &depthImage, &depthImageAllocation, nullptr));
 
-        VkImageViewCreateInfo imageViewInfo{};
-        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewInfo.pNext = nullptr;
-        imageViewInfo.image = depthImage;
-        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewInfo.format = depthImageFormat;
-        //imageViewInfo.components.r
-        //imageViewInfo.components.g
-        //imageViewInfo.components.b
-        //imageViewInfo.components.a
-        imageViewInfo.subresourceRange.layerCount = 1;
-        imageViewInfo.subresourceRange.baseArrayLayer = 0;
-        imageViewInfo.subresourceRange.levelCount = 1;
-        imageViewInfo.subresourceRange.baseMipLevel = 0;
-        imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
+        VkImageViewCreateInfo imageViewInfo = vk_create::imageView(depthImage, depthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
         checkResult(vkCreateImageView(device, &imageViewInfo, nullptr, &depthImageView));
 
         std::cout << "created depth image" << std::endl;

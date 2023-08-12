@@ -28,7 +28,9 @@ namespace engine {
         std::vector<const char *> allRequiredExtensions;
         allRequiredExtensions.reserve(requiredExtensions.size() + glfwRequiredExtensionsCount);
         allRequiredExtensions.insert(allRequiredExtensions.end(), requiredExtensions.begin(), requiredExtensions.end());
-        allRequiredExtensions.insert(allRequiredExtensions.end(), glfwRequiredExtensionsArray, glfwRequiredExtensionsArray + glfwRequiredExtensionsCount); // we can use pointers as an iterator
+        allRequiredExtensions.insert(allRequiredExtensions.end(), glfwRequiredExtensionsArray,
+                                     glfwRequiredExtensionsArray +
+                                     glfwRequiredExtensionsCount); // we can use pointers as an iterator
 
         // add required extensions to the enabled extensions if they exist
         for (auto const &requiredExtension: allRequiredExtensions) {
@@ -40,7 +42,8 @@ namespace engine {
                               }) != *(extensions.end())) {
                 enabledExtensions.push_back(requiredExtension);
             } else {
-                throw std::runtime_error("could not add required instance extension: " + std::string(requiredExtension));
+                throw std::runtime_error(
+                        "could not add required instance extension: " + std::string(requiredExtension));
             }
         }
 
@@ -48,10 +51,12 @@ namespace engine {
         if (*std::find_if(extensions.begin(),
                           extensions.end(),
                           [](VkExtensionProperties extension) -> bool {
-                              return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0);
+                              return (strcmp(extension.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) ==
+                                      0);
                           }) != *extensions.end()) {
             enabledExtensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-            enabledExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // needs to be enabled as well
+            enabledExtensions.push_back(
+                    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // needs to be enabled as well
             flags = flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         }
 
@@ -66,7 +71,7 @@ namespace engine {
         std::vector<VkLayerProperties> layers(layersCount);
         vkEnumerateInstanceLayerProperties(&layersCount, layers.data());
 
-        for (auto requiredLayer : requiredLayers) {
+        for (auto requiredLayer: requiredLayers) {
             if (*std::find_if(layers.begin(),
                               layers.end(),
                               [&requiredLayer](const VkLayerProperties layer) -> bool {
@@ -75,42 +80,46 @@ namespace engine {
                 enabledLayers.push_back(requiredLayer);
             } else {
                 // couldn't find required layer
-                throw std::runtime_error(std::string("device does not support required layer: ") + std::string(requiredLayer));
+                throw std::runtime_error(
+                        std::string("device does not support required layer: ") + std::string(requiredLayer));
             }
         }
 
         return enabledLayers;
     }
 
-    void Engine::createInstance(const std::vector<const char *> &requiredExtensions, const std::vector<const char *> &requiredLayers) {
-        VkApplicationInfo appInfo{};
-        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.apiVersion = VK_API_VERSION_1_0;
-        appInfo.applicationVersion = configuration.applicationVersion;
-        appInfo.engineVersion = configuration.engineVersion;
-        appInfo.pEngineName = configuration.engineName.data();
-        appInfo.pApplicationName = configuration.applicationName.data();
+    void Engine::createInstance(const std::vector<const char *> &requiredExtensions,
+                                const std::vector<const char *> &requiredLayers) {
+        VkApplicationInfo appInfo{
+                .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+                .pApplicationName = configuration.applicationName.data(),
+                .applicationVersion = configuration.applicationVersion,
+                .pEngineName = configuration.engineName.data(),
+                .engineVersion = configuration.engineVersion,
+                .apiVersion = VK_API_VERSION_1_0,
+        };
 
         VkInstanceCreateFlags flags{};
         std::vector<const char *> enabledExtensions = getEnabledInstanceExtensions(requiredExtensions, flags);
         std::vector<const char *> enabledLayers = getEnabledInstanceLayers(requiredLayers);
 
-        for (const auto &enabledLayer : enabledLayers) {
+        for (const auto &enabledLayer: enabledLayers) {
             std::cout << "enabled instance layer: " << enabledLayer << std::endl;
         }
 
-        for (auto const &enabledExtension : enabledExtensions) {
+        for (auto const &enabledExtension: enabledExtensions) {
             std::cout << "enabled instance extension: " << enabledExtension << std::endl;
         }
 
-        VkInstanceCreateInfo instanceCreateInfo{};
-        instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        instanceCreateInfo.pApplicationInfo = &appInfo;
-        instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
-        instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
-        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(enabledLayers.size());
-        instanceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
-        instanceCreateInfo.flags = flags;
+        VkInstanceCreateInfo instanceCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+                .flags = flags,
+                .pApplicationInfo = &appInfo,
+                .enabledLayerCount = static_cast<uint32_t>(enabledLayers.size()),
+                .ppEnabledLayerNames = enabledLayers.data(),
+                .enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size()),
+                .ppEnabledExtensionNames = enabledExtensions.data(),
+        };
 
         checkResult(vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
         std::cout << "created instance" << std::endl;
@@ -138,7 +147,8 @@ namespace engine {
                                           const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
                                           const VkAllocationCallbacks *pAllocator,
                                           VkDebugUtilsMessengerEXT *pDebugMessenger) {
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,"vkCreateDebugUtilsMessengerEXT");
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
+                                                                               "vkCreateDebugUtilsMessengerEXT");
         if (func != nullptr) {
             return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
         } else {
@@ -200,7 +210,8 @@ namespace engine {
         uint32_t queueFamilyPropertyCount;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
         std::vector<VkQueueFamilyProperties> queueFamilyPropertiesList(queueFamilyPropertyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyPropertiesList.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount,
+                                                 queueFamilyPropertiesList.data());
 
         for (int i = 0; i < queueFamilyPropertyCount; i++) {
             auto const &queueFamilyProperties = queueFamilyPropertiesList[i];
@@ -305,14 +316,15 @@ namespace engine {
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, deviceExtensions.data());
 
         // see if this physical device supports the required device extensions
-        for (const auto &requiredDeviceExtensionName : requiredDeviceExtensionNames) {
+        for (const auto &requiredDeviceExtensionName: requiredDeviceExtensionNames) {
             if (*std::find_if(deviceExtensions.begin(),
                               deviceExtensions.end(),
                               [&requiredDeviceExtensionName](const VkExtensionProperties extension) -> bool {
                                   return strcmp(extension.extensionName, requiredDeviceExtensionName) == 0;
                               }) == *deviceExtensions.end()) {
                 // this means the device extension is not supported
-                errorMessage = std::string("physical device does not contain required device extension ") + std::string(requiredDeviceExtensionName);
+                errorMessage = std::string("physical device does not contain required device extension ") +
+                               std::string(requiredDeviceExtensionName);
                 return 0;
             }
         }
@@ -362,7 +374,7 @@ namespace engine {
         std::cout << physicalDeviceCount << " devices found with Vulkan support" << std::endl;
 
         // print devices
-        for (auto const &_physicalDevice : physicalDevices) {
+        for (auto const &_physicalDevice: physicalDevices) {
 
             // get device properties
             VkPhysicalDeviceProperties properties;
@@ -377,9 +389,10 @@ namespace engine {
         int bestScore = 0;
         VkPhysicalDevice bestPhysicalDevice = nullptr;
         std::string physicalDeviceErrorMessage{"Physical device does not support required extensions and features"};
-        for (auto const &_physicalDevice : physicalDevices) {
+        for (auto const &_physicalDevice: physicalDevices) {
 
-            int score = getPhysicalDeviceScore(_physicalDevice, surface, physicalDeviceErrorMessage, requiredExtensions);
+            int score = getPhysicalDeviceScore(_physicalDevice, surface, physicalDeviceErrorMessage,
+                                               requiredExtensions);
             if (score > 0 && score > bestScore) {
                 bestScore = score;
                 bestPhysicalDevice = _physicalDevice;
@@ -403,7 +416,8 @@ namespace engine {
         std::cout << "picked device: " << properties.deviceName << std::endl;
     }
 
-    std::vector<const char *> getEnabledDeviceExtensions(VkPhysicalDevice &physicalDevice, const std::vector<const char *> &requiredExtensions) {
+    std::vector<const char *>
+    getEnabledDeviceExtensions(VkPhysicalDevice &physicalDevice, const std::vector<const char *> &requiredExtensions) {
 
         // add the required device extensions
         std::vector<const char *> enabledDeviceExtensions(0);
@@ -414,7 +428,7 @@ namespace engine {
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionsCount, deviceExtensions.data());
 
         // add required device extensions if supported
-        for (const auto &requiredExtension : requiredExtensions) {
+        for (const auto &requiredExtension: requiredExtensions) {
             if (*std::find_if(
                     deviceExtensions.begin(),
                     deviceExtensions.end(),
@@ -451,40 +465,44 @@ namespace engine {
 
         // uses a map so that no duplicate entries can exist.
         std::map<uint32_t, QueueFamilyData> queueFamilyDataMap = {
-                {queueFamiliesData.presentQueueFamilyData.value().index, queueFamiliesData.presentQueueFamilyData.value()},
+                {queueFamiliesData.presentQueueFamilyData.value().index,  queueFamiliesData.presentQueueFamilyData.value()},
                 {queueFamiliesData.graphicsQueueFamilyData.value().index, queueFamiliesData.graphicsQueueFamilyData.value()}
         };
+
+        // Within the same device, queues with higher priority may be allotted more processing time than queues
+        // with lower priority, the higher priority queue may also execute fully before executing the lower
+        // priority queue
 
         float queuePriority = 1.0f;
         for (auto queueFamilyData: queueFamilyDataMap) {
             const QueueFamilyData &data = queueFamilyData.second;
-            VkDeviceQueueCreateInfo queueCreateInfo{};
-            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = data.index;
-            queueCreateInfo.queueCount = data.properties.queueCount;
-            // Within the same device, queues with higher priority may be allotted more processing time than queues
-            // with lower priority, the higher priority queue may also execute fully before executing the lower
-            // priority queue
-            queueCreateInfo.pQueuePriorities = &queuePriority;
+            VkDeviceQueueCreateInfo queueCreateInfo{
+                    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                    .queueFamilyIndex = data.index,
+                    .queueCount = data.properties.queueCount,
+                    .pQueuePriorities = &queuePriority,
+            };
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        std::vector<const char *> enabledDeviceExtensions = getEnabledDeviceExtensions(physicalDevice, requiredDeviceExtensions);
+        std::vector<const char *> enabledDeviceExtensions = getEnabledDeviceExtensions(physicalDevice,
+                                                                                       requiredDeviceExtensions);
 
         // print enabled device extensions
-        for (const auto &enabledDeviceExtension : enabledDeviceExtensions) {
+        for (const auto &enabledDeviceExtension: enabledDeviceExtensions) {
             std::cout << "enabled device extension: " << enabledDeviceExtension << std::endl;
         }
 
-        VkDeviceCreateInfo deviceCreateInfo{};
-        deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-        deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enabledDeviceExtensions.size());
-        deviceCreateInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
+        VkDeviceCreateInfo deviceCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+                .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
+                .pQueueCreateInfos = queueCreateInfos.data(),
+                .enabledExtensionCount = static_cast<uint32_t>(enabledDeviceExtensions.size()),
+                .ppEnabledExtensionNames = enabledDeviceExtensions.data(),
+        };
         // deviceCreateInfo.ppEnabledLayerNames and deviceCreateInfo.enabledLayerCount are deprecated. layers are now specified when creating the vulkan instance.
 
-        VkResult result = vkCreateDevice(physicalDevice,&deviceCreateInfo, nullptr, &device);
+        VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
 
         if (result != VK_SUCCESS) {
             throw std::runtime_error(std::string("failed to create logical device: ") + string_VkResult(result));
@@ -507,7 +525,6 @@ namespace engine {
      */
     void Engine::createSurface() {
         checkResult(glfwCreateWindowSurface(instance, configuration.window, nullptr, &surface));
-
         std::cout << "created surface" << std::endl;
     }
 }

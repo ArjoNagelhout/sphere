@@ -93,39 +93,30 @@ namespace engine {
             imageCount = surfaceData.surfaceCapabilities.maxImageCount;
         }
 
-        VkSwapchainCreateInfoKHR swapchainCreateInfo{};
-        swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreateInfo.surface = engine->surface;
-        swapchainCreateInfo.minImageCount = imageCount;
-        swapchainCreateInfo.imageFormat = surfaceFormat.format;
-        swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
-        swapchainCreateInfo.imageExtent = extent;
-        swapchainCreateInfo.imageArrayLayers = 1; // for stereoscopic rendering should be more than 1
-        swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // listed in surfaceCapabilities.supportedUsageFlags, but VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT is guaranteed to always exist
-
         // determine if the graphics queue family and the present queue family share the same index
         QueueFamiliesData queueFamiliesData = engine->queueFamiliesData;
         uint32_t queueFamilyIndices[]{queueFamiliesData.graphicsQueueFamilyData->index,
                                       queueFamiliesData.presentQueueFamilyData->index};
+        bool oneFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
-        if (queueFamilyIndices[0] == queueFamilyIndices[1]) {
-            // This option offers the best performance.
-            swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            swapchainCreateInfo.queueFamilyIndexCount = 0; // optional
-            swapchainCreateInfo.pQueueFamilyIndices = nullptr; // optional
-        } else {
-            // an image is owned by one queue family at a time and ownership must be explicitly transferred before
-            // using it in another queue family.
-            swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            swapchainCreateInfo.queueFamilyIndexCount = 2;
-            swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
-        }
-
-        swapchainCreateInfo.preTransform = surfaceData.surfaceCapabilities.currentTransform;
-        swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // ignores the alpha channel when compositing the window with other surfaces on certain window systems.
-        swapchainCreateInfo.presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes);
-        swapchainCreateInfo.clipped = VK_TRUE;
-        swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+        VkSwapchainCreateInfoKHR swapchainCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                .surface = engine->surface,
+                .minImageCount = imageCount,
+                .imageFormat = surfaceFormat.format,
+                .imageColorSpace = surfaceFormat.colorSpace,
+                .imageExtent = extent,
+                .imageArrayLayers = 1, // for stereoscopic rendering should be more than 1
+                .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // listed in surfaceCapabilities.supportedUsageFlags, but VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT is guaranteed to always exist
+                .imageSharingMode = oneFamily ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT,
+                .queueFamilyIndexCount = static_cast<uint32_t>(oneFamily ? 0 : 2),
+                .pQueueFamilyIndices = oneFamily ? nullptr : queueFamilyIndices,
+                .preTransform = surfaceData.surfaceCapabilities.currentTransform,
+                .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // ignores the alpha channel when compositing the window with other surfaces on certain window systems.
+                .presentMode = pickSwapchainPresentMode(surfaceData.surfacePresentModes),
+                .clipped = VK_TRUE,
+                .oldSwapchain = VK_NULL_HANDLE,
+        };
 
         checkResult(vkCreateSwapchainKHR(engine->device, &swapchainCreateInfo, nullptr, &swapchain));
         std::cout << "created swapchain" << std::endl;
@@ -142,11 +133,10 @@ namespace engine {
         imageViews.resize(images.size());
 
         for (size_t i = 0; i < images.size(); i++) {
-
             // If you were working on a stereographic 3D application, then you would create a swap chain
             // with multiple layers. You could then create multiple image views for each image representing
             // the views for the left and right eyes by accessing different layers.
-            VkImageViewCreateInfo viewInfo = vk_create::imageView(images[i], surfaceFormat.format);
+            VkImageViewCreateInfo viewInfo = vk_create::imageView(images[i], surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT);
             checkResult(vkCreateImageView(engine->device, &viewInfo, nullptr, &imageViews[i]));
         }
     }

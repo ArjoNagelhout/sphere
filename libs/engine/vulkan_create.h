@@ -9,7 +9,7 @@ namespace engine::vk_create {
     // if a Vk___CreateInfo is used often and often with the same parameters, it can be defined here
 
     VkImageCreateInfo image(const VkFormat &format, const VkExtent3D &extent, const VkImageUsageFlags &usage);
-    VkImageViewCreateInfo imageView(const VkImage &image, const VkFormat &format);
+    VkImageViewCreateInfo imageView(const VkImage &image, const VkFormat &format, const VkImageAspectFlags &aspectMask);
     VkFramebufferCreateInfo framebuffer(const VkRenderPass &renderPass, const std::vector<VkImageView> &attachments, const VkExtent2D &extent);
 }
 
