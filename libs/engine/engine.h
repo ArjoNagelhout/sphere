@@ -144,10 +144,10 @@ namespace engine {
 
         // buffers
         std::vector<VertexAttributes> vertices{
-                {{-0.5f, -0.5f, 0}},
-                {{0.5f,  -0.5f, 0}},
-                {{0.5f,  0.5f,  0}},
-                {{-0.5f, 0.5f,  0}}
+                {{-1.0f, -1.0f, 0}, {0, 0}, {1, 0, 0}},
+                {{1.0f,  -1.0f, 0}, {0, 0}, {0, 1, 0}},
+                {{1.0f,  1.0f,  0}, {0, 0}, {0, 0, 1}},
+                {{-1.0f, 1.0f,  0}, {0, 0}, {1, 1, 1}}
         };
         VkBuffer vertexBuffer;
         VmaAllocation vertexBufferAllocation;

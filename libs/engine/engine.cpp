@@ -1,6 +1,7 @@
 #include "engine.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
+
 #include <tiny_obj_loader.h>
 
 namespace engine {
@@ -55,7 +56,8 @@ namespace engine {
     /*
      * Todo: refactor
      */
-    static void loadObj(const std::string &filePath, std::vector<VertexAttributes> &vertices, std::vector<uint32_t> &indices) {
+    static void
+    loadObj(const std::string &filePath, std::vector<VertexAttributes> &vertices, std::vector<uint32_t> &indices) {
 
         vertices.clear();
         indices.clear();
@@ -82,11 +84,22 @@ namespace engine {
 
         for (size_t v = 0; v < attributes.vertices.size(); v += 3) {
 
-            VertexAttributes vertexData{{
-                                          attributes.vertices[v + 0],
-                                          attributes.vertices[v + 1],
-                                          attributes.vertices[v + 2]
-                                  }};
+            VertexAttributes vertexData{
+                    .position = {
+                            attributes.vertices[v + 0],
+                            attributes.vertices[v + 1],
+                            attributes.vertices[v + 2]
+                    },
+                    .uv = {
+                            attributes.texcoords[v + 0],
+                            attributes.texcoords[v + 1]
+                    },
+                    .normal = {
+                            attributes.normals[v + 0],
+                            attributes.normals[v + 1],
+                            attributes.normals[v + 2]
+                    }
+            };
             vertices.push_back(vertexData);
         }
 
@@ -101,21 +114,21 @@ namespace engine {
 
         std::cout << "loaded 3d model at: " << filePath << std::endl;
 
-    //            for (size_t s = 0; s < shapes.size(); s++) {
-    //
-    //                size_t index_offset = 0;
-    //                for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-    //                    size_t vertices = size_t(shapes[s].mesh.num_face_vertices[f]);
-    //
-    //                    for (size_t v = 0; v < vertices; v++) {
-    //                        tinyobj::index_t index = shapes[s].mesh.indices[index_offset + v];
-    //                        size_t a = 3*size_t(index.vertex_index);
-    //                        tinyobj::real_t x = attributes.vertices[a+0];
-    //                        tinyobj::real_t y = attributes.vertices[a+1];
-    //                        tinyobj::real_t z = attributes.vertices[a+2];
-    //                    }
-    //                }
-    //            }
+        //            for (size_t s = 0; s < shapes.size(); s++) {
+        //
+        //                size_t index_offset = 0;
+        //                for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+        //                    size_t vertices = size_t(shapes[s].mesh.num_face_vertices[f]);
+        //
+        //                    for (size_t v = 0; v < vertices; v++) {
+        //                        tinyobj::index_t index = shapes[s].mesh.indices[index_offset + v];
+        //                        size_t a = 3*size_t(index.vertex_index);
+        //                        tinyobj::real_t x = attributes.vertices[a+0];
+        //                        tinyobj::real_t y = attributes.vertices[a+1];
+        //                        tinyobj::real_t z = attributes.vertices[a+2];
+        //                    }
+        //                }
+        //            }
     }
 
     Engine::Engine(EngineConfiguration &engineConfiguration) {
@@ -141,8 +154,10 @@ namespace engine {
                 .requiredDeviceExtensions = {},
         };
 
-        std::vector<const char *> allRequiredInstanceExtensions{configuration.requiredInstanceExtensions.begin(), configuration.requiredInstanceExtensions.end()};
-        std::vector<const char *> allRequiredInstanceLayers{configuration.requiredInstanceLayers.begin(), configuration.requiredInstanceLayers.end()};
+        std::vector<const char *> allRequiredInstanceExtensions{configuration.requiredInstanceExtensions.begin(),
+                                                                configuration.requiredInstanceExtensions.end()};
+        std::vector<const char *> allRequiredInstanceLayers{configuration.requiredInstanceLayers.begin(),
+                                                            configuration.requiredInstanceLayers.end()};
 
         if (configuration.debug) {
             allRequiredInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -173,8 +188,8 @@ namespace engine {
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             FrameData frameData{
-                .commandBuffer = commandBuffers[i],
-                .descriptorSet = descriptorSets[i]
+                    .commandBuffer = commandBuffers[i],
+                    .descriptorSet = descriptorSets[i]
             };
             frameData.initialize();
             frames.push_back(frameData);
@@ -189,19 +204,19 @@ namespace engine {
         allocator->createBuffer<VertexAttributes>(vertexBuffer,
                                                   vertexBufferAllocation,
                                                   *vertices.data(),
-                                                         vertices.size() * sizeof(vertices[0]),
+                                                  vertices.size() * sizeof(vertices[0]),
                                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
         allocator->createBuffer<uint32_t>(indexBuffer,
                                           indexBufferAllocation,
                                           *indices.data(),
-                                                indices.size() * sizeof(indices[0]),
+                                          indices.size() * sizeof(indices[0]),
                                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     }
 
     Engine::~Engine() {
         vkDeviceWaitIdle(device);
 
-        for (auto const &frameData : frames) {
+        for (auto const &frameData: frames) {
             frameData.destroy();
         }
 

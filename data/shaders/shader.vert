@@ -11,8 +11,8 @@ vec3 colors[6] = vec3[](
 
 // vertex attributes:
 layout(location = 0) in vec3 positionAttribute;
-//layout(location = 1) in vec2 uvAtrribute;
-//layout(location = 2) in vec3 normalAttribute;
+layout(location = 1) in vec2 uvAtrribute;
+layout(location = 2) in vec3 normalAttribute;
 
 layout(binding = 0) uniform cameraBuf {
     mat4 MVP;
@@ -24,5 +24,6 @@ void main() {
     // matrix multiplication using model view projection
     gl_Position = Camera.MVP * vec4(positionAttribute, 1);
     //gl_Position = vec4(positionAttribute, 1);
-    fragColor = colors[gl_VertexIndex % 6];
+    //fragColor = colors[gl_VertexIndex % 6];
+    fragColor = normalAttribute;
 }

@@ -77,8 +77,6 @@ namespace engine {
                 fragmentShaderStageInfo
         };
 
-        PhysicalDeviceData physicalDeviceData = engine->physicalDeviceData;
-
         VkVertexInputBindingDescription vertexInputBindingDescription{
                 .binding = 0, // binding number (identifier?)
                 .stride = sizeof(VertexAttributes), //physicalDeviceData.minVertexInputBindingStrideAlignment, // the amount of bytes per item in the vertex buffer
@@ -86,11 +84,31 @@ namespace engine {
         };
 
         //must contain VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,
-        VkVertexInputAttributeDescription vertexInputAttributeDescription{
+        VkVertexInputAttributeDescription pos{
                 .location = 0, // is the shader input location number for this attribute
                 .binding = 0, // binding number
                 .format = VK_FORMAT_R32G32B32_SFLOAT, // super confusing, but vec3 translates to this format
                 .offset = 0
+        };
+
+        VkVertexInputAttributeDescription uv{
+                .location = 1,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32_SFLOAT, // vec2
+                .offset = sizeof(VertexAttributes::position)
+        };
+
+        VkVertexInputAttributeDescription normal{
+                .location = 2,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT, // vec3
+                .offset = sizeof(VertexAttributes::position) + sizeof(VertexAttributes::uv)
+        };
+
+        std::vector<VkVertexInputAttributeDescription> attributes{
+            pos,
+            uv,
+            normal
         };
 
         // how are vertices input into the pipeline
@@ -98,8 +116,8 @@ namespace engine {
         vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputState.vertexBindingDescriptionCount = 1;
         vertexInputState.pVertexBindingDescriptions = &vertexInputBindingDescription;
-        vertexInputState.vertexAttributeDescriptionCount = 1;
-        vertexInputState.pVertexAttributeDescriptions = &vertexInputAttributeDescription;
+        vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
+        vertexInputState.pVertexAttributeDescriptions = attributes.data();
 
         // how do vertices get converted into a primitive (i.e. triangle)
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
