@@ -4,19 +4,20 @@ set(SOURCES
 
         types.h
 
-        swapchain.h swapchain.cpp
-        render_pass.h render_pass.cpp
-        graphics_pipeline.h graphics_pipeline.cpp
-        memory_allocator.h memory_allocator.cpp
-
         camera.h camera.cpp
 
         engine.h engine.cpp vulkan_setup.cpp
+        vulkan_create.h vulkan_create.cpp
 
-        scene/scene.h
-        scene/mesh.h
-        scene/object.h
-        scene/material.h scene/material.cpp scene/mesh.cpp scene/object.cpp scene/scene.cpp descriptor_set_manager.h scene/material_system.h texture.cpp vulkan_create.h vulkan_create.cpp pipeline_builder.h pipeline_builder.cpp)
+        swapchain.h swapchain.cpp
+        render_pass.h render_pass.cpp
+        memory_allocator.h memory_allocator.cpp
+
+        descriptor_set_builder.h descriptor_set_builder.cpp
+        pipeline_builder.h pipeline_builder.cpp
+
+        texture.h texture.cpp
+        )
 
 add_library(engine "${SOURCES}")
 

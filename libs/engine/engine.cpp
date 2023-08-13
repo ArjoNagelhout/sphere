@@ -33,30 +33,8 @@ namespace engine {
         std::cout << "destroyed frame data" << std::endl;
     }
 
-    void FrameData::updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const {
-        VkDescriptorBufferInfo bufferInfo{
-                .buffer = buffer,
-                .offset = 0,
-                .range = VK_WHOLE_SIZE,
-        };
-
-        VkWriteDescriptorSet writeDescriptorSet{
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext = nullptr,
-                .dstSet = descriptorSet,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = descriptorType,
-                .pImageInfo = nullptr,
-                .pBufferInfo = &bufferInfo,
-                .pTexelBufferView = nullptr,
-        };
-        vkUpdateDescriptorSets(engine->device, 1, &writeDescriptorSet, 0, nullptr);
-    }
-
     /*
-     * Todo: refactor
+     * Todo: refactor to use index buffer again
      */
     static void
     loadObj(const std::string &filePath, std::vector<VertexAttributes> &vertices, std::vector<uint32_t> &indices) {
@@ -207,30 +185,38 @@ namespace engine {
         allocator = std::make_unique<MemoryAllocator>();
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
+        descriptorSetBuilder = std::make_unique<DescriptorSetBuilder>();
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{
+                descriptorSetBuilder->descriptorSetLayout
+        };
+
+        pipelineBuilder = std::make_unique<PipelineBuilder>();
+        pipelineBuilder->createPipeline(renderPass->renderPass, descriptorSetLayouts);
 
         createDepthImage();
         swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
-
-        graphicsPipeline = std::make_unique<GraphicsPipeline>(*swapchain, *renderPass);
         camera = std::make_unique<Camera>(*allocator, *swapchain);
 
         createCommandPool();
-        createDescriptorPool(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-
         std::vector<VkCommandBuffer> commandBuffers = allocateCommandBuffers();
-        std::vector<VkDescriptorSet> descriptorSets = allocateDescriptorSets(graphicsPipeline->descriptorSetLayout);
+
+        // load image
+        texture = std::make_unique<Texture>("/Users/arjonagelhout/Desktop/Screenshot 2023-08-12 at 01.18.16.png");
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            std::vector<VkDescriptorSet> descriptorSets = descriptorSetBuilder->createDescriptorSets(descriptorSetBuilder->descriptorSetLayout, 1);
+            descriptorSetBuilder->bindBuffer(descriptorSets[0], camera->cameraDataBuffer, 0);
+            descriptorSetBuilder->bindImage(descriptorSets[0], texture->sampler, texture->imageView, 1);
+
             FrameData frameData{
                     .commandBuffer = commandBuffers[i],
-                    .descriptorSet = descriptorSets[i]
+                    .descriptorSets = descriptorSets
             };
             frameData.initialize();
             frames.push_back(frameData);
-            frameData.updateDescriptorSet(camera->cameraDataBuffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         }
 
-        std::string path = "/Users/arjonagelhout/Documents/Projecten/projects_2019/2019-08-23_Blender_exercises/RUST_3d_Low1.obj";//"/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj";
+        std::string path = "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj";
         loadObj(path,
                 vertices,
                 indices);
@@ -245,9 +231,6 @@ namespace engine {
                                           *indices.data(),
                                           indices.size() * sizeof(indices[0]),
                                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
-        // load image
-        //Texture texture{"/Users/arjonagelhout/Desktop/Screenshot 2023-08-12 at 01.18.16.png"};
     }
 
     Engine::~Engine() {
@@ -258,13 +241,15 @@ namespace engine {
         }
 
         vkDestroyCommandPool(device, commandPool, nullptr);
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
         // destroy depth image
         vkDestroyImageView(device, depthImageView, nullptr);
         vmaDestroyImage(allocator->allocator, depthImage, depthImageAllocation);
 
-        graphicsPipeline.reset();
+        texture.reset();
+
+        pipelineBuilder.reset();
+        descriptorSetBuilder.reset();
         renderPass.reset();
         swapchain.reset();
         allocator.reset();
@@ -382,13 +367,13 @@ namespace engine {
         vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindDescriptorSets(cmd,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                graphicsPipeline->graphicsPipelineLayout,
+                                pipelineBuilder->graphicsPipelineLayout,
                                 0,
-                                1,
-                                &frameData.descriptorSet,
+                                static_cast<uint32_t>(frameData.descriptorSets.size()),
+                                frameData.descriptorSets.data(),
                                 0,
                                 nullptr);
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->graphicsPipeline);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineBuilder->graphicsPipeline);
 
         VkViewport viewport{
                 .x = 0.0f,
@@ -426,22 +411,6 @@ namespace engine {
         std::cout << "created command pool" << std::endl;
     }
 
-    void Engine::createDescriptorPool(const VkDescriptorType &descriptorType) {
-        VkDescriptorPoolSize poolSize{
-                .type = descriptorType,
-                .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
-        };
-
-        VkDescriptorPoolCreateInfo info{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                .maxSets = MAX_FRAMES_IN_FLIGHT,
-                .poolSizeCount = 1,
-                .pPoolSizes = &poolSize,
-        };
-        checkResult(vkCreateDescriptorPool(device, &info, nullptr, &descriptorPool));
-        std::cout << "created descriptor pool" << std::endl;
-    }
-
     std::vector<VkCommandBuffer> Engine::allocateCommandBuffers() {
         std::vector<VkCommandBuffer> commandBuffers(MAX_FRAMES_IN_FLIGHT);
 
@@ -455,23 +424,6 @@ namespace engine {
         std::cout << "created command buffers" << std::endl;
 
         return commandBuffers;
-    }
-
-    std::vector<VkDescriptorSet> Engine::allocateDescriptorSets(VkDescriptorSetLayout &descriptorSetLayout) {
-        std::vector<VkDescriptorSet> descriptorSets(MAX_FRAMES_IN_FLIGHT);
-
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
-
-        VkDescriptorSetAllocateInfo allocateInfo{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                .descriptorPool = descriptorPool,
-                .descriptorSetCount = static_cast<uint32_t>(descriptorSets.size()),
-                .pSetLayouts = descriptorSetLayouts.data(),
-        };
-        checkResult(vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data()));
-        std::cout << "created descriptor sets" << std::endl;
-
-        return descriptorSets;
     }
 
     void Engine::createDepthImage() {

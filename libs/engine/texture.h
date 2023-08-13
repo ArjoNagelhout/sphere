@@ -56,11 +56,13 @@ namespace engine {
         explicit Texture(const std::string &filePath);
         ~Texture();
 
+        VkImage image;
+        VkImageView imageView;
+        VkSampler sampler;
+
     private:
         VmaAllocator &allocator;
         unsigned char *data;
-        VkImage image;
-        VkImageView imageView;
         VmaAllocation allocation;
     };
 

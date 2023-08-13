@@ -15,9 +15,11 @@
 #include "utils.h"
 #include "swapchain.h"
 #include "render_pass.h"
-#include "graphics_pipeline.h"
+#include "descriptor_set_builder.h"
+#include "pipeline_builder.h"
 #include "memory_allocator.h"
 #include "camera.h"
+#include "texture.h"
 
 namespace engine {
 
@@ -82,7 +84,7 @@ namespace engine {
      */
     struct FrameData {
         VkCommandBuffer commandBuffer;
-        VkDescriptorSet descriptorSet;
+        std::vector<VkDescriptorSet> descriptorSets;
 
         // synchronization primitives
         VkFence inFlightFence;
@@ -91,7 +93,6 @@ namespace engine {
 
         void initialize();
         void destroy() const;
-        void updateDescriptorSet(VkBuffer &buffer, VkDescriptorType descriptorType) const;
     };
 
     /*
@@ -134,14 +135,14 @@ namespace engine {
         };
 
         std::unique_ptr<RenderPass> renderPass;
-        std::unique_ptr<GraphicsPipeline> graphicsPipeline;
+        std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
+        std::unique_ptr<PipelineBuilder> pipelineBuilder;
 
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t currentFrameIndex = 0;
         std::vector<FrameData> frames;
 
         VkCommandPool commandPool;
-        VkDescriptorPool descriptorPool;
 
         // buffers
         std::vector<VertexAttributes> vertices{
@@ -164,6 +165,8 @@ namespace engine {
         VkImageView depthImageView;
         VmaAllocation depthImageAllocation;
 
+        std::unique_ptr<Texture> texture;
+
         // vulkan setup
         void createInstance(const std::vector<const char *> &requiredExtensions, const std::vector<const char *> &requiredLayers);
         void createDebugMessenger();
@@ -174,9 +177,7 @@ namespace engine {
 
         // drawing
         void createCommandPool();
-        void createDescriptorPool(const VkDescriptorType &descriptorType);
         std::vector<VkCommandBuffer> allocateCommandBuffers();
-        std::vector<VkDescriptorSet> allocateDescriptorSets(VkDescriptorSetLayout &descriptorSetLayout);
         void drawFrame(FrameData frameData);
         void recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer);
 

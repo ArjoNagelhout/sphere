@@ -1,7 +1,8 @@
-#ifndef SPHERE_DESCRIPTOR_SET_MANAGER_H
-#define SPHERE_DESCRIPTOR_SET_MANAGER_H
+#ifndef SPHERE_DESCRIPTOR_SET_BUILDER_H
+#define SPHERE_DESCRIPTOR_SET_BUILDER_H
 
-#include "core/vulkan_context.h"
+#include <vulkan/vulkan.h>
+#include <vector>
 
 namespace engine {
 
@@ -56,26 +57,34 @@ namespace engine {
      *
      * Pipeline layout and descriptor sets need to be compatible (so created together)
      */
-    class DescriptorSetManager {
+    class DescriptorSetBuilder {
 
     public:
-        explicit DescriptorSetManager() {
-            std::vector<VkDescriptorPoolSize> poolSizes{
-                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 }
-            };
+        explicit DescriptorSetBuilder();
+        ~DescriptorSetBuilder();
+//            std::vector<VkDescriptorPoolSize> poolSizes{
+//                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 }
+//            };
+//
+//            VkDescriptorPoolCreateInfo poolInfo{};
+//            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+//            poolInfo.maxSets = 1000; // maximum number of sets that can be allocated from the pool
+//            poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+//            poolInfo.pPoolSizes = poolSizes.data();
+//        }
 
-            VkDescriptorPoolCreateInfo poolInfo{};
-            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            poolInfo.maxSets = 1000; // maximum number of sets that can be allocated from the pool
-            poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-            poolInfo.pPoolSizes = poolSizes.data();
-        }
-        ~DescriptorSetManager();
+        VkDescriptorSetLayout descriptorSetLayout;
+
+        std::vector<VkDescriptorSet> createDescriptorSets(VkDescriptorSetLayout layout, size_t amount);
+        void bindBuffer(VkDescriptorSet &descriptorSet, VkBuffer &buffer, uint32_t dstBinding);
+        void bindImage(VkDescriptorSet &descriptorSet, VkSampler &sampler, VkImageView &imageView, uint32_t dstBinding);
 
     private:
+        VkDescriptorPool descriptorPool;
 
-
+        void createDescriptorPool();
+        void createDescriptorSetLayout();
     };
 }
 
-#endif //SPHERE_DESCRIPTOR_SET_MANAGER_H
+#endif //SPHERE_DESCRIPTOR_SET_BUILDER_H

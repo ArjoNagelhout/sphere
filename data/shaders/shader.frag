@@ -1,10 +1,11 @@
 #version 450
 
-// location = 0 specifies index of the framebuffer
-layout(location = 0) in vec3 fragColor;
+layout(set = 0, binding = 1) uniform sampler2D u_Texture;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) in vec2 v_UV;
+layout(location = 0) out vec4 out_Color;
 
 void main() {
-    outColor = vec4(fragColor, 1.0);
+    out_Color = texture(u_Texture, v_UV);
+    //out_Color = vec4(0.5, v_UV, 1);
 }

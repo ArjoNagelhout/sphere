@@ -6,7 +6,7 @@ namespace engine::vk_create {
         VkImageCreateInfo info{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                 .pNext = nullptr,
-                //info.flags,
+                .flags = 0,
                 .imageType = VK_IMAGE_TYPE_2D,
                 .format = format,
                 .extent = extent,
