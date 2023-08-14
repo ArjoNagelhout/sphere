@@ -123,6 +123,9 @@ namespace engine {
         VkQueue graphicsQueue;
         VkQueue presentQueue;
         VkSurfaceKHR surface;
+        VkCommandPool commandPool;
+        const uint32_t UPLOAD_COMMAND_BUFFERS = 1;
+        VkCommandBuffer uploadCommandBuffer;
 
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<MemoryAllocator> allocator;
@@ -138,11 +141,10 @@ namespace engine {
         std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
         std::unique_ptr<PipelineBuilder> pipelineBuilder;
 
+
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t currentFrameIndex = 0;
         std::vector<FrameData> frames;
-
-        VkCommandPool commandPool;
 
         // buffers
         std::vector<VertexAttributes> vertices{
@@ -177,7 +179,7 @@ namespace engine {
 
         // drawing
         void createCommandPool();
-        std::vector<VkCommandBuffer> allocateCommandBuffers();
+        std::vector<VkCommandBuffer> createCommandBuffers();
         void drawFrame(FrameData frameData);
         void recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer);
 

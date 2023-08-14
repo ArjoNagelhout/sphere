@@ -1,7 +1,5 @@
 #include "engine.h"
 
-#include "texture.h"
-
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
@@ -198,7 +196,8 @@ namespace engine {
         camera = std::make_unique<Camera>(*allocator, *swapchain);
 
         createCommandPool();
-        std::vector<VkCommandBuffer> commandBuffers = allocateCommandBuffers();
+        std::vector<VkCommandBuffer> commandBuffers = createCommandBuffers();
+        uploadCommandBuffer = commandBuffers[MAX_FRAMES_IN_FLIGHT]; // use the command buffer that comes after the frame command buffers
 
         // load image
         texture = std::make_unique<Texture>("/Users/arjonagelhout/Desktop/Screenshot 2023-08-12 at 01.18.16.png");
@@ -411,8 +410,8 @@ namespace engine {
         std::cout << "created command pool" << std::endl;
     }
 
-    std::vector<VkCommandBuffer> Engine::allocateCommandBuffers() {
-        std::vector<VkCommandBuffer> commandBuffers(MAX_FRAMES_IN_FLIGHT);
+    std::vector<VkCommandBuffer> Engine::createCommandBuffers() {
+        std::vector<VkCommandBuffer> commandBuffers(MAX_FRAMES_IN_FLIGHT + UPLOAD_COMMAND_BUFFERS);
 
         VkCommandBufferAllocateInfo allocateInfo{
                 .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,

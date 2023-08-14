@@ -61,7 +61,7 @@ namespace engine {
                 .tiling = VK_IMAGE_TILING_OPTIMAL,
                 .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
                 .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VK_IMAGE_LAYOUT_UNDEFINED
+                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // VK_IMAGE_LAYOUT_UNDEFINED
         };
         VmaAllocationCreateInfo allocationInfo{
                 .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -106,27 +106,92 @@ namespace engine {
 
         // sampler
         VkSamplerCreateInfo samplerInfo{
-            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .magFilter = VK_FILTER_NEAREST,
-            .minFilter = VK_FILTER_NEAREST,
-            .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-            .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-            .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-            .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-            .mipLodBias = 0,
-            .anisotropyEnable = VK_FALSE,
-            .maxAnisotropy = 0,
-            .compareEnable = VK_FALSE,
-            .compareOp = VK_COMPARE_OP_NEVER,
-            .minLod = 0,
-            .maxLod = 0,
-            .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-            .unnormalizedCoordinates = VK_FALSE
+                .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .magFilter = VK_FILTER_NEAREST,
+                .minFilter = VK_FILTER_NEAREST,
+                .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .mipLodBias = 0,
+                .anisotropyEnable = VK_FALSE,
+                .maxAnisotropy = 0,
+                .compareEnable = VK_FALSE,
+                .compareOp = VK_COMPARE_OP_NEVER,
+                .minLod = 0,
+                .maxLod = 0,
+                .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                .unnormalizedCoordinates = VK_FALSE
         };
 
         checkResult(vkCreateSampler(engine->device, &samplerInfo, nullptr, &sampler));
+
+        const VkCommandBuffer &cmd = engine->uploadCommandBuffer;
+
+        // upload the image to the read only shader layout
+        checkResult(vkResetCommandPool(engine->device, engine->commandPool, 0));
+        VkCommandBufferBeginInfo beginInfo{
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .pNext = nullptr,
+                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        };
+        checkResult(vkBeginCommandBuffer(engine->uploadCommandBuffer, &beginInfo));
+
+        VkImageCopy imageCopy{
+                .srcSubresource = {
+                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .mipLevel = 1,
+                        .baseArrayLayer = 1,
+                        .layerCount = 1
+                },
+                .srcOffset = {0, 0, 0},
+                .dstSubresource = {
+                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .mipLevel = 1,
+                        .baseArrayLayer = 1,
+                        .layerCount = 1
+                },
+                .dstOffset = {0, 0, 0},
+                .extent = extent,
+        };
+
+        VkImage targetImage;
+        VkImageCreateInfo targetImageInfo{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format = format,
+                .extent = extent,
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .samples = VK_SAMPLE_COUNT_1_BIT,
+                .tiling = VK_IMAGE_TILING_OPTIMAL,
+                .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        checkResult(vkCreateImage(engine->device, &targetImageInfo, nullptr, &targetImage));
+
+        std::cout << "created target image" << std::endl;
+
+        vkCmdCopyImage(cmd, image, VK_IMAGE_LAYOUT_UNDEFINED, targetImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, &imageCopy);
+
+
+        VkSubmitInfo submitInfo{
+                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .pNext = nullptr,
+                .commandBufferCount = 1,
+                .pCommandBuffers = &cmd,
+        };
+        checkResult(vkEndCommandBuffer(cmd));
+        checkResult(vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+        vkDeviceWaitIdle(engine->device);
+
+        std::cout << "copied image" << std::endl;
 
         std::cout << "created texture" << std::endl;
     }
