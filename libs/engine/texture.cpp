@@ -7,34 +7,6 @@
 
 namespace engine {
 
-    void immediateSubmit(std::function<void(VkCommandBuffer)>&& function) {
-        const VkCommandBuffer &cmd = engine->uploadCommandBuffer;
-        const VkFence &fence = engine->uploadFence;
-
-        // upload the image to the read only shader layout
-        checkResult(vkResetCommandPool(engine->device, engine->commandPool, 0));
-        VkCommandBufferBeginInfo beginInfo{
-                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                .pNext = nullptr,
-                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        };
-        checkResult(vkBeginCommandBuffer(engine->uploadCommandBuffer, &beginInfo));
-
-        function(cmd);
-
-        VkSubmitInfo submitInfo{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .pNext = nullptr,
-                .commandBufferCount = 1,
-                .pCommandBuffers = &cmd,
-        };
-        checkResult(vkEndCommandBuffer(cmd));
-        checkResult(vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, fence));
-
-        vkWaitForFences(engine->device, 1, &fence, true, UINT64_MAX);
-        vkResetFences(engine->device, 1, &fence);
-    }
-
     Texture::Texture(const std::string &filePath) : allocator(engine->allocator->allocator) {
 
         int x, y, channelAmount;
@@ -128,8 +100,7 @@ namespace engine {
         };
         checkResult(vmaCreateImage(allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr));
 
-
-        immediateSubmit([&](VkCommandBuffer cmd) {
+        engine->immediateSubmit([&](VkCommandBuffer cmd) {
 
             // set image layout to "transfer destination optimal"
             uint32_t queueFamilyIndex = engine->queueFamiliesData.graphicsQueueFamilyData->index;

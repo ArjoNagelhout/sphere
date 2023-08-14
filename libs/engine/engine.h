@@ -109,6 +109,7 @@ namespace engine {
         ~Engine();
 
         void render();
+        void immediateSubmit(std::function<void(VkCommandBuffer)>&& function);
 
         VulkanConfiguration configuration;
 
