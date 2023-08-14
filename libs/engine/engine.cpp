@@ -1,7 +1,12 @@
 #include "engine.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
+
 #include <tiny_obj_loader.h>
+
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
+#include <imgui_impl_glfw.h>
 
 namespace engine {
 
@@ -92,56 +97,56 @@ namespace engine {
 
         std::cout << "loaded 3d model at: " << filePath << std::endl;
 
-                    for (size_t s = 0; s < shapes.size(); s++) {
+        for (size_t s = 0; s < shapes.size(); s++) {
 
-                        size_t index_offset = 0;
-                        for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-                            size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+            size_t index_offset = 0;
+            for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+                size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
 
-                            for (size_t v = 0; v < fv; v++) {
-                                // access to vertex
-                                tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+                for (size_t v = 0; v < fv; v++) {
+                    // access to vertex
+                    tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
 
-                                tinyobj::real_t vx = attributes.vertices[3*size_t(idx.vertex_index)+0];
-                                tinyobj::real_t vy = attributes.vertices[3*size_t(idx.vertex_index)+1];
-                                tinyobj::real_t vz = attributes.vertices[3*size_t(idx.vertex_index)+2];
+                    tinyobj::real_t vx = attributes.vertices[3 * size_t(idx.vertex_index) + 0];
+                    tinyobj::real_t vy = attributes.vertices[3 * size_t(idx.vertex_index) + 1];
+                    tinyobj::real_t vz = attributes.vertices[3 * size_t(idx.vertex_index) + 2];
 
-                                VertexAttributes out {
-                                        .position = {vx, vy, vz},
-                                };
+                    VertexAttributes out{
+                            .position = {vx, vy, vz},
+                    };
 
-                                // Check if `normal_index` is zero or positive. negative = no normal data
-                                if (idx.normal_index >= 0) {
-                                    tinyobj::real_t nx = attributes.normals[3*size_t(idx.normal_index)+0];
-                                    tinyobj::real_t ny = attributes.normals[3*size_t(idx.normal_index)+1];
-                                    tinyobj::real_t nz = attributes.normals[3*size_t(idx.normal_index)+2];
+                    // Check if `normal_index` is zero or positive. negative = no normal data
+                    if (idx.normal_index >= 0) {
+                        tinyobj::real_t nx = attributes.normals[3 * size_t(idx.normal_index) + 0];
+                        tinyobj::real_t ny = attributes.normals[3 * size_t(idx.normal_index) + 1];
+                        tinyobj::real_t nz = attributes.normals[3 * size_t(idx.normal_index) + 2];
 
-                                    out.normal = {nx, ny, nz};
-                                }
-
-                                // Check if `texcoord_index` is zero or positive. negative = no texcoord data
-                                if (idx.texcoord_index >= 0) {
-                                    tinyobj::real_t tx = attributes.texcoords[2*size_t(idx.texcoord_index)+0];
-                                    tinyobj::real_t ty = attributes.texcoords[2*size_t(idx.texcoord_index)+1];
-
-                                    out.uv = {tx, ty};
-                                }
-                                // Optional: vertex colors
-                                // tinyobj::real_t red   = attrib.colors[3*size_t(idx.vertex_index)+0];
-                                // tinyobj::real_t green = attrib.colors[3*size_t(idx.vertex_index)+1];
-                                // tinyobj::real_t blue  = attrib.colors[3*size_t(idx.vertex_index)+2];
-
-                                vertices.push_back(out);
-                                indices.push_back(indices.size());
-                            }
-                            index_offset += fv;
-
-
-                        }
+                        out.normal = {nx, ny, nz};
                     }
+
+                    // Check if `texcoord_index` is zero or positive. negative = no texcoord data
+                    if (idx.texcoord_index >= 0) {
+                        tinyobj::real_t tx = attributes.texcoords[2 * size_t(idx.texcoord_index) + 0];
+                        tinyobj::real_t ty = attributes.texcoords[2 * size_t(idx.texcoord_index) + 1];
+
+                        out.uv = {tx, ty};
+                    }
+                    // Optional: vertex colors
+                    // tinyobj::real_t red   = attrib.colors[3*size_t(idx.vertex_index)+0];
+                    // tinyobj::real_t green = attrib.colors[3*size_t(idx.vertex_index)+1];
+                    // tinyobj::real_t blue  = attrib.colors[3*size_t(idx.vertex_index)+2];
+
+                    vertices.push_back(out);
+                    indices.push_back(indices.size());
+                }
+                index_offset += fv;
+
+
+            }
+        }
     }
 
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    static void framebufferResizeCallback(GLFWwindow *window, int width, int height) {
         engine->framebufferResized = true;
         engine->render();
         // std::cout << "frame buffer resized to x: " << width << ", y: " << height << std::endl;
@@ -208,17 +213,19 @@ namespace engine {
         uploadCommandBuffer = commandBuffers[MAX_FRAMES_IN_FLIGHT]; // use the command buffer that comes after the frame command buffers
 
         VkFenceCreateInfo fenceInfo{
-            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0
+                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0
         };
         vkCreateFence(device, &fenceInfo, nullptr, &uploadFence);
 
         // load image
-        texture = std::make_unique<Texture>("/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
+        texture = std::make_unique<Texture>(
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            std::vector<VkDescriptorSet> descriptorSets = descriptorSetBuilder->createDescriptorSets(descriptorSetBuilder->descriptorSetLayout, 1);
+            std::vector<VkDescriptorSet> descriptorSets = descriptorSetBuilder->createDescriptorSets(
+                    descriptorSetBuilder->descriptorSetLayout, 1);
             descriptorSetBuilder->bindBuffer(descriptorSets[0], camera->cameraDataBuffer, 0);
             descriptorSetBuilder->bindImage(descriptorSets[0], texture->sampler, texture->imageView, 1);
 
@@ -245,10 +252,14 @@ namespace engine {
                                           *indices.data(),
                                           indices.size() * sizeof(indices[0]),
                                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+        initializeImgui();
     }
 
     Engine::~Engine() {
         vkDeviceWaitIdle(device);
+
+        destroyImgui();
 
         for (auto const &frameData: frames) {
             frameData.destroy();
@@ -278,6 +289,13 @@ namespace engine {
     }
 
     void Engine::render() {
+        bool showDemoWindow = true;
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow(&showDemoWindow);
+        ImGui::Render();
+
         camera->updateCameraData();
         drawFrame();
     }
@@ -416,7 +434,9 @@ namespace engine {
         vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffer, &vertexBufferOffset);
         vkCmdDrawIndexed(cmd, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
-        //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+        // imgui
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
         vkCmdEndRenderPass(cmd);
         checkResult(vkEndCommandBuffer(cmd));
     }
@@ -450,7 +470,8 @@ namespace engine {
 
     void Engine::createDepthImage() {
         VkExtent3D extent = toExtent3D(swapchain->extent);
-        VkImageCreateInfo imageInfo = vk_create::image(depthImageFormat, extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        VkImageCreateInfo imageInfo = vk_create::image(depthImageFormat, extent,
+                                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
         VmaAllocationCreateInfo allocationInfo{
                 .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -461,18 +482,21 @@ namespace engine {
                                    &imageInfo, &allocationInfo,
                                    &depthImage, &depthImageAllocation, nullptr));
 
-        VkImageViewCreateInfo imageViewInfo = vk_create::imageView(depthImage, depthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        VkImageViewCreateInfo imageViewInfo = vk_create::imageView(depthImage, depthImageFormat,
+                                                                   VK_IMAGE_ASPECT_DEPTH_BIT);
         checkResult(vkCreateImageView(device, &imageViewInfo, nullptr, &depthImageView));
 
         std::cout << "created depth image" << std::endl;
     }
 
-    void Engine::immediateSubmit(std::function<void(VkCommandBuffer)>&& function) {
-        const VkCommandBuffer &cmd = engine->uploadCommandBuffer;
-        const VkFence &fence = engine->uploadFence;
+    void Engine::immediateSubmit(std::function<void(VkCommandBuffer)> &&function) {
+        const VkCommandBuffer &cmd = uploadCommandBuffer;
+        const VkFence &fence = uploadFence;
+
+        vkDeviceWaitIdle(device);
 
         // upload the image to the read only shader layout
-        checkResult(vkResetCommandPool(engine->device, engine->commandPool, 0));
+        checkResult(vkResetCommandPool(device, commandPool, 0));
         VkCommandBufferBeginInfo beginInfo{
                 .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                 .pNext = nullptr,
@@ -493,5 +517,69 @@ namespace engine {
 
         vkWaitForFences(engine->device, 1, &fence, true, UINT64_MAX);
         vkResetFences(engine->device, 1, &fence);
+    }
+
+    void Engine::initializeImgui() {
+        //1: create descriptor pool for IMGUI
+        // the size of the pool is very oversize, but it's copied from imgui demo itself.
+        VkDescriptorPoolSize poolSizes[] = {
+                {VK_DESCRIPTOR_TYPE_SAMPLER,                1000},
+                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1000},
+                {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1000},
+                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1000},
+                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1000}
+        };
+
+        VkDescriptorPoolCreateInfo poolInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                .maxSets = 1000,
+                .poolSizeCount = std::size(poolSizes),
+                .pPoolSizes = poolSizes,
+        };
+
+        checkResult(vkCreateDescriptorPool(device, &poolInfo, nullptr, &imguiDescriptorPool));
+
+        // 2: initialize imgui library
+
+        //this initializes the core structures of imgui
+        ImGui::CreateContext();
+
+        // init Imgui
+        uint32_t imageCount = static_cast<uint32_t>(swapchain->framebuffers.size());
+
+        ImGui_ImplGlfw_InitForVulkan(configuration.window, true);
+        ImGui_ImplVulkan_InitInfo initInfo{
+                .Instance = instance,
+                .PhysicalDevice = physicalDevice,
+                .Device = device,
+                .Queue = graphicsQueue,
+                .DescriptorPool = imguiDescriptorPool,
+                .MinImageCount = imageCount,
+                .ImageCount = imageCount,
+                .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
+        };
+
+        ImGui_ImplVulkan_Init(&initInfo, renderPass->renderPass);
+        immediateSubmit([&](VkCommandBuffer cmd) {
+            ImGui_ImplVulkan_CreateFontsTexture(cmd);
+        });
+        ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+        std::cout << "initialized imgui" << std::endl;
+    }
+
+    void Engine::destroyImgui() {
+        vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
+
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
     }
 }

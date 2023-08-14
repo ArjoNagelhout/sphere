@@ -130,6 +130,8 @@ namespace engine {
         VkFence uploadFence;
         bool framebufferResized = false;
 
+        VkDescriptorPool imguiDescriptorPool;
+
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<MemoryAllocator> allocator;
         std::unique_ptr<Camera> camera;
@@ -178,6 +180,10 @@ namespace engine {
         void createSurface();
         void pickPhysicalDevice(const std::vector<const char *> &requiredExtensions);
         void createDevice(const std::vector<const char *> &requiredExtensions);
+
+        // imgui
+        void initializeImgui();
+        void destroyImgui();
 
         // drawing
         void createCommandPool();
