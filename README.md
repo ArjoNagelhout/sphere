@@ -1,6 +1,8 @@
 # sphere
 
-Sphere is an experimental 3D game engine specifically for creating and authoring AR / VR experiences.
+![img](https://github.com/ShapeReality/sphere/assets/16051555/41679e91-c7b0-4f1e-8aad-0cbea2e4adf4)
+
+Sphere is an experimental 3D game engine for creating and authoring AR / VR experiences.
 
 Its main innovation goal is in enabling **full live editing on the target device** (probably at reduced visual quality).
 
