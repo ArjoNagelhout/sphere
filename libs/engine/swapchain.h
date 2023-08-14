@@ -41,14 +41,23 @@ namespace engine {
         VkExtent2D extent;
         std::vector<VkFramebuffer> framebuffers;
 
+        void cleanup();
+        void recreate();
         void createFramebuffers(const VkRenderPass &renderPass, const VkImageView &depthImageView);
 
     private:
+        struct CachedData {
+            VkRenderPass renderPass;
+            VkImageView depthImageView;
+        };
+
         std::vector<VkImage> images;
         std::vector<VkImageView> imageViews;
+        CachedData cachedData;
 
-        void createSwapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats);
+        void createSwapchain();
         void createImageViews();
+        void createFramebuffers();
     };
 }
 

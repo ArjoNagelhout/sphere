@@ -141,6 +141,12 @@ namespace engine {
                     }
     }
 
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+        engine->framebufferResized = true;
+        engine->render();
+        // std::cout << "frame buffer resized to x: " << width << ", y: " << height << std::endl;
+    }
+
     Engine::Engine(EngineConfiguration &engineConfiguration) {
 
         assert((engine == nullptr) && "Only one engine can exist at one time");
@@ -179,6 +185,8 @@ namespace engine {
         createSurface();
         pickPhysicalDevice(requiredDeviceExtensions);
         createDevice(requiredDeviceExtensions);
+
+        glfwSetFramebufferSizeCallback(configuration.window, framebufferResizeCallback);
 
         allocator = std::make_unique<MemoryAllocator>();
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
@@ -271,15 +279,15 @@ namespace engine {
 
     void Engine::render() {
         camera->updateCameraData();
-        drawFrame(frames[currentFrameIndex]);
-        currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+        drawFrame();
     }
 
-    void Engine::drawFrame(const FrameData &frameData) {
+    void Engine::drawFrame() {
+        const FrameData &frameData = frames[currentFrameIndex];
+
         VkResult result;
 
         vkWaitForFences(device, 1, &frameData.inFlightFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(device, 1, &frameData.inFlightFence);
 
         uint32_t imageIndex;
         result = vkAcquireNextImageKHR(device,
@@ -290,12 +298,19 @@ namespace engine {
                                        &imageIndex);
         switch (result) {
             case VK_SUCCESS:
+            case VK_ERROR_OUT_OF_DATE_KHR:
             case VK_SUBOPTIMAL_KHR:
                 break;
+//            case VK_ERROR_OUT_OF_DATE_KHR:
+//                window resized, so we should recreate the swapchain
+//                swapchain->recreate();
+//                return;
             default:
                 throw std::runtime_error(
                         std::string("failed to acquire swapchain image") + string_VkResult(result));
         }
+
+        vkResetFences(device, 1, &frameData.inFlightFence);
 
         // frame buffer must have been created with the same render pass (compatibility)
         VkFramebuffer &framebuffer = swapchain->framebuffers[imageIndex];
@@ -331,14 +346,14 @@ namespace engine {
                 .pResults = nullptr,
         };
         result = vkQueuePresentKHR(presentQueue, &presentInfo);
-        switch (result) {
-            case VK_SUCCESS:
-            case VK_SUBOPTIMAL_KHR:
-                break;
-            default:
-                throw std::runtime_error(
-                        std::string("failed to present swap chain image") + string_VkResult(result));
+        if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR || framebufferResized) {
+            swapchain->recreate();
+            framebufferResized = false;
+        } else {
+            checkResult(result);
         }
+
+        currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     void Engine::recordCommandBuffer(const FrameData &frameData, const VkFramebuffer &framebuffer) {

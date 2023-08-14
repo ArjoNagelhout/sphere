@@ -12,7 +12,7 @@ namespace engine {
      * first item in list will be chosen first
      */
     static VkSurfaceFormatKHR pickSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &surfaceFormats,
-                                                         const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats = {}) {
+                                                         const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) {
         // iterate over preferred surface formats and see if they are supported, if so pick that one
         for (const VkSurfaceFormatKHR &preferredSurfaceFormat: preferredSurfaceFormats) {
             if (*std::find_if(surfaceFormats.begin(),
@@ -33,50 +33,38 @@ namespace engine {
     }
 
     static VkExtent2D pickSwapchainExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR &surfaceCapabilities) {
-        if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-            // vulkan says: extent should match window extent. but for some window managers
-            // this is not required, this is indicated with setting the width and height extent
-            // to the max value of uint32_t
-            return surfaceCapabilities.currentExtent;
-        } else {
-            int width, height;
-            glfwGetFramebufferSize(window, &width, &height);
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
 
-            VkExtent2D actualExtent = {
-                    static_cast<uint32_t>(width),
-                    static_cast<uint32_t>(height)
-            };
+        VkExtent2D actualExtent = {
+                static_cast<uint32_t>(width),
+                static_cast<uint32_t>(height)
+        };
 
-            actualExtent.width = std::clamp(actualExtent.width,
-                                            surfaceCapabilities.minImageExtent.width,
-                                            surfaceCapabilities.maxImageExtent.width);
-            actualExtent.height = std::clamp(actualExtent.height,
-                                             surfaceCapabilities.minImageExtent.height,
-                                             surfaceCapabilities.maxImageExtent.height);
-            return actualExtent;
-        }
+        actualExtent.width = std::clamp(actualExtent.width,
+                                        surfaceCapabilities.minImageExtent.width,
+                                        surfaceCapabilities.maxImageExtent.width);
+        actualExtent.height = std::clamp(actualExtent.height,
+                                         surfaceCapabilities.minImageExtent.height,
+                                         surfaceCapabilities.maxImageExtent.height);
+
+        // std::cout << "x: " << width << ", y: " << height << std::endl;
+        return actualExtent;
     }
 
     Swapchain::Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) {
-        createSwapchain(preferredSurfaceFormats);
+        SurfaceData surfaceData = engine->surfaceData;
+        surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
+        createSwapchain();
         createImageViews();
     }
 
     Swapchain::~Swapchain() {
-        for (auto const &framebuffer: framebuffers) {
-            vkDestroyFramebuffer(engine->device, framebuffer, nullptr);
-        }
-
-        for (auto const &imageView: imageViews) {
-            vkDestroyImageView(engine->device, imageView, nullptr);
-        }
-
-        vkDestroySwapchainKHR(engine->device, swapchain, nullptr);
+        cleanup();
     }
 
-    void Swapchain::createSwapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) {
+    void Swapchain::createSwapchain() {
         SurfaceData surfaceData = engine->surfaceData;
-        surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
         extent = pickSwapchainExtent(engine->configuration.window, surfaceData.surfaceCapabilities);
 
         // from vulkan-tutorial.com
@@ -119,7 +107,7 @@ namespace engine {
         };
 
         checkResult(vkCreateSwapchainKHR(engine->device, &swapchainCreateInfo, nullptr, &swapchain));
-        std::cout << "created swapchain" << std::endl;
+        // std::cout << "created swapchain" << std::endl;
 
         // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
         // in order to perform any rendering operations, create a VkImageView from a VkImage.
@@ -141,17 +129,51 @@ namespace engine {
         }
     }
 
-    void Swapchain::createFramebuffers(const VkRenderPass &renderPass, const VkImageView &depthImageView) {
+    void Swapchain::cleanup() {
+        for (auto const &framebuffer: framebuffers) {
+            vkDestroyFramebuffer(engine->device, framebuffer, nullptr);
+        }
+
+        for (auto const &imageView: imageViews) {
+            vkDestroyImageView(engine->device, imageView, nullptr);
+        }
+
+        vkDestroySwapchainKHR(engine->device, swapchain, nullptr);
+    }
+
+    void Swapchain::recreate() {
+        int width = 0, height = 0;
+        glfwGetFramebufferSize(engine->configuration.window, &width, &height);
+        while (width == 0 || height == 0) {
+            glfwGetFramebufferSize(engine->configuration.window, &width, &height);
+            glfwWaitEvents();
+        }
+
+        vkDeviceWaitIdle(engine->device);
+        cleanup();
+        createSwapchain();
+        createImageViews();
+        createFramebuffers();
+    }
+
+    void Swapchain::createFramebuffers() {
         framebuffers.resize(images.size());
 
         for (size_t i = 0; i < imageViews.size(); i++) {
             std::vector<VkImageView> attachments{
                     imageViews[i],
-                    depthImageView
+                    cachedData.depthImageView
             };
-            VkFramebufferCreateInfo framebufferInfo = vk_create::framebuffer(renderPass, attachments, extent);
+            VkFramebufferCreateInfo framebufferInfo = vk_create::framebuffer(cachedData.renderPass, attachments, extent);
             checkResult(vkCreateFramebuffer(engine->device, &framebufferInfo, nullptr, &framebuffers[i]));
         }
-        std::cout << "created frame buffers" << std::endl;
+
+        // std::cout << "created frame buffers" << std::endl;
+    }
+
+    void Swapchain::createFramebuffers(const VkRenderPass &renderPass, const VkImageView &depthImageView) {
+        cachedData.renderPass = renderPass;
+        cachedData.depthImageView = depthImageView;
+        createFramebuffers();
     }
 }

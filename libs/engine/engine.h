@@ -127,6 +127,7 @@ namespace engine {
         const uint32_t UPLOAD_COMMAND_BUFFERS = 1;
         VkCommandBuffer uploadCommandBuffer;
         VkFence uploadFence;
+        bool framebufferResized = false;
 
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<MemoryAllocator> allocator;
@@ -141,7 +142,6 @@ namespace engine {
         std::unique_ptr<RenderPass> renderPass;
         std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
         std::unique_ptr<PipelineBuilder> pipelineBuilder;
-
 
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t currentFrameIndex = 0;
@@ -181,7 +181,7 @@ namespace engine {
         // drawing
         void createCommandPool();
         std::vector<VkCommandBuffer> createCommandBuffers();
-        void drawFrame(const FrameData &frameData);
+        void drawFrame();
         void recordCommandBuffer(const FrameData &frameData, const VkFramebuffer &framebuffer);
 
         // to be refactored
