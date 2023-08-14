@@ -7,6 +7,34 @@
 
 namespace engine {
 
+    void immediateSubmit(std::function<void(VkCommandBuffer)>&& function) {
+        const VkCommandBuffer &cmd = engine->uploadCommandBuffer;
+        const VkFence &fence = engine->uploadFence;
+
+        // upload the image to the read only shader layout
+        checkResult(vkResetCommandPool(engine->device, engine->commandPool, 0));
+        VkCommandBufferBeginInfo beginInfo{
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .pNext = nullptr,
+                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        };
+        checkResult(vkBeginCommandBuffer(engine->uploadCommandBuffer, &beginInfo));
+
+        function(cmd);
+
+        VkSubmitInfo submitInfo{
+                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .pNext = nullptr,
+                .commandBufferCount = 1,
+                .pCommandBuffers = &cmd,
+        };
+        checkResult(vkEndCommandBuffer(cmd));
+        checkResult(vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, fence));
+
+        vkWaitForFences(engine->device, 1, &fence, true, UINT64_MAX);
+        vkResetFences(engine->device, 1, &fence);
+    }
+
     Texture::Texture(const std::string &filePath) : allocator(engine->allocator->allocator) {
 
         int x, y, channelAmount;
@@ -48,6 +76,36 @@ namespace engine {
                 .depth = 1
         };
 
+        VkDeviceSize sizeInBytes = x * y * channelAmount;
+
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingBufferAllocation;
+        VkBufferCreateInfo stagingBufferInfo{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .size = sizeInBytes,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+        VmaAllocationCreateInfo stagingBufferAllocationInfo{
+            //.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            .usage = VMA_MEMORY_USAGE_CPU_ONLY,
+            //.requiredFlags = VK_MEMORY_PROPERTY
+        };
+        checkResult(vmaCreateBuffer(allocator, &stagingBufferInfo, &stagingBufferAllocationInfo, &stagingBuffer, &stagingBufferAllocation, nullptr));
+
+        std::cout << "created staging buffer" << std::endl;
+
+        void *mappedData;
+        vmaMapMemory(allocator, stagingBufferAllocation, &mappedData);
+        memcpy(mappedData, data, static_cast<size_t>(sizeInBytes));
+        //vmaFlushAllocation(allocator, stagingBufferAllocation, 0, VK_WHOLE_SIZE);
+        vmaUnmapMemory(allocator, stagingBufferAllocation);
+        stbi_image_free(data);
+
+        std::cout << "copied data into staging buffer" << std::endl;
+
         VkImageCreateInfo imageInfo{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                 .pNext = nullptr,
@@ -59,25 +117,93 @@ namespace engine {
                 .arrayLayers = 1,
                 .samples = VK_SAMPLE_COUNT_1_BIT,
                 .tiling = VK_IMAGE_TILING_OPTIMAL,
-                .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+                .usage = VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
                 .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // VK_IMAGE_LAYOUT_UNDEFINED
         };
         VmaAllocationCreateInfo allocationInfo{
-                .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                .usage = VMA_MEMORY_USAGE_AUTO,
-                .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                .flags = 0,
+                .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+                .requiredFlags = 0,
         };
         checkResult(vmaCreateImage(allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr));
 
-        void *mappedData;
-        vmaMapMemory(allocator, allocation, &mappedData);
-        memcpy(mappedData, &data, x * y * channelAmount);
-        vmaUnmapMemory(allocator, allocation);
 
-        std::cout << "uploaded data" << std::endl;
+        immediateSubmit([&](VkCommandBuffer cmd) {
 
-        stbi_image_free(data);
+            // set image layout to "transfer destination optimal"
+            uint32_t queueFamilyIndex = engine->queueFamiliesData.graphicsQueueFamilyData->index;
+            VkImageMemoryBarrier barrierToTransferDst{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .pNext = nullptr,
+                    .srcAccessMask = 0,
+                    .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .srcQueueFamilyIndex = queueFamilyIndex,
+                    .dstQueueFamilyIndex = queueFamilyIndex,
+                    .image = image,
+                    .subresourceRange = {
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .baseMipLevel = 0,
+                            .levelCount = 1,
+                            .baseArrayLayer = 0,
+                            .layerCount = 1
+                    }
+            };
+
+            vkCmdPipelineBarrier(cmd,
+                                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_DEPENDENCY_DEVICE_GROUP_BIT,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrierToTransferDst);
+
+            // copy from the buffer to the image
+            VkBufferImageCopy copyRegion{
+                    .bufferOffset = 0,
+                    .bufferRowLength = 0,
+                    .bufferImageHeight = 0,
+                    .imageSubresource = {
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .mipLevel = 0,
+                            .baseArrayLayer = 0,
+                            .layerCount = 1,
+                    },
+                    .imageOffset = {0, 0, 0},
+                    .imageExtent = extent
+            };
+            vkCmdCopyBufferToImage(cmd, stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+            // change image layout to "shader read optimal"
+            VkImageMemoryBarrier barrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .pNext = nullptr,
+                    .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                    .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamilyIndex = queueFamilyIndex,
+                    .dstQueueFamilyIndex = queueFamilyIndex,
+                    .image = image,
+                    .subresourceRange = {
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .baseMipLevel = 0,
+                            .levelCount = 1,
+                            .baseArrayLayer = 0,
+                            .layerCount = 1
+                    }
+            };
+
+            vkCmdPipelineBarrier(cmd,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                 VK_DEPENDENCY_DEVICE_GROUP_BIT,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        });
 
         // image view
         VkImageViewCreateInfo imageViewInfo{
@@ -104,6 +230,8 @@ namespace engine {
 
         checkResult(vkCreateImageView(engine->device, &imageViewInfo, nullptr, &imageView));
 
+        std::cout << "created image view" << std::endl;
+
         // sampler
         VkSamplerCreateInfo samplerInfo{
                 .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -128,76 +256,16 @@ namespace engine {
 
         checkResult(vkCreateSampler(engine->device, &samplerInfo, nullptr, &sampler));
 
-        const VkCommandBuffer &cmd = engine->uploadCommandBuffer;
+        std::cout << "created sampler" << std::endl;
 
-        // upload the image to the read only shader layout
-        checkResult(vkResetCommandPool(engine->device, engine->commandPool, 0));
-        VkCommandBufferBeginInfo beginInfo{
-                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                .pNext = nullptr,
-                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        };
-        checkResult(vkBeginCommandBuffer(engine->uploadCommandBuffer, &beginInfo));
+        vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 
-        VkImageCopy imageCopy{
-                .srcSubresource = {
-                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                        .mipLevel = 1,
-                        .baseArrayLayer = 1,
-                        .layerCount = 1
-                },
-                .srcOffset = {0, 0, 0},
-                .dstSubresource = {
-                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                        .mipLevel = 1,
-                        .baseArrayLayer = 1,
-                        .layerCount = 1
-                },
-                .dstOffset = {0, 0, 0},
-                .extent = extent,
-        };
-
-        VkImage targetImage;
-        VkImageCreateInfo targetImageInfo{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-                .imageType = VK_IMAGE_TYPE_2D,
-                .format = format,
-                .extent = extent,
-                .mipLevels = 1,
-                .arrayLayers = 1,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .tiling = VK_IMAGE_TILING_OPTIMAL,
-                .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
-                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VK_IMAGE_LAYOUT_UNDEFINED
-        };
-
-        checkResult(vkCreateImage(engine->device, &targetImageInfo, nullptr, &targetImage));
-
-        std::cout << "created target image" << std::endl;
-
-        vkCmdCopyImage(cmd, image, VK_IMAGE_LAYOUT_UNDEFINED, targetImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, &imageCopy);
-
-
-        VkSubmitInfo submitInfo{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .pNext = nullptr,
-                .commandBufferCount = 1,
-                .pCommandBuffers = &cmd,
-        };
-        checkResult(vkEndCommandBuffer(cmd));
-        checkResult(vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
-        vkDeviceWaitIdle(engine->device);
-
-        std::cout << "copied image" << std::endl;
+        std::cout << "destroyed staging buffer" << std::endl;
 
         std::cout << "created texture" << std::endl;
     }
 
     Texture::~Texture() {
-
         vkDestroySampler(engine->device, sampler, nullptr);
         vkDestroyImageView(engine->device, imageView, nullptr);
         vmaDestroyImage(allocator, image, allocation);

@@ -126,6 +126,7 @@ namespace engine {
         VkCommandPool commandPool;
         const uint32_t UPLOAD_COMMAND_BUFFERS = 1;
         VkCommandBuffer uploadCommandBuffer;
+        VkFence uploadFence;
 
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<MemoryAllocator> allocator;
@@ -180,8 +181,8 @@ namespace engine {
         // drawing
         void createCommandPool();
         std::vector<VkCommandBuffer> createCommandBuffers();
-        void drawFrame(FrameData frameData);
-        void recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer);
+        void drawFrame(const FrameData &frameData);
+        void recordCommandBuffer(const FrameData &frameData, const VkFramebuffer &framebuffer);
 
         // to be refactored
         void createDepthImage();

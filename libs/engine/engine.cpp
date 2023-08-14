@@ -199,8 +199,15 @@ namespace engine {
         std::vector<VkCommandBuffer> commandBuffers = createCommandBuffers();
         uploadCommandBuffer = commandBuffers[MAX_FRAMES_IN_FLIGHT]; // use the command buffer that comes after the frame command buffers
 
+        VkFenceCreateInfo fenceInfo{
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+        vkCreateFence(device, &fenceInfo, nullptr, &uploadFence);
+
         // load image
-        texture = std::make_unique<Texture>("/Users/arjonagelhout/Desktop/Screenshot 2023-08-12 at 01.18.16.png");
+        texture = std::make_unique<Texture>("/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             std::vector<VkDescriptorSet> descriptorSets = descriptorSetBuilder->createDescriptorSets(descriptorSetBuilder->descriptorSetLayout, 1);
@@ -239,6 +246,7 @@ namespace engine {
             frameData.destroy();
         }
 
+        vkDestroyFence(device, uploadFence, nullptr);
         vkDestroyCommandPool(device, commandPool, nullptr);
 
         // destroy depth image
@@ -267,7 +275,7 @@ namespace engine {
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
-    void Engine::drawFrame(FrameData frameData) {
+    void Engine::drawFrame(const FrameData &frameData) {
         VkResult result;
 
         vkWaitForFences(device, 1, &frameData.inFlightFence, VK_TRUE, UINT64_MAX);
@@ -333,8 +341,8 @@ namespace engine {
         }
     }
 
-    void Engine::recordCommandBuffer(FrameData frameData, VkFramebuffer framebuffer) {
-        VkCommandBuffer &cmd = frameData.commandBuffer;
+    void Engine::recordCommandBuffer(const FrameData &frameData, const VkFramebuffer &framebuffer) {
+        const VkCommandBuffer &cmd = frameData.commandBuffer;
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -343,7 +351,7 @@ namespace engine {
 
         checkResult(vkBeginCommandBuffer(cmd, &beginInfo));
 
-        VkClearValue clearColor = {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}};
+        VkClearValue clearColor = {.color = {{0.757f, 0.953f, 1.0f, 1.0f}}};
         VkClearValue clearDepth = {.depthStencil{.depth = 1.0f}};
         VkClearValue clearValues[] = {
                 clearColor,

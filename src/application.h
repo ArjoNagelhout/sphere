@@ -48,6 +48,7 @@ namespace sphere {
         std::unique_ptr<engine::Window> window;
 
         bool keys[GLFW_KEY_LAST+1];
+        const float speed = 0.1f;
 
         void updateCameraPosition() {
             glm::vec3 &cameraPosition = engine->camera->position;
@@ -56,9 +57,9 @@ namespace sphere {
             int right = (int)keys[GLFW_KEY_D] - (int)keys[GLFW_KEY_A];
             int up = (int)keys[GLFW_KEY_E] - (int)keys[GLFW_KEY_Q];
 
-            cameraPosition.x += (float)right;
-            cameraPosition.y += (float)up;
-            cameraPosition.z += (float)forward;
+            cameraPosition.x += (float)right * speed;
+            cameraPosition.y += (float)up * speed;
+            cameraPosition.z += (float)forward * speed;
         }
 
         static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
