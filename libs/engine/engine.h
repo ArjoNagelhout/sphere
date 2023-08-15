@@ -135,6 +135,7 @@ namespace engine {
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<MemoryAllocator> allocator;
         std::unique_ptr<Camera> camera;
+        std::function<void()> renderImgui;
 
     private:
 

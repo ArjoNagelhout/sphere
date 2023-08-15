@@ -17,6 +17,7 @@ set(SOURCES
         pipeline_builder.h pipeline_builder.cpp
 
         texture.h texture.cpp
+        scene/object.h scene/object.cpp
         )
 
 add_library(engine "${SOURCES}")

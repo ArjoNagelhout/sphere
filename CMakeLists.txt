@@ -50,7 +50,7 @@ if (APPLE)
         # Generate macOS icons file
         set(SPHERE_ICON_NAME icon.icns)
         set(SPHERE_ICON_SOURCE ${CMAKE_SOURCE_DIR}/data/icons/icon.png)
-        set(SPHERE_ICON_TARGET ${SPHERE_RESOURCES_DIR}/${SPHERE_ICON_NAME} libs/mesh.h)
+        set(SPHERE_ICON_TARGET ${SPHERE_RESOURCES_DIR}/${SPHERE_ICON_NAME})
 
         add_custom_command(OUTPUT ${SPHERE_ICON_TARGET}
                 COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/generate-icons.sh
@@ -79,10 +79,10 @@ add_executable(sphere
         src/commands/transform_nodes_command.h
         src/commands/remove_nodes_command.h)
 
-target_link_libraries(sphere PUBLIC engine)
-
 add_subdirectory(external)
 add_subdirectory(libs)
+
+target_link_libraries(sphere PUBLIC engine editor)
 
 if(APPLE)
         set_target_properties(sphere PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/data/Info.plist)

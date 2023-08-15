@@ -17,9 +17,12 @@ namespace engine {
         explicit Object(Mesh &mesh, Material &material);
         ~Object();
 
-    private:
         Mesh &mesh;
         Material &material;
+
+
+    private:
+
     };
 }
 

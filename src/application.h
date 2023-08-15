@@ -3,6 +3,7 @@
 
 #include "window.h"
 #include <engine.h>
+#include <editor.h>
 
 #include <unordered_map>
 
@@ -26,6 +27,11 @@ namespace sphere {
             };
 
             engine = std::make_unique<engine::Engine>(configuration);
+            editor = std::make_unique<editor::Editor>();
+
+            engine->renderImgui = [&](){
+                editor->render();
+            };
 
             glfwSetWindowUserPointer(window->glfwWindow, this);
             glfwSetKeyCallback(window->glfwWindow, keyCallback);
@@ -44,8 +50,9 @@ namespace sphere {
         }
 
     private:
-        std::unique_ptr<engine::Engine> engine;
         std::unique_ptr<engine::Window> window;
+        std::unique_ptr<engine::Engine> engine;
+        std::unique_ptr<editor::Editor> editor;
 
         bool keys[GLFW_KEY_LAST+1];
         const float speed = 0.1f;

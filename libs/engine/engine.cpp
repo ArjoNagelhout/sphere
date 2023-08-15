@@ -220,8 +220,7 @@ namespace engine {
         vkCreateFence(device, &fenceInfo, nullptr, &uploadFence);
 
         // load image
-        texture = std::make_unique<Texture>(
-                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
+        texture = std::make_unique<Texture>("/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             std::vector<VkDescriptorSet> descriptorSets = descriptorSetBuilder->createDescriptorSets(
@@ -289,11 +288,10 @@ namespace engine {
     }
 
     void Engine::render() {
-        bool showDemoWindow = true;
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow(&showDemoWindow);
+        renderImgui();
         ImGui::Render();
 
         camera->updateCameraData();
@@ -553,7 +551,6 @@ namespace engine {
 
         // init Imgui
         uint32_t imageCount = static_cast<uint32_t>(swapchain->framebuffers.size());
-
         ImGui_ImplGlfw_InitForVulkan(configuration.window, true);
         ImGui_ImplVulkan_InitInfo initInfo{
                 .Instance = instance,
