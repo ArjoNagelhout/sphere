@@ -1,3 +1,9 @@
-//
-// Created by Arjo Nagelhout on 2023-08-11.
-//
+#include "material.h"
+
+namespace engine {
+    Material::Material() {
+
+    }
+
+    Material::~Material() = default;
+}

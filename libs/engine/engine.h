@@ -20,6 +20,7 @@
 #include "memory_allocator.h"
 #include "camera.h"
 #include "texture.h"
+#include "scene/mesh.h"
 
 namespace engine {
 
@@ -108,9 +109,6 @@ namespace engine {
         explicit Engine(EngineConfiguration &engineConfiguration);
         ~Engine();
 
-        void render();
-        void immediateSubmit(std::function<void(VkCommandBuffer)>&& function);
-
         VulkanConfiguration configuration;
 
         // vulkan data
@@ -125,17 +123,20 @@ namespace engine {
         VkQueue presentQueue;
         VkSurfaceKHR surface;
         VkCommandPool commandPool;
+
         const uint32_t UPLOAD_COMMAND_BUFFERS = 1;
         VkCommandBuffer uploadCommandBuffer;
         VkFence uploadFence;
-        bool framebufferResized = false;
 
-        VkDescriptorPool imguiDescriptorPool;
+        bool framebufferResized = false;
 
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<MemoryAllocator> allocator;
         std::unique_ptr<Camera> camera;
+
         std::function<void()> renderImgui;
+        void render();
+        void immediateSubmit(std::function<void(VkCommandBuffer)>&& function);
 
     private:
 
@@ -146,32 +147,18 @@ namespace engine {
         std::unique_ptr<RenderPass> renderPass;
         std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
         std::unique_ptr<PipelineBuilder> pipelineBuilder;
+        VkDescriptorPool imguiDescriptorPool;
 
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t currentFrameIndex = 0;
         std::vector<FrameData> frames;
-
-        // buffers
-        std::vector<VertexAttributes> vertices{
-                {{-1.0f, -1.0f, 0}, {0, 0}, {1, 0, 0}},
-                {{1.0f,  -1.0f, 0}, {0, 0}, {0, 1, 0}},
-                {{1.0f,  1.0f,  0}, {0, 0}, {0, 0, 1}},
-                {{-1.0f, 1.0f,  0}, {0, 0}, {1, 1, 1}}
-        };
-        VkBuffer vertexBuffer;
-        VmaAllocation vertexBufferAllocation;
-
-        std::vector<uint32_t> indices{
-                0, 1, 2, 2, 3, 0
-        };
-        VkBuffer indexBuffer;
-        VmaAllocation indexBufferAllocation;
 
         const VkFormat depthImageFormat = VK_FORMAT_D16_UNORM;
         VkImage depthImage;
         VkImageView depthImageView;
         VmaAllocation depthImageAllocation;
 
+        std::vector<std::unique_ptr<Mesh>> meshes;
         std::unique_ptr<Texture> texture;
 
         // vulkan setup

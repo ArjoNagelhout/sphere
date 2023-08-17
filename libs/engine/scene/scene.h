@@ -17,11 +17,10 @@ namespace engine {
         explicit Scene();
         ~Scene();
 
-        void addObject(Object object) {}
-        void removeObject(Object object) {}
+        std::vector<Object> objects;
 
     private:
-        std::vector<Object> objects;
+
     };
 }
 

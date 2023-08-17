@@ -30,4 +30,12 @@ namespace engine {
 
         vmaDestroyAllocator(allocator);
     }
+
+    void MemoryAllocator::destroyBuffer(const VkBuffer &buffer) {
+        if (auto findit = allocatedBuffers.find(buffer); findit != allocatedBuffers.end() ) {
+            AllocatedBufferData data = findit->second;
+            vmaDestroyBuffer(allocator, data.buffer, data.allocation);
+            allocatedBuffers.erase(buffer);
+        }
+    }
 }

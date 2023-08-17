@@ -4,6 +4,8 @@
 #include "mesh.h"
 #include "material.h"
 
+#include <glm/mat4x4.hpp>
+
 namespace engine {
 
     /*
@@ -20,6 +22,7 @@ namespace engine {
         Mesh &mesh;
         Material &material;
 
+        glm::mat4 transform;
 
     private:
 

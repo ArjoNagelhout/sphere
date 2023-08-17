@@ -6,7 +6,5 @@ namespace engine {
 
     }
 
-    Scene::~Scene() {
-
-    }
+    Scene::~Scene() = default;
 }

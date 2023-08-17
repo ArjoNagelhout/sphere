@@ -86,6 +86,8 @@ namespace engine {
             updateBuffer(buffer, allocation, data, size);
         }
 
+        void destroyBuffer(const VkBuffer &buffer);
+
     private:
         std::unordered_map<VkBuffer, AllocatedBufferData> allocatedBuffers;
     };
