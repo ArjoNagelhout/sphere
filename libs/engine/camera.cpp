@@ -29,12 +29,11 @@ namespace engine {
         );
 
         // Model matrix : an identity matrix (model will be at the origin)
-        glm::mat4 Model = glm::mat4(1.0f);
+//        glm::mat4 Model = glm::mat4(1.0f);
 
         // Our ModelViewProjection : multiplication of our 3 matrices
-        glm::mat4 mvp = Projection * View * Model; // Remember, matrix multiplication is the other way around
-
-        cameraData.MVP = mvp;
+        glm::mat4 vp = Projection * View; // Remember, matrix multiplication is the other way around
+        cameraData.VP = vp;
 
         // then update the buffer
         allocator.updateBuffer<CameraData>(cameraDataBuffer,

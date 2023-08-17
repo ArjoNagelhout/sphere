@@ -15,7 +15,7 @@ namespace engine {
     class Mesh{
 
     public:
-        explicit Mesh(const std::string &filePath);
+        explicit Mesh(const std::string &filePath, glm::mat4 transform);
         ~Mesh();
 
         std::vector<VertexAttributes> vertices{
@@ -30,6 +30,7 @@ namespace engine {
 
         VkBuffer vertexBuffer;
         VkBuffer indexBuffer;
+        glm::mat4 transform;
 
     private:
         void loadObj(const std::string &filePath);
@@ -37,10 +38,7 @@ namespace engine {
         MemoryAllocator &allocator;
 
         // buffers
-
         VmaAllocation vertexBufferAllocation;
-
-
         VmaAllocation indexBufferAllocation;
     };
 }

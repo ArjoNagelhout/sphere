@@ -228,12 +228,26 @@ namespace engine {
                 .pDynamicStates = dynamicStates.data(),
         };
 
+
+        uint32_t size = sizeof(glm::mat4x4);
+        std::cout << size << std::endl;
+
+        VkPushConstantRange pushConstantRange{
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .offset = 0,
+            .size = size
+        };
+
+        std::vector<VkPushConstantRange> pushConstantRanges{
+            pushConstantRange
+        };
+
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
                 .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
                 .pSetLayouts = descriptorSetLayouts.data(),
-                .pushConstantRangeCount = 0,
-                .pPushConstantRanges = nullptr,
+                .pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size()),
+                .pPushConstantRanges = pushConstantRanges.data(),
         };
 
         checkResult(

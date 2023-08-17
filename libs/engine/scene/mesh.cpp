@@ -10,7 +10,7 @@
 
 namespace engine {
 
-    Mesh::Mesh(const std::string &filePath) : allocator(*engine->allocator) {
+    Mesh::Mesh(const std::string &filePath, glm::mat4 transform) : allocator(*engine->allocator), transform(transform) {
         loadObj(filePath);
         allocator.createBuffer<VertexAttributes>(vertexBuffer,
                                                   vertexBufferAllocation,

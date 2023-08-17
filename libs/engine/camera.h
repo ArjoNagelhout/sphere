@@ -8,7 +8,7 @@
 
 namespace engine {
     struct CameraData {
-        glm::mat4x4 MVP;
+        glm::mat4x4 VP;
     };
 
     class Camera {
