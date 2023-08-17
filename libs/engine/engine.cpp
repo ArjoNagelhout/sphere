@@ -4,8 +4,6 @@
 #include <imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
 
-#include <glm/gtc/quaternion.hpp>
-
 namespace engine {
 
     Engine *engine;
@@ -165,6 +163,7 @@ namespace engine {
         vmaDestroyImage(allocator->allocator, depthImage, depthImageAllocation);
 
         texture.reset();
+        meshes.clear();
 
         pipelineBuilder.reset();
         descriptorSetBuilder.reset();
