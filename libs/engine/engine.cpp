@@ -108,7 +108,8 @@ namespace engine {
         vkCreateFence(device, &fenceInfo, nullptr, &uploadFence);
 
         // load image
-        texture = std::make_unique<Texture>("/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
+        texture = std::make_unique<Texture>(
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             std::vector<VkDescriptorSet> descriptorSets = descriptorSetBuilder->createDescriptorSets(
@@ -125,14 +126,14 @@ namespace engine {
         }
 
         std::vector<std::string> meshNames{
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/orb.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/hollowcube.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/bunny_patched.obj",
                 "/Users/arjonagelhout/Downloads/kenney_platformer-kit/Models/OBJ format/blockSnowRoundedLow.obj",
-                "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj",
                 "/Users/arjonagelhout/Downloads/kenney_platformer-kit/Models/OBJ format/ladderBroken.obj",
                 "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/bunny.obj",
-                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/bunny_patched.obj",
                 "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/column.obj",
-                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/hollowcube.obj",
-                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/orb.obj"
+                "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj",
         };
 
         for (size_t i = 0; i < meshNames.size(); i++) {
@@ -189,8 +190,9 @@ namespace engine {
         camera->updateCameraData();
 
         // update mesh transforms
-        for (auto const &mesh : meshes) {
-            mesh->localRotation = mesh->localRotation + glm::vec3(0, 1, 0);
+        for (size_t i = 0; i < meshes.size(); i++) {
+            const auto &mesh = meshes[i];
+            mesh->localRotation = mesh->localRotation + glm::vec3(0, -1.0f + 2.0f * static_cast<float>(i % 2), 0);
         }
         drawFrame();
     }
@@ -324,7 +326,7 @@ namespace engine {
                 .extent = extent};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        for (const auto &mesh : meshes) {
+        for (const auto &mesh: meshes) {
             // push transform matrix using push constants
             glm::mat4x4 transform = mesh->getTransform();
             vkCmdPushConstants(cmd,
