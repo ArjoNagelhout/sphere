@@ -18,7 +18,7 @@ namespace sphere {
 
         explicit Application(const std::string &applicationName) {
 
-            window = std::make_unique<engine::Window>(applicationName, 1000, 600, 200, 100);
+            window = std::make_unique<engine::Window>(applicationName, 1250, 1250, 200, 100);
 
             engine::EngineConfiguration configuration{
                     .window = window->glfwWindow,
@@ -57,7 +57,7 @@ namespace sphere {
 
         bool keys[GLFW_KEY_LAST + 1];
         const float speed = 0.1f;
-        const float turnSpeed = 0.1f;
+        const float turnSpeed = 0.05f;
 
         void updateCameraPosition() {
             glm::vec3 &cameraPosition = engine->camera->position;
