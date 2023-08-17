@@ -187,6 +187,11 @@ namespace engine {
         ImGui::Render();
 
         camera->updateCameraData();
+
+        // update mesh transforms
+        for (auto const &mesh : meshes) {
+            mesh->localRotation = mesh->localRotation + glm::vec3(0, 1, 0);
+        }
         drawFrame();
     }
 
