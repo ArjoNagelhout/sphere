@@ -5,8 +5,6 @@
 #include <imgui_impl_glfw.h>
 
 #include <glm/gtc/quaternion.hpp>
-#include<glm/gtx/transform.hpp>
-#include<glm/gtx/quaternion.hpp>
 
 namespace engine {
 
@@ -126,32 +124,25 @@ namespace engine {
             frames.push_back(frameData);
         }
 
-        std::string path = "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj";
-        glm::vec3 position{0, 5, 0};
-        glm::vec3 rotationEulerDegrees{0, 0, 0}; // pitch, yaw, roll
-        glm::quat rotation{rotationEulerDegrees};
-        glm::vec3 scale{2, 1, 1};
+        std::vector<std::string> meshNames{
+                "/Users/arjonagelhout/Downloads/kenney_platformer-kit/Models/OBJ format/blockSnowRoundedLow.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj",
+                "/Users/arjonagelhout/Downloads/kenney_platformer-kit/Models/OBJ format/ladderBroken.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/bunny.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/bunny_patched.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/column.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/hollowcube.obj",
+                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/orb.obj"
+        };
 
-        glm::mat4x4 translateMatrix{glm::translate(position)};
-        glm::mat4x4 rotateMatrix{glm::toMat4(rotation)};
-        glm::mat4x4 scaleMatrix{glm::scale(scale)};
-
-        glm::mat4x4 transform = translateMatrix * rotateMatrix * scaleMatrix;
-
-        meshes.emplace_back(std::make_unique<Mesh>(path, transform));
-
-        glm::vec3 position2{0, -3, 0};
-        glm::vec3 rotationEulerDegrees2{0, 10, 0}; // pitch, yaw, roll
-        glm::quat rotation2{rotationEulerDegrees2};
-        glm::vec3 scale2{0.5, 1, 1};
-
-        glm::mat4x4 translateMatrix2{glm::translate(position2)};
-        glm::mat4x4 rotateMatrix2{glm::toMat4(rotation2)};
-        glm::mat4x4 scaleMatrix2{glm::scale(scale2)};
-
-        glm::mat4x4 transform2 = translateMatrix2 * rotateMatrix2 * scaleMatrix2;
-
-        meshes.emplace_back(std::make_unique<Mesh>(path, transform2));
+        for (size_t i = 0; i < meshNames.size(); i++) {
+            const auto &meshName = meshNames[i];
+            meshes.emplace_back(std::make_unique<Mesh>(meshName));
+            const std::unique_ptr<Mesh> &mesh = meshes.back();
+            mesh->localPosition = {i * 2, 0, 0};
+            mesh->localRotation = {0, i * 10, 0};
+            mesh->localScale = {0.5, 0.5, 0.5f};
+        }
 
         initializeImgui();
     }
@@ -330,11 +321,11 @@ namespace engine {
 
         for (const auto &mesh : meshes) {
             // push transform matrix using push constants
-
+            glm::mat4x4 transform = mesh->getTransform();
             vkCmdPushConstants(cmd,
                                pipelineBuilder->graphicsPipelineLayout,
                                VK_SHADER_STAGE_VERTEX_BIT,
-                               0, sizeof(glm::mat4x4), &mesh->transform);
+                               0, sizeof(transform), &transform);
             VkDeviceSize vertexBufferOffset = 0;
             vkCmdBindIndexBuffer(cmd, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
             vkCmdBindVertexBuffers(cmd, 0, 1, &mesh->vertexBuffer, &vertexBufferOffset);

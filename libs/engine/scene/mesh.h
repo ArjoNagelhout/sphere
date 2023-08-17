@@ -15,7 +15,7 @@ namespace engine {
     class Mesh{
 
     public:
-        explicit Mesh(const std::string &filePath, glm::mat4 transform);
+        explicit Mesh(const std::string &filePath);
         ~Mesh();
 
         std::vector<VertexAttributes> vertices{
@@ -30,7 +30,12 @@ namespace engine {
 
         VkBuffer vertexBuffer;
         VkBuffer indexBuffer;
-        glm::mat4 transform;
+
+        // todo: should be refactored out
+        glm::vec3 localPosition;
+        glm::vec3 localRotation; // euler, degrees
+        glm::vec3 localScale;
+        glm::mat4 getTransform();
 
     private:
         void loadObj(const std::string &filePath);
