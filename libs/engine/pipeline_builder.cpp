@@ -5,6 +5,12 @@
 
 namespace engine {
 
+    PipelineData::PipelineData(const VkPipeline &pipeline, const VkPipelineLayout &pipelineLayout) : pipeline(pipeline),
+                                                                                                     pipelineLayout(
+                                                                                                             pipelineLayout) {
+
+    }
+
     PipelineBuilder::PipelineBuilder() {
 //
 //        VkPipelineCacheCreateInfo pipelineCacheInfo{};
@@ -15,8 +21,10 @@ namespace engine {
     }
 
     PipelineBuilder::~PipelineBuilder() {
-        vkDestroyPipeline(engine->device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(engine->device, graphicsPipelineLayout, nullptr);
+        for (const auto &pipeline: pipelines) {
+            vkDestroyPipeline(engine->device, pipeline->pipeline, nullptr);
+            vkDestroyPipelineLayout(engine->device, pipeline->pipelineLayout, nullptr);
+        }
     }
 
     static std::vector<char> readFile(const std::string &filename) {
@@ -54,11 +62,17 @@ namespace engine {
         return shaderModule;
     }
 
-    void PipelineBuilder::createPipeline(const VkRenderPass &renderPass,
-                                         const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts) {
+    PipelineData &PipelineBuilder::createPipeline(const VkRenderPass &renderPass,
+                                                  const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
+                                                  const std::string &vertexShaderPath,
+                                                  const std::string &fragmentShaderPath) {
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
 
-        std::vector<char> vertexShaderCode = readFile("shaders/shader_vert.spv");
-        std::vector<char> fragmentShaderCode = readFile("shaders/shader_frag.spv");
+        std::string shadersDirectory = "shaders/";
+
+        std::vector<char> vertexShaderCode = readFile(shadersDirectory + vertexShaderPath);
+        std::vector<char> fragmentShaderCode = readFile(shadersDirectory + fragmentShaderPath);
 
         VkShaderModule vertexShaderModule = createShaderModule(vertexShaderCode);
         VkShaderModule fragmentShaderModule = createShaderModule(fragmentShaderCode);
@@ -228,18 +242,14 @@ namespace engine {
                 .pDynamicStates = dynamicStates.data(),
         };
 
-
-        uint32_t size = sizeof(glm::mat4x4);
-        std::cout << size << std::endl;
-
         VkPushConstantRange pushConstantRange{
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .offset = 0,
-            .size = size
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .offset = 0,
+                .size = sizeof(glm::mat4)
         };
 
         std::vector<VkPushConstantRange> pushConstantRanges{
-            pushConstantRange
+                pushConstantRange
         };
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
@@ -251,7 +261,7 @@ namespace engine {
         };
 
         checkResult(
-                vkCreatePipelineLayout(engine->device, &pipelineLayoutCreateInfo, nullptr, &graphicsPipelineLayout));
+                vkCreatePipelineLayout(engine->device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
         VkGraphicsPipelineCreateInfo createInfo{
                 .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -266,7 +276,7 @@ namespace engine {
                 .pDepthStencilState = &depthStencilState,
                 .pColorBlendState = &colorBlendState,
                 .pDynamicState = &dynamicState,
-                .layout = graphicsPipelineLayout,
+                .layout = pipelineLayout,
                 .renderPass = renderPass,
                 .subpass = 0,
                 .basePipelineHandle = VK_NULL_HANDLE, // / optional, can be used to create a new graphics pipeline by deriving from an existing.pipeline, makes switching quicker
@@ -274,10 +284,14 @@ namespace engine {
         };
 
         checkResult(vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &createInfo, nullptr,
-                                              &graphicsPipeline));
-        std::cout << "created graphics pipeline" << std::endl;
+                                              &pipeline));
+
+        std::cout << "created pipeline" << std::endl;
 
         vkDestroyShaderModule(engine->device, vertexShaderModule, nullptr);
         vkDestroyShaderModule(engine->device, fragmentShaderModule, nullptr);
+
+        pipelines.emplace_back(std::make_unique<PipelineData>(pipeline, pipelineLayout));
+        return *pipelines.back();
     }
 }

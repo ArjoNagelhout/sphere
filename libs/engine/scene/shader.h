@@ -2,6 +2,7 @@
 #define SPHERE_SHADER_H
 
 #include <string>
+#include "pipeline_builder.h"
 
 namespace engine {
 
@@ -18,9 +19,9 @@ namespace engine {
         explicit Shader(const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
         ~Shader();
 
+        PipelineData *pipelineData; // (unowned pointer)
+
     private:
-
-
     };
 }
 

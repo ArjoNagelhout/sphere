@@ -6,6 +6,13 @@
 
 namespace engine {
 
+    struct PipelineData {
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
+
+        explicit PipelineData(const VkPipeline &pipeline, const VkPipelineLayout &pipelineLayout);
+    };
+
     /*
      * Pipelines should be cached in a pipeline cache.
      *
@@ -23,7 +30,7 @@ namespace engine {
      * 7. FIXED color blending (applies operations for overlapping fragments (same pixel coordinates))
      * OUTPUT: framebuffer
      *
-     * note: graphics pipeline is completely immutable
+     * note: graphics pipeline is completely immutable, except for the dynamic states
      */
     class PipelineBuilder {
 
@@ -31,10 +38,11 @@ namespace engine {
         explicit PipelineBuilder();
         ~PipelineBuilder();
 
-        VkPipeline graphicsPipeline;
-        VkPipelineLayout graphicsPipelineLayout;
+        // should be destroyed
+        std::vector<std::unique_ptr<PipelineData>> pipelines;
 
-        void createPipeline(const VkRenderPass &renderPass, const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts);
+        PipelineData &createPipeline(const VkRenderPass &renderPass, const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
+                            const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
 
     private:
         VkPipelineCache pipelineCache;

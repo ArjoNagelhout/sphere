@@ -133,6 +133,9 @@ namespace engine {
 
         std::unique_ptr<Swapchain> swapchain;
         std::unique_ptr<MemoryAllocator> allocator;
+        std::unique_ptr<RenderPass> renderPass;
+        std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
+        std::unique_ptr<PipelineBuilder> pipelineBuilder;
         std::unique_ptr<Camera> camera;
 
         std::function<void()> renderImgui;
@@ -145,9 +148,6 @@ namespace engine {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
-        std::unique_ptr<RenderPass> renderPass;
-        std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
-        std::unique_ptr<PipelineBuilder> pipelineBuilder;
         VkDescriptorPool imguiDescriptorPool;
 
         const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
@@ -160,6 +160,7 @@ namespace engine {
         VmaAllocation depthImageAllocation;
 
         std::vector<std::unique_ptr<Mesh>> meshes;
+        std::vector<std::unique_ptr<Shader>> shaders;
         std::vector<std::unique_ptr<Object>> objects;
         std::unique_ptr<Texture> texture;
 

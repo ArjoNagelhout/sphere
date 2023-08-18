@@ -83,12 +83,7 @@ namespace engine {
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
         descriptorSetBuilder = std::make_unique<DescriptorSetBuilder>();
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{
-                descriptorSetBuilder->descriptorSetLayout
-        };
-
         pipelineBuilder = std::make_unique<PipelineBuilder>();
-        pipelineBuilder->createPipeline(renderPass->renderPass, descriptorSetLayouts);
 
         createDepthImage();
         swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
@@ -123,6 +118,7 @@ namespace engine {
             frames.push_back(frameData);
         }
 
+        // load meshes
         std::vector<std::string> meshNames{
                 "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/orb.obj",
                 "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/hollowcube.obj",
@@ -134,37 +130,54 @@ namespace engine {
                 "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj",
         };
 
-        for (const auto & meshName : meshNames) {
+        for (const auto &meshName: meshNames) {
             meshes.emplace_back(std::make_unique<Mesh>(meshName));
         }
 
+        // load shaders
+        struct ShaderData {
+            std::string vertexShaderPath;
+            std::string fragmentShaderPath;
+        };
+
+        std::vector<ShaderData> shadersData{
+                {"shader_vert.spv", "shader_frag.spv"},
+                {"shader_test_vert.spv", "shader_test_frag.spv"}
+        };
+
+        for (const auto &shaderData: shadersData) {
+            shaders.emplace_back(std::make_unique<Shader>(shaderData.vertexShaderPath, shaderData.fragmentShaderPath));
+        }
+
+        // create scene with objects
         struct ObjectData {
             glm::vec3 position;
             glm::vec3 scale;
             Mesh &mesh;
+            Shader &shader;
         };
 
         std::vector<ObjectData> objectsData{
-                {{0, 0, 0}, {1, 1, 1}, *meshes[0]},
-                {{0, 2, 0}, {0.9, 1, 1}, *meshes[0]},
-                {{0, 4, 0}, {0.8, 1, 1}, *meshes[0]},
-                {{0, 6, 0}, {0.7, 1, 1}, *meshes[0]},
-                {{0, 8, 0}, {0.6, 1, 1}, *meshes[0]},
-                {{0, 10, 0}, {0.5, 1, 1}, *meshes[0]},
-                {{0, 12, 0}, {0.4, 1, 1}, *meshes[0]},
-                {{0, 14, 0}, {0.3, 1, 1}, *meshes[0]},
-                {{4, 0, 0}, {1, 1, 1}, *meshes[1]},
-                {{4, 2, 0}, {0.9, 1, 1}, *meshes[1]},
-                {{4, 4, 0}, {0.8, 1, 1}, *meshes[1]},
-                {{4, 6, 0}, {0.7, 1, 1}, *meshes[1]},
-                {{4, 8, 0}, {0.6, 1, 1}, *meshes[1]},
-                {{4, 10, 0}, {0.5, 1, 1}, *meshes[1]},
-                {{4, 12, 0}, {0.4, 1, 1}, *meshes[1]},
-                {{4, 14, 0}, {0.3, 1, 1}, *meshes[1]},
+                {{0, 0,  0}, {1,   1,    1},    *meshes[0], *shaders[0]},
+                {{0, 2,  0}, {0.9, 1,    1},    *meshes[0], *shaders[1]},
+                {{0, 4,  0}, {0.8, 1,    1},    *meshes[0], *shaders[1]},
+                {{0, 6,  0}, {0.7, 1,    1},    *meshes[0], *shaders[1]},
+                {{0, 8,  0}, {0.6, 1,    1},    *meshes[0], *shaders[0]},
+                {{0, 10, 0}, {0.5, 1,    1},    *meshes[0], *shaders[0]},
+                {{0, 12, 0}, {0.4, 1,    1},    *meshes[0], *shaders[0]},
+                {{0, 14, 0}, {0.3, 1,    1},    *meshes[0], *shaders[0]},
+                {{4, 0,  0}, {1,   0.25, 0.25}, *meshes[1], *shaders[1]},
+                {{4, 2,  0}, {0.9, 0.25, 0.25}, *meshes[1], *shaders[1]},
+                {{4, 4,  0}, {0.8, 0.25, 0.25}, *meshes[1], *shaders[1]},
+                {{4, 6,  0}, {0.7, 0.25, 0.25}, *meshes[1], *shaders[0]},
+                {{4, 8,  0}, {0.6, 0.25, 0.25}, *meshes[1], *shaders[0]},
+                {{4, 10, 0}, {0.5, 0.25, 0.25}, *meshes[1], *shaders[0]},
+                {{4, 12, 0}, {0.4, 0.25, 0.25}, *meshes[1], *shaders[0]},
+                {{4, 14, 0}, {0.3, 0.25, 0.25}, *meshes[1], *shaders[0]},
         };
 
-        for (const auto & objectData : objectsData) {
-            objects.emplace_back(std::make_unique<Object>(objectData.mesh));
+        for (const auto &objectData: objectsData) {
+            objects.emplace_back(std::make_unique<Object>(objectData.mesh, objectData.shader));
             const auto &obj = objects.back();
             obj->localPosition = objectData.position;
             obj->localScale = objectData.scale;
@@ -172,8 +185,6 @@ namespace engine {
 
         initializeImgui();
     }
-
-
 
     Engine::~Engine() {
         vkDeviceWaitIdle(device);
@@ -220,7 +231,9 @@ namespace engine {
         // update mesh transforms
         for (size_t i = 0; i < objects.size(); i++) {
             const auto &object = objects[i];
-            object->localRotation = object->localRotation * glm::angleAxis(0.05f * (-1.0f + 2.0f * static_cast<float>(i % 2)), glm::vec3(0, 1, 0));
+            object->localRotation = object->localRotation *
+                                    glm::angleAxis(0.05f * (-1.0f + 2.0f * static_cast<float>(i % 2)),
+                                                   glm::vec3(0, 1, 0));
         }
         drawFrame();
     }
@@ -330,15 +343,6 @@ namespace engine {
         };
 
         vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindDescriptorSets(cmd,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipelineBuilder->graphicsPipelineLayout,
-                                0,
-                                static_cast<uint32_t>(frameData.descriptorSets.size()),
-                                frameData.descriptorSets.data(),
-                                0,
-                                nullptr);
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineBuilder->graphicsPipeline);
 
         VkViewport viewport{
                 .x = 0.0f,
@@ -355,10 +359,24 @@ namespace engine {
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
         for (const auto &object: objects) {
+
+            // bind the pipeline
+            PipelineData *pipelineData = object->shader.pipelineData;
+
+            vkCmdBindDescriptorSets(cmd,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    pipelineData->pipelineLayout,
+                                    0,
+                                    static_cast<uint32_t>(frameData.descriptorSets.size()),
+                                    frameData.descriptorSets.data(),
+                                    0,
+                                    nullptr);
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData->pipeline);
+
             // push transform matrix using push constants
             glm::mat4x4 transform = object->getTransform();
             vkCmdPushConstants(cmd,
-                               pipelineBuilder->graphicsPipelineLayout,
+                               pipelineData->pipelineLayout,
                                VK_SHADER_STAGE_VERTEX_BIT,
                                0, sizeof(transform), &transform);
             VkDeviceSize vertexBufferOffset = 0;
