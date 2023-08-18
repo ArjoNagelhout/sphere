@@ -5,6 +5,7 @@
 #include "material.h"
 
 #include <glm/mat4x4.hpp>
+#include<glm/gtx/quaternion.hpp>
 
 namespace engine {
 
@@ -16,13 +17,17 @@ namespace engine {
     class Object {
 
     public:
-        explicit Object(Mesh &mesh, Material &material);
+        explicit Object(Mesh &mesh); //Material &material);
         ~Object();
 
         Mesh &mesh;
-        Material &material;
+        //Material &material;
 
-        glm::mat4 transform;
+        // todo: should be refactored out
+        glm::vec3 localPosition;
+        glm::quat localRotation{0, 0, 0, 1}; // identity quaternion, otherwise multiplication always results in 0
+        glm::vec3 localScale;
+        glm::mat4 getTransform();
 
     private:
 

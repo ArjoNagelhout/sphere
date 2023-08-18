@@ -22,7 +22,7 @@ set(SOURCES
         scene/object.h scene/object.cpp
         scene/material.h scene/material.cpp
         scene/mesh.h scene/mesh.cpp
-        )
+        scene/shader.h scene/shader.cpp)
 
 add_library(engine "${SOURCES}")
 

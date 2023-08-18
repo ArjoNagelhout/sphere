@@ -31,12 +31,6 @@ namespace engine {
         VkBuffer vertexBuffer;
         VkBuffer indexBuffer;
 
-        // todo: should be refactored out
-        glm::vec3 localPosition;
-        glm::vec3 localRotation; // euler, degrees
-        glm::vec3 localScale;
-        glm::mat4 getTransform();
-
     private:
         void loadObj(const std::string &filePath);
 

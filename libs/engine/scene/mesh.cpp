@@ -7,10 +7,6 @@
 
 #include <tiny_obj_loader.h>
 
-#include<glm/gtx/transform.hpp>
-#include<glm/gtx/quaternion.hpp>
-
-
 namespace engine {
 
     Mesh::Mesh(const std::string &filePath) : allocator(*engine->allocator) {
@@ -30,18 +26,6 @@ namespace engine {
     Mesh::~Mesh() {
         allocator.destroyBuffer(vertexBuffer);
         allocator.destroyBuffer(indexBuffer);
-    }
-
-    glm::mat4x4 Mesh::getTransform() {
-        // calculates the transform from the position, rotation and scale
-
-        glm::quat rotation{glm::vec3(glm::radians(localRotation.x), glm::radians(localRotation.y), glm::radians(localRotation.z))};
-
-        glm::mat4x4 translateMatrix{glm::translate(localPosition)};
-        glm::mat4x4 rotateMatrix{glm::toMat4(rotation)};
-        glm::mat4x4 scaleMatrix{glm::scale(localScale)};
-
-        return translateMatrix * rotateMatrix * scaleMatrix;
     }
 
     /*

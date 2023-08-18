@@ -134,17 +134,46 @@ namespace engine {
                 "/Users/arjonagelhout/Documents/ShapeReality/sphere/external/tinyobjloader/models/map-bump.obj",
         };
 
-        for (size_t i = 0; i < meshNames.size(); i++) {
-            const auto &meshName = meshNames[i];
+        for (const auto & meshName : meshNames) {
             meshes.emplace_back(std::make_unique<Mesh>(meshName));
-            const std::unique_ptr<Mesh> &mesh = meshes.back();
-            mesh->localPosition = {i * 2, 0, 0};
-            mesh->localRotation = {0, i * 10, 0};
-            mesh->localScale = {0.5, 0.5, 0.5f};
+        }
+
+        struct ObjectData {
+            glm::vec3 position;
+            glm::vec3 scale;
+            Mesh &mesh;
+        };
+
+        std::vector<ObjectData> objectsData{
+                {{0, 0, 0}, {1, 1, 1}, *meshes[0]},
+                {{0, 2, 0}, {0.9, 1, 1}, *meshes[0]},
+                {{0, 4, 0}, {0.8, 1, 1}, *meshes[0]},
+                {{0, 6, 0}, {0.7, 1, 1}, *meshes[0]},
+                {{0, 8, 0}, {0.6, 1, 1}, *meshes[0]},
+                {{0, 10, 0}, {0.5, 1, 1}, *meshes[0]},
+                {{0, 12, 0}, {0.4, 1, 1}, *meshes[0]},
+                {{0, 14, 0}, {0.3, 1, 1}, *meshes[0]},
+                {{4, 0, 0}, {1, 1, 1}, *meshes[1]},
+                {{4, 2, 0}, {0.9, 1, 1}, *meshes[1]},
+                {{4, 4, 0}, {0.8, 1, 1}, *meshes[1]},
+                {{4, 6, 0}, {0.7, 1, 1}, *meshes[1]},
+                {{4, 8, 0}, {0.6, 1, 1}, *meshes[1]},
+                {{4, 10, 0}, {0.5, 1, 1}, *meshes[1]},
+                {{4, 12, 0}, {0.4, 1, 1}, *meshes[1]},
+                {{4, 14, 0}, {0.3, 1, 1}, *meshes[1]},
+        };
+
+        for (const auto & objectData : objectsData) {
+            objects.emplace_back(std::make_unique<Object>(objectData.mesh));
+            const auto &obj = objects.back();
+            obj->localPosition = objectData.position;
+            obj->localScale = objectData.scale;
         }
 
         initializeImgui();
     }
+
+
 
     Engine::~Engine() {
         vkDeviceWaitIdle(device);
@@ -189,9 +218,9 @@ namespace engine {
         camera->updateCameraData();
 
         // update mesh transforms
-        for (size_t i = 0; i < meshes.size(); i++) {
-            const auto &mesh = meshes[i];
-            mesh->localRotation = mesh->localRotation + glm::vec3(0, -1.0f + 2.0f * static_cast<float>(i % 2), 0);
+        for (size_t i = 0; i < objects.size(); i++) {
+            const auto &object = objects[i];
+            object->localRotation = object->localRotation * glm::angleAxis(0.05f * (-1.0f + 2.0f * static_cast<float>(i % 2)), glm::vec3(0, 1, 0));
         }
         drawFrame();
     }
@@ -325,17 +354,17 @@ namespace engine {
                 .extent = extent};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        for (const auto &mesh: meshes) {
+        for (const auto &object: objects) {
             // push transform matrix using push constants
-            glm::mat4x4 transform = mesh->getTransform();
+            glm::mat4x4 transform = object->getTransform();
             vkCmdPushConstants(cmd,
                                pipelineBuilder->graphicsPipelineLayout,
                                VK_SHADER_STAGE_VERTEX_BIT,
                                0, sizeof(transform), &transform);
             VkDeviceSize vertexBufferOffset = 0;
-            vkCmdBindIndexBuffer(cmd, mesh->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-            vkCmdBindVertexBuffers(cmd, 0, 1, &mesh->vertexBuffer, &vertexBufferOffset);
-            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+            vkCmdBindIndexBuffer(cmd, object->mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(cmd, 0, 1, &(object->mesh.vertexBuffer), &vertexBufferOffset);
+            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(object->mesh.indices.size()), 1, 0, 0, 0);
         }
 
         // imgui
