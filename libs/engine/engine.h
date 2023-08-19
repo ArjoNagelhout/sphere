@@ -23,6 +23,7 @@
 #include "scene/scene.h"
 #include "scene/mesh.h"
 #include "scene/object.h"
+#include "text/text_rendering.h"
 
 namespace engine {
 
@@ -162,6 +163,7 @@ namespace engine {
 
         std::unique_ptr<Scene> scene;
         std::unique_ptr<Texture> texture;
+        std::unique_ptr<TextRendering> textRendering;
 
         // vulkan setup
         void createInstance(const std::vector<const char *> &requiredExtensions, const std::vector<const char *> &requiredLayers);

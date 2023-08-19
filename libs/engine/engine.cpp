@@ -84,6 +84,7 @@ namespace engine {
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
         descriptorSetBuilder = std::make_unique<DescriptorSetBuilder>();
         pipelineBuilder = std::make_unique<PipelineBuilder>();
+        textRendering = std::make_unique<TextRendering>();
 
         createDepthImage();
         swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
@@ -141,6 +142,7 @@ namespace engine {
 
         texture.reset();
         scene.reset();
+        textRendering.reset();
 
         pipelineBuilder.reset();
         descriptorSetBuilder.reset();

@@ -10,8 +10,13 @@ target_include_directories(vma INTERFACE VulkanMemoryAllocator/include)
 
 add_subdirectory(glm)
 
+set(FREETYPE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/freetype)
+message(STATUS "Freetype dir: ${FREETYPE_DIR}")
+find_package(Freetype REQUIRED)
+
 add_library(freetype INTERFACE)
-target_include_directories(freetype INTERFACE freetype/include)
+target_link_libraries(freetype INTERFACE ${FREETYPE_LIBRARIES})
+target_include_directories(freetype INTERFACE ${FREETYPE_INCLUDE_DIRS})
 
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE stb)

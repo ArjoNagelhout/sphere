@@ -1,8 +1,9 @@
 #ifndef SPHERE_TEXT_RENDERING_H
 #define SPHERE_TEXT_RENDERING_H
 
-#include <ft2build.h>
-#include <freetype/freetype.h>
+#include "ft2build.h"
+#include FT_FREETYPE_H
+//#include "freetype/freetype.h"
 
 namespace engine {
 
@@ -29,16 +30,26 @@ namespace engine {
      *
      * http://sluglibrary.com
      *
+     *
+     * https://github.com/behdad/glyphy
+     * Glyphy high runtime cost
+     *
      * The results can be cached on disk. If no entry exists on disk, the font file will be parsed and the
      * rendering will be performed.
      *
      * We start out by using the simplest implementation possible using an existing library, and gradually
      *
+     * The Freetype library runs on the CPU.
+     *
      */
     class TextRendering {
 
+    public:
+        explicit TextRendering();
+        ~TextRendering();
 
-
+    private:
+        FT_Library library;
     };
 
 }
