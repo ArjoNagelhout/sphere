@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "object.h"
+#include "texture.h"
 
 namespace engine {
 
@@ -23,7 +24,9 @@ namespace engine {
         void update();
 
     private:
+        std::vector<std::unique_ptr<Texture>> textures;
         std::vector<std::unique_ptr<Mesh>> meshes;
+        std::vector<std::unique_ptr<Material>> materials;
         std::vector<std::unique_ptr<Shader>> shaders;
     };
 }

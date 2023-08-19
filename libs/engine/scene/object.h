@@ -18,11 +18,11 @@ namespace engine {
     class Object {
 
     public:
-        explicit Object(Mesh &mesh, Shader &shader); //Material &material);
+        explicit Object(Mesh &mesh, Material &material);
         ~Object();
 
         Mesh &mesh;
-        Shader &shader; // the shader that is used for rendering this object, todo: should be replaced by Material
+        Material &material; // the shader that is used for rendering this object, todo: should be replaced by Material
 
         // todo: should be refactored out into Transform component using ECS
         glm::vec3 localPosition;

@@ -5,13 +5,17 @@ namespace engine {
 
     Shader::Shader(const std::string &vertexShaderPath, const std::string &fragmentShaderPath) {
 
+        descriptorSetLayout = createDescriptorSetLayout();
+
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts{
-                engine->descriptorSetBuilder->descriptorSetLayout
+                descriptorSetLayout
         };
 
         PipelineData &data = engine->pipelineBuilder->createPipeline(engine->renderPass->renderPass, descriptorSetLayouts, vertexShaderPath, fragmentShaderPath);
         pipelineData = &data; // get pointer to pipeline data (unowned pointer)
     }
 
-    Shader::~Shader() = default;
+    Shader::~Shader() {
+        vkDestroyDescriptorSetLayout(engine->device, descriptorSetLayout, nullptr);
+    }
 }

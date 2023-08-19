@@ -22,6 +22,7 @@ namespace engine {
         ~Shader();
 
         PipelineData *pipelineData; // (unowned pointer)
+        VkDescriptorSetLayout descriptorSetLayout;
 
     private:
     };

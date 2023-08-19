@@ -4,7 +4,7 @@
 
 namespace engine {
 
-    Object::Object(Mesh &mesh, Shader &shader) : mesh(mesh), shader(shader) {
+    Object::Object(Mesh &mesh, Material &material) : mesh(mesh), material(material) {
 
     }
 

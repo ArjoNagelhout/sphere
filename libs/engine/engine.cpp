@@ -101,19 +101,9 @@ namespace engine {
         };
         vkCreateFence(device, &fenceInfo, nullptr, &uploadFence);
 
-        // load image
-        texture = std::make_unique<Texture>(
-                "/Users/arjonagelhout/Documents/ShapeReality/2023-06-11_green_assets/textures/edited/leaves_1.png");
-
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            std::vector<VkDescriptorSet> descriptorSets = descriptorSetBuilder->createDescriptorSets(
-                    descriptorSetBuilder->descriptorSetLayout, 1);
-            descriptorSetBuilder->bindBuffer(descriptorSets[0], camera->cameraDataBuffer, 0);
-            descriptorSetBuilder->bindImage(descriptorSets[0], texture->sampler, texture->imageView, 1);
-
             FrameData frameData{
                     .commandBuffer = commandBuffers[i],
-                    .descriptorSets = descriptorSets
             };
             frameData.initialize();
             frames.push_back(frameData);
@@ -140,7 +130,6 @@ namespace engine {
         vkDestroyImageView(device, depthImageView, nullptr);
         vmaDestroyImage(allocator->allocator, depthImage, depthImageAllocation);
 
-        texture.reset();
         scene.reset();
         textRendering.reset();
 
@@ -295,14 +284,16 @@ namespace engine {
         for (const auto &object: scene->objects) {
 
             // bind the pipeline
-            PipelineData *pipelineData = object->shader.pipelineData;
+            PipelineData *pipelineData = object->material.shader.pipelineData;
 
+            // should bind descriptor sets that are owned by either the material or shader.
+            // shader has layout, material has descriptor sets themselves.
             vkCmdBindDescriptorSets(cmd,
                                     VK_PIPELINE_BIND_POINT_GRAPHICS,
                                     pipelineData->pipelineLayout,
                                     0,
-                                    static_cast<uint32_t>(frameData.descriptorSets.size()),
-                                    frameData.descriptorSets.data(),
+                                    static_cast<uint32_t>(object->material.descriptorSets.size()),
+                                    object->material.descriptorSets.data(),
                                     0,
                                     nullptr);
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData->pipeline);

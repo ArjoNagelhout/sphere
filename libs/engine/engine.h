@@ -19,7 +19,6 @@
 #include "pipeline_builder.h"
 #include "memory_allocator.h"
 #include "camera.h"
-#include "texture.h"
 #include "scene/scene.h"
 #include "scene/mesh.h"
 #include "scene/object.h"
@@ -88,7 +87,6 @@ namespace engine {
      */
     struct FrameData {
         VkCommandBuffer commandBuffer;
-        std::vector<VkDescriptorSet> descriptorSets;
 
         // synchronization primitives
         VkFence inFlightFence;
@@ -162,7 +160,7 @@ namespace engine {
         VmaAllocation depthImageAllocation;
 
         std::unique_ptr<Scene> scene;
-        std::unique_ptr<Texture> texture;
+
         std::unique_ptr<TextRendering> textRendering;
 
         // vulkan setup

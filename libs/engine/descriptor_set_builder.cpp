@@ -4,16 +4,31 @@
 namespace engine {
 
     DescriptorSetBuilder::DescriptorSetBuilder() {
-        createDescriptorSetLayout();
         createDescriptorPool();
     }
 
     DescriptorSetBuilder::~DescriptorSetBuilder() {
         vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(engine->device, descriptorSetLayout, nullptr);
     }
 
-    void DescriptorSetBuilder::createDescriptorSetLayout() {
+    /*
+     * Creates a descriptor set layout from a list of VkDescriptorSetLayoutBindings.
+     * No additional data is assumed or required
+     */
+    VkDescriptorSetLayout createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings) {
+        VkDescriptorSetLayout descriptorSetLayout;
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .bindingCount = static_cast<uint32_t>(bindings.size()),
+                .pBindings = bindings.data(),
+        };
+        checkResult(vkCreateDescriptorSetLayout(engine->device,
+                                                &descriptorSetLayoutInfo,
+                                                nullptr, &descriptorSetLayout));
+        return descriptorSetLayout;
+    }
+
+    VkDescriptorSetLayout createDescriptorSetLayout() {
         VkDescriptorSetLayoutBinding cameraData{
                 .binding = 0,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -35,14 +50,7 @@ namespace engine {
                 diffuse
         };
 
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-                .bindingCount = static_cast<uint32_t>(bindings.size()),
-                .pBindings = bindings.data(),
-        };
-
-        checkResult(
-                vkCreateDescriptorSetLayout(engine->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
+        return createDescriptorSetLayout(bindings);
     }
 
     void DescriptorSetBuilder::createDescriptorPool() {
@@ -85,7 +93,7 @@ namespace engine {
         return descriptorSets;
     }
 
-    void DescriptorSetBuilder::bindImage(VkDescriptorSet &descriptorSet, VkSampler &sampler, VkImageView &imageView, uint32_t dstBinding) {
+    void bindImage(VkDescriptorSet &descriptorSet, VkSampler &sampler, VkImageView &imageView, uint32_t dstBinding) {
         VkDescriptorImageInfo imageInfo{
                 .sampler = sampler,
                 .imageView = imageView,
@@ -107,7 +115,7 @@ namespace engine {
         vkUpdateDescriptorSets(engine->device, 1, &writeInfo, 0, nullptr);
     }
 
-    void DescriptorSetBuilder::bindBuffer(VkDescriptorSet &descriptorSet, VkBuffer &buffer, uint32_t dstBinding) {
+    void bindBuffer(VkDescriptorSet &descriptorSet, VkBuffer &buffer, uint32_t dstBinding) {
         VkDescriptorBufferInfo bufferInfo{
                 .buffer = buffer,
                 .offset = 0,
