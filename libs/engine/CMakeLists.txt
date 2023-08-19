@@ -22,10 +22,10 @@ set(SOURCES
         scene/object.h scene/object.cpp
         scene/material.h scene/material.cpp
         scene/mesh.h scene/mesh.cpp
-        scene/shader.h scene/shader.cpp)
+        scene/shader.h scene/shader.cpp scene/text_rendering.h)
 
 add_library(engine "${SOURCES}")
 
-target_link_libraries(engine Vulkan::Vulkan glfw vma tinyobj imgui glm stb)
+target_link_libraries(engine Vulkan::Vulkan glfw vma tinyobj imgui glm stb freetype)
 
 target_include_directories(engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
