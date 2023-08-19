@@ -82,7 +82,7 @@ add_executable(sphere
 add_subdirectory(external)
 add_subdirectory(libs)
 
-target_link_libraries(sphere PUBLIC engine editor)
+target_link_libraries(sphere PUBLIC glfw glm engine editor)
 
 if(APPLE)
         set_target_properties(sphere PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/data/Info.plist)

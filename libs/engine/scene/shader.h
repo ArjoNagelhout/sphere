@@ -12,6 +12,8 @@ namespace engine {
      * construct the proper representations in Vulkan objects.
      *
      * Properties can be: matrices, textures, floats, vectors
+     *
+     * These properties get set using descriptor sets
      */
     class Shader{
 

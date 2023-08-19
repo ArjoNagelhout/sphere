@@ -26,6 +26,12 @@ namespace editor {
                 ImGui::EndMenu();
             }
 
+            if (ImGui::BeginMenu("Create")) {
+                ImGui::MenuItem("Cube");
+
+                ImGui::EndMenu();
+            }
+
             ImGui::EndMainMenuBar();
         }
         ImGui::Begin("Sphere", &open, 0);

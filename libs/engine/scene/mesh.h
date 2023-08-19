@@ -9,7 +9,6 @@
 #include <vector>
 #include "types.h"
 
-
 namespace engine {
 
     class Mesh{

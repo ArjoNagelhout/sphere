@@ -17,10 +17,14 @@ namespace engine {
         explicit Scene();
         ~Scene();
 
-        std::vector<Object> objects;
+        std::vector<std::unique_ptr<Object>> objects;
+
+        // todo: refactor out
+        void update();
 
     private:
-
+        std::vector<std::unique_ptr<Mesh>> meshes;
+        std::vector<std::unique_ptr<Shader>> shaders;
     };
 }
 

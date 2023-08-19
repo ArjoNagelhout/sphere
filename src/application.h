@@ -70,26 +70,15 @@ namespace sphere {
             int turnRight = (int) keys[GLFW_KEY_RIGHT] - (int) keys[GLFW_KEY_LEFT];
             int turnUp = (int) keys[GLFW_KEY_UP] - (int) keys[GLFW_KEY_DOWN];
 
-            // need to get forward vector, we do this by getting the rotation
-
             glm::vec3 deltaPosition{(float) right * speed, -(float) up * speed, -(float) forward * speed};
-            // now rotate the position
-
-            cameraPosition += cameraRotation * deltaPosition;
+            cameraPosition += cameraRotation * deltaPosition; // rotate the delta position by the camera rotation
 
             glm::vec3 rightRelativeToCamera = cameraRotation * glm::vec3(1, 0, 0);
 
             glm::quat deltaHorizontalRotation = glm::angleAxis((float) turnRight * turnSpeed, glm::vec3{0, 1, 0});
             glm::quat deltaVerticalRotation = glm::angleAxis(-(float) turnUp * turnSpeed, rightRelativeToCamera);
 
-            //printRotation("cameraRotation", cameraRotation);
-            //printRotation("deltaRotation", deltaRotation);
             cameraRotation = deltaVerticalRotation * deltaHorizontalRotation * cameraRotation;
-//            printRotation("cameraRotationAfter", cameraRotation);
-
-
-            //cameraRotation.x += (float)turnUp * turnSpeed;
-            //cameraRotation.z += (float)turnRight * turnSpeed;
         }
 
         static void printRotation(const std::string &str, const glm::quat &rot) {

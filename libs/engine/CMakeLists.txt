@@ -26,6 +26,6 @@ set(SOURCES
 
 add_library(engine "${SOURCES}")
 
-target_link_libraries(engine Vulkan::Vulkan glfw vma tinyobj imgui glm)
+target_link_libraries(engine Vulkan::Vulkan glfw vma tinyobj imgui glm stb)
 
 target_include_directories(engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

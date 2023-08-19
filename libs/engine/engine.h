@@ -20,6 +20,7 @@
 #include "memory_allocator.h"
 #include "camera.h"
 #include "texture.h"
+#include "scene/scene.h"
 #include "scene/mesh.h"
 #include "scene/object.h"
 
@@ -159,9 +160,7 @@ namespace engine {
         VkImageView depthImageView;
         VmaAllocation depthImageAllocation;
 
-        std::vector<std::unique_ptr<Mesh>> meshes;
-        std::vector<std::unique_ptr<Shader>> shaders;
-        std::vector<std::unique_ptr<Object>> objects;
+        std::unique_ptr<Scene> scene;
         std::unique_ptr<Texture> texture;
 
         // vulkan setup

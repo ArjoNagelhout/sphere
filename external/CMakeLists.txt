@@ -5,12 +5,17 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(glfw)
-add_subdirectory(glm)
-#add_subdirectory(shaderc)
-
 add_library(vma INTERFACE)
 target_include_directories(vma INTERFACE VulkanMemoryAllocator/include)
+
+add_subdirectory(glfw)
+add_subdirectory(glm)
+
+add_library(freetype INTERFACE)
+target_include_directories(freetype INTERFACE freetype/include)
+
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE stb)
 
 add_library(imgui STATIC)
 target_include_directories(imgui PUBLIC imgui imgui/backends)
@@ -33,10 +38,3 @@ target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 add_library(tinyobj INTERFACE)
 target_include_directories(tinyobj INTERFACE tinyobjloader)
-
-target_include_directories(sphere
-#        PRIVATE glfw/include
-#        PRIVATE glm
-        PRIVATE stb)
-
-target_link_libraries(sphere PUBLIC glfw glm) #shaderc)
