@@ -137,6 +137,7 @@ namespace engine {
         std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
         std::unique_ptr<PipelineBuilder> pipelineBuilder;
         std::unique_ptr<Camera> camera;
+        std::unique_ptr<Scene> scene;
 
         std::function<void()> renderImgui;
         void render();
@@ -158,8 +159,6 @@ namespace engine {
         VkImage depthImage;
         VkImageView depthImageView;
         VmaAllocation depthImageAllocation;
-
-        std::unique_ptr<Scene> scene;
 
         std::unique_ptr<TextRendering> textRendering;
 

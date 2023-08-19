@@ -4,7 +4,7 @@
 
 namespace engine {
 
-    Object::Object(Mesh &mesh, Material &material) : mesh(mesh), material(material) {
+    Object::Object(const std::string &name, Mesh &mesh, Material &material) : name(name), mesh(mesh), material(material) {
 
     }
 

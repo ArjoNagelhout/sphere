@@ -18,9 +18,10 @@ namespace engine {
     class Object {
 
     public:
-        explicit Object(Mesh &mesh, Material &material);
+        explicit Object(const std::string &name, Mesh &mesh, Material &material);
         ~Object();
 
+        std::string name;
         Mesh &mesh;
         Material &material; // the shader that is used for rendering this object, todo: should be replaced by Material
 

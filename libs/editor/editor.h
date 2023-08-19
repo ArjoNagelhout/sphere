@@ -12,6 +12,7 @@ namespace editor {
         void render();
 
     private:
+        int selectedObjectIndex = 0;
 
     };
 }

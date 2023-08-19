@@ -51,6 +51,7 @@ namespace engine {
 
         // create scene with objects
         struct ObjectData {
+            std::string name;
             glm::vec3 position;
             glm::vec3 scale;
             Mesh &mesh;
@@ -75,26 +76,26 @@ namespace engine {
         }
 
         std::vector<ObjectData> objectsData{
-                {{0, 0,  0}, {1,   1,    1},    *meshes[0], *materials[0]},
-                {{0, 2,  0}, {0.9, 1,    1},    *meshes[0], *materials[1]},
-                {{0, 4,  0}, {0.8, 1,    1},    *meshes[0], *materials[2]},
-                {{0, 6,  0}, {0.7, 1,    1},    *meshes[0], *materials[3]},
-                {{-4, 0,  0}, {0.6, 1,    1},    *meshes[0], *materials[1]},
-                {{-4, 2, 0}, {0.5, 1,    1},    *meshes[0], *materials[2]},
-                {{-4, 4, 0}, {0.4, 1,    1},    *meshes[0], *materials[1]},
-                {{-4, 6, 0}, {0.3, 1,    1},    *meshes[0], *materials[0]},
-                {{4, 0,  0}, {1,   0.25, 0.25}, *meshes[1], *materials[1]},
-                {{4, 2,  0}, {0.9, 0.25, 0.25}, *meshes[1], *materials[1]},
-                {{4, 4,  0}, {0.8, 0.25, 0.25}, *meshes[1], *materials[1]},
-                {{4, 6,  0}, {0.7, 0.25, 0.25}, *meshes[1], *materials[0]},
-                {{4, 8,  0}, {0.6, 0.25, 0.25}, *meshes[1], *materials[0]},
-                {{4, 10, 0}, {0.5, 0.25, 0.25}, *meshes[1], *materials[0]},
-                {{4, 12, 0}, {0.4, 0.25, 0.25}, *meshes[1], *materials[0]},
-                {{4, 14, 0}, {0.3, 0.25, 0.25}, *meshes[1], *materials[0]},
+                {"Wee", {0, 0,  0}, {1,   1,    1},    *meshes[0], *materials[0]},
+                {"Dingetje", {0, 2,  0}, {0.9, 1,    1},    *meshes[0], *materials[1]},
+                {"Objectje", {0, 4,  0}, {0.8, 1,    1},    *meshes[0], *materials[2]},
+                {"Woeie", {0, 6,  0}, {0.7, 1,    1},    *meshes[0], *materials[3]},
+                {"Bowo", {-4, 0,  0}, {0.6, 1,    1},    *meshes[0], *materials[1]},
+                {"Meet", {-4, 2, 0}, {0.5, 1,    1},    *meshes[0], *materials[2]},
+                {"Frie", {-4, 4, 0}, {0.4, 1,    1},    *meshes[0], *materials[1]},
+                {"Sat", {-4, 6, 0}, {0.3, 1,    1},    *meshes[0], *materials[0]},
+                {"Fry", {4, 0,  0}, {1,   0.25, 0.25}, *meshes[1], *materials[1]},
+                {"Lalalal33", {4, 2,  0}, {0.9, 0.25, 0.25}, *meshes[1], *materials[1]},
+                {"1Wee", {4, 4,  0}, {0.8, 0.25, 0.25}, *meshes[1], *materials[1]},
+                {"Obje223", {4, 6,  0}, {0.7, 0.25, 0.25}, *meshes[1], *materials[0]},
+                {"Llsss", {4, 8,  0}, {0.6, 0.25, 0.25}, *meshes[1], *materials[0]},
+                {"Llalalal", {4, 10, 0}, {0.5, 0.25, 0.25}, *meshes[1], *materials[0]},
+                {"MBes", {4, 12, 0}, {0.4, 0.25, 0.25}, *meshes[1], *materials[0]},
+                {"Ke3", {4, 14, 0}, {0.3, 0.25, 0.25}, *meshes[1], *materials[0]},
         };
 
         for (const auto &objectData: objectsData) {
-            objects.emplace_back(std::make_unique<Object>(objectData.mesh, objectData.material));
+            objects.emplace_back(std::make_unique<Object>(objectData.name, objectData.mesh, objectData.material));
             const auto &obj = objects.back();
             obj->localPosition = objectData.position;
             obj->localScale = objectData.scale;

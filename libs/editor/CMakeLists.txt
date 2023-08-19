@@ -4,6 +4,6 @@ set(SOURCES
 
 add_library(editor "${SOURCES}")
 
-target_link_libraries(editor imgui)
+target_link_libraries(editor imgui engine glm)
 
 target_include_directories(editor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
