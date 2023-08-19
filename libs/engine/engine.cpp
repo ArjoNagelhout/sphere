@@ -163,9 +163,7 @@ namespace engine {
 
     void Engine::drawFrame() {
         const FrameData &frameData = frames[currentFrameIndex];
-
         VkResult result;
-
         vkWaitForFences(device, 1, &frameData.inFlightFence, VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -175,18 +173,10 @@ namespace engine {
                                        frameData.imageAvailableSemaphore,
                                        VK_NULL_HANDLE,
                                        &imageIndex);
-        switch (result) {
-            case VK_SUCCESS:
-            case VK_ERROR_OUT_OF_DATE_KHR:
-            case VK_SUBOPTIMAL_KHR:
-                break;
-//            case VK_ERROR_OUT_OF_DATE_KHR:
-//                window resized, so we should recreate the swapchain
-//                swapchain->recreate();
-//                return;
-            default:
-                throw std::runtime_error(
-                        std::string("failed to acquire swapchain image") + string_VkResult(result));
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+
+        } else {
+            checkResult(result);
         }
 
         vkResetFences(device, 1, &frameData.inFlightFence);
@@ -231,7 +221,6 @@ namespace engine {
         } else {
             checkResult(result);
         }
-
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
@@ -282,7 +271,6 @@ namespace engine {
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
         for (const auto &object: scene->objects) {
-
             // bind the pipeline
             PipelineData *pipelineData = object->material.shader.pipelineData;
 
