@@ -1,5 +1,5 @@
-#ifndef SPHERE_MEMORY_H
-#define SPHERE_MEMORY_H
+#ifndef SPHERE_BUFFER_H
+#define SPHERE_BUFFER_H
 
 #define VK_ENABLE_BETA_EXTENSIONS
 
@@ -8,18 +8,7 @@
 #include <memory>
 #include <iostream>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnullability-completeness"
-
-#include "vk_mem_alloc.h"
-
-#pragma clang diagnostic pop
-
-namespace engine::memory {
-
-    extern VmaAllocator allocator;
-    void initializeAllocator();
-    void destroyAllocator();
+namespace engine {
 
     class Buffer {
 
@@ -32,9 +21,10 @@ namespace engine::memory {
         void update(const void *data);
 
     private:
+        VmaAllocator allocator;
         VmaAllocation allocation;
         size_t size;
     };
 }
 
-#endif //SPHERE_MEMORY_H
+#endif //SPHERE_BUFFER_H

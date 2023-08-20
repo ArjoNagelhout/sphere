@@ -1,6 +1,9 @@
-#include "engine.h"
+#include "vulkan_context.h"
+
+#include "utils.h"
 
 #include <map>
+#include <iostream>
 
 namespace engine {
 
@@ -88,8 +91,8 @@ namespace engine {
         return enabledLayers;
     }
 
-    void Engine::createInstance(const std::vector<const char *> &requiredExtensions,
-                                const std::vector<const char *> &requiredLayers) {
+    void VulkanContext::createInstance(const std::vector<const char *> &requiredExtensions,
+                                       const std::vector<const char *> &requiredLayers) {
         VkApplicationInfo appInfo{
                 .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
                 .pApplicationName = configuration.applicationName.data(),
@@ -166,7 +169,7 @@ namespace engine {
         }
     }
 
-    void Engine::createDebugMessenger() {
+    void VulkanContext::createDebugMessenger() {
         if (!configuration.debug) {
             return;
         }
@@ -187,7 +190,7 @@ namespace engine {
         std::cout << "created debug messenger" << std::endl;
     }
 
-    void Engine::destroyDebugMessenger() {
+    void VulkanContext::destroyDebugMessenger() {
         if (debugMessenger == nullptr) {
             return;
         }
@@ -338,30 +341,11 @@ namespace engine {
         return score;
     }
 
-    PhysicalDeviceData getPhysicalDeviceData(const VkPhysicalDevice &physicalDevice) {
-
-        VkPhysicalDeviceProperties2 properties{};
-        properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-
-        VkPhysicalDevicePortabilitySubsetPropertiesKHR portabilitySubsetProperties{};
-        portabilitySubsetProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
-        properties.pNext = &portabilitySubsetProperties;
-
-        vkGetPhysicalDeviceProperties2(physicalDevice, &properties);
-
-        PhysicalDeviceData physicalDeviceData{
-                .minVertexInputBindingStrideAlignment = portabilitySubsetProperties.minVertexInputBindingStrideAlignment,
-                .maxVertexInputBindingStride = properties.properties.limits.maxVertexInputBindingStride
-        };
-
-        return physicalDeviceData;
-    }
-
     /*
      * Picks the physical device with the highest score and one that is valid.
      * Sets the physicalDevice and queueFamiliesData (i.e. caches the queueFamiliesData in this class)
      */
-    void Engine::pickPhysicalDevice(const std::vector<const char *> &requiredExtensions) {
+    void VulkanContext::pickPhysicalDevice(const std::vector<const char *> &requiredExtensions) {
         uint32_t physicalDeviceCount;
         vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
         std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
@@ -408,7 +392,6 @@ namespace engine {
         // cache data
         queueFamiliesData = getQueueFamiliesData(physicalDevice, surface);
         surfaceData = getSurfaceData(physicalDevice, surface);
-        physicalDeviceData = getPhysicalDeviceData(physicalDevice);
 
         // print picked device
         VkPhysicalDeviceProperties properties;
@@ -458,7 +441,7 @@ namespace engine {
      * Creates a logical device based on the chosen physical device.
      * This is the end of the responsibilities of the device class.
      */
-    void Engine::createDevice(const std::vector<const char *> &requiredExtensions) {
+    void VulkanContext::createDevice(const std::vector<const char *> &requiredExtensions) {
 
         // first create a queue create info for each queue family
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
@@ -486,7 +469,7 @@ namespace engine {
         }
 
         std::vector<const char *> enabledDeviceExtensions = getEnabledDeviceExtensions(physicalDevice,
-                                                                                       requiredDeviceExtensions);
+                                                                                       requiredExtensions);
 
         // print enabled device extensions
         for (const auto &enabledDeviceExtension: enabledDeviceExtensions) {
@@ -523,8 +506,9 @@ namespace engine {
      *
      * A VkSurfaceKHR can be used to present images to the screen.
      */
-    void Engine::createSurface() {
+    void VulkanContext::createSurface() {
         checkResult(glfwCreateWindowSurface(instance, configuration.window, nullptr, &surface));
         std::cout << "created surface" << std::endl;
     }
+
 }

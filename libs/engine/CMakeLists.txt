@@ -6,7 +6,7 @@ set(SOURCES
 
         camera.h camera.cpp
 
-        engine.h engine.cpp vulkan_setup.cpp
+        engine.h engine.cpp vulkan/vulkan_setup.cpp
         vulkan_create.h vulkan_create.cpp
 
         swapchain.h swapchain.cpp
@@ -24,7 +24,12 @@ set(SOURCES
         scene/mesh.h scene/mesh.cpp
         scene/shader.h scene/shader.cpp
 
-        ui/text_rendering.h ui/text_rendering.cpp os/filesystem.h)
+        ui/text_rendering.h ui/text_rendering.cpp
+        os/filesystem.h
+        vulkan/vulkan_context.cpp
+        vulkan/vulkan_context.h
+        vulkan/imgui_context.h
+        vulkan/imgui_context.cpp)
 
 add_library(engine "${SOURCES}")
 

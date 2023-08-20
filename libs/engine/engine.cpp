@@ -1,12 +1,6 @@
 #include "engine.h"
 
-#include <imgui.h>
-#include <imgui_impl_vulkan.h>
-#include <imgui_impl_glfw.h>
-
 namespace engine {
-
-    Engine *engine;
 
     void FrameData::initialize() {
         // create synchronization primitives
@@ -17,17 +11,17 @@ namespace engine {
         fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        checkResult(vkCreateSemaphore(engine->device, &semaphoreCreateInfo, nullptr, &imageAvailableSemaphore));
-        checkResult(vkCreateSemaphore(engine->device, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphore));
-        checkResult(vkCreateFence(engine->device, &fenceCreateInfo, nullptr, &inFlightFence));
+        checkResult(vkCreateSemaphore(context->device, &semaphoreCreateInfo, nullptr, &imageAvailableSemaphore));
+        checkResult(vkCreateSemaphore(context->device, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphore));
+        checkResult(vkCreateFence(context->device, &fenceCreateInfo, nullptr, &inFlightFence));
 
         std::cout << "created frame data" << std::endl;
     }
 
     void FrameData::destroy() const {
-        vkDestroySemaphore(engine->device, imageAvailableSemaphore, nullptr);
-        vkDestroySemaphore(engine->device, renderFinishedSemaphore, nullptr);
-        vkDestroyFence(engine->device, inFlightFence, nullptr);
+        vkDestroySemaphore(context->device, imageAvailableSemaphore, nullptr);
+        vkDestroySemaphore(context->device, renderFinishedSemaphore, nullptr);
+        vkDestroyFence(context->device, inFlightFence, nullptr);
 
         std::cout << "destroyed frame data" << std::endl;
     }
@@ -39,12 +33,10 @@ namespace engine {
     }
 
     Engine::Engine(EngineConfiguration &engineConfiguration) {
-        assert((engine == nullptr) && "Only one engine can exist at one time");
-        engine = this;
 
         std::cout << "created engine" << std::endl;
 
-        configuration = {
+        VulkanConfiguration configuration{
                 .window = engineConfiguration.window,
 
                 .engineName = ENGINE_NAME,
@@ -57,33 +49,16 @@ namespace engine {
                 .preferredSurfaceFormats = {},
                 .requiredInstanceExtensions = {},
                 .requiredInstanceLayers = {},
-                .requiredDeviceExtensions = {},
+                .requiredDeviceExtensions = requiredDeviceExtensions,
         };
-
-        std::vector<const char *> allRequiredInstanceExtensions{configuration.requiredInstanceExtensions.begin(),
-                                                                configuration.requiredInstanceExtensions.end()};
-        std::vector<const char *> allRequiredInstanceLayers{configuration.requiredInstanceLayers.begin(),
-                                                            configuration.requiredInstanceLayers.end()};
-
-        if (configuration.debug) {
-            allRequiredInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            allRequiredInstanceLayers.push_back("VK_LAYER_KHRONOS_validation");
-        }
-
-        createInstance(allRequiredInstanceExtensions, allRequiredInstanceLayers);
-        createDebugMessenger();
-        createSurface();
-        pickPhysicalDevice(requiredDeviceExtensions);
-        createDevice(requiredDeviceExtensions);
-
-        glfwSetFramebufferSizeCallback(configuration.window, framebufferResizeCallback);
-
-        memory::initializeAllocator();
+        context = std::make_unique<VulkanContext>(configuration);
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
         descriptorSetBuilder = std::make_unique<DescriptorSetBuilder>();
         pipelineBuilder = std::make_unique<PipelineBuilder>();
         textRendering = std::make_unique<TextRendering>();
+
+        glfwSetFramebufferSizeCallback(configuration.window, framebufferResizeCallback);
 
         createDepthImage();
         swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
@@ -98,7 +73,7 @@ namespace engine {
                 .pNext = nullptr,
                 .flags = 0
         };
-        vkCreateFence(device, &fenceInfo, nullptr, &uploadFence);
+        vkCreateFence(context->device, &fenceInfo, nullptr, &uploadFence);
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             FrameData frameData{
@@ -109,25 +84,21 @@ namespace engine {
         }
 
         scene = std::make_unique<Scene>();
-
-        initializeImgui();
     }
 
     Engine::~Engine() {
-        vkDeviceWaitIdle(device);
-
-        destroyImgui();
+        vkDeviceWaitIdle(context->device);
 
         for (auto const &frameData: frames) {
             frameData.destroy();
         }
 
-        vkDestroyFence(device, uploadFence, nullptr);
-        vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyFence(context->device, uploadFence, nullptr);
+        vkDestroyCommandPool(context->device, commandPool, nullptr);
 
         // destroy depth image
-        vkDestroyImageView(device, depthImageView, nullptr);
-        vmaDestroyImage(memory::allocator, depthImage, depthImageAllocation);
+        vkDestroyImageView(context->device, depthImageView, nullptr);
+        vmaDestroyImage(context->allocator, depthImage, depthImageAllocation);
 
         scene.reset();
         textRendering.reset();
@@ -136,12 +107,6 @@ namespace engine {
         descriptorSetBuilder.reset();
         renderPass.reset();
         swapchain.reset();
-        memory::destroyAllocator();
-
-        vkDestroyDevice(device, nullptr);
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        destroyDebugMessenger();
-        vkDestroyInstance(instance, nullptr);
 
         std::cout << "destroyed engine" << std::endl;
     }
@@ -163,10 +128,10 @@ namespace engine {
     void Engine::drawFrame() {
         const FrameData &frameData = frames[currentFrameIndex];
         VkResult result;
-        vkWaitForFences(device, 1, &frameData.inFlightFence, VK_TRUE, UINT64_MAX);
+        vkWaitForFences(context->device, 1, &frameData.inFlightFence, VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        result = vkAcquireNextImageKHR(device,
+        result = vkAcquireNextImageKHR(context->device,
                                        swapchain->swapchain,
                                        UINT64_MAX,
                                        frameData.imageAvailableSemaphore,
@@ -178,7 +143,7 @@ namespace engine {
             checkResult(result);
         }
 
-        vkResetFences(device, 1, &frameData.inFlightFence);
+        vkResetFences(context->device, 1, &frameData.inFlightFence);
 
         // frame buffer must have been created with the same render pass (compatibility)
         VkFramebuffer &framebuffer = swapchain->framebuffers[imageIndex];
@@ -200,7 +165,7 @@ namespace engine {
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores = signalSemaphores,
         };
-        checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, frameData.inFlightFence));
+        checkResult(vkQueueSubmit(context->graphicsQueue, 1, &submitInfo, frameData.inFlightFence));
 
         VkSwapchainKHR swapchains[] = {swapchain->swapchain};
 
@@ -213,7 +178,7 @@ namespace engine {
                 .pImageIndices = &imageIndex,
                 .pResults = nullptr,
         };
-        result = vkQueuePresentKHR(presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(context->presentQueue, &presentInfo);
         if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR || framebufferResized) {
             swapchain->recreate();
             framebufferResized = false;
@@ -305,14 +270,14 @@ namespace engine {
     }
 
     void Engine::createCommandPool() {
-        QueueFamiliesData data = queueFamiliesData;
+        QueueFamiliesData data = context->queueFamiliesData;
 
         VkCommandPoolCreateInfo info{
                 .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                 .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
                 .queueFamilyIndex = data.graphicsQueueFamilyData->index,
         };
-        checkResult(vkCreateCommandPool(device, &info, nullptr, &commandPool));
+        checkResult(vkCreateCommandPool(context->device, &info, nullptr, &commandPool));
         std::cout << "created command pool" << std::endl;
     }
 
@@ -325,7 +290,7 @@ namespace engine {
                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
                 .commandBufferCount = static_cast<uint32_t>(commandBuffers.size()),
         };
-        checkResult(vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data()));
+        checkResult(vkAllocateCommandBuffers(context->device, &allocateInfo, commandBuffers.data()));
         std::cout << "created command buffers" << std::endl;
 
         return commandBuffers;
@@ -341,13 +306,13 @@ namespace engine {
                 .usage = VMA_MEMORY_USAGE_GPU_ONLY,
                 .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         };
-        checkResult(vmaCreateImage(memory::allocator,
+        checkResult(vmaCreateImage(context->allocator,
                                    &imageInfo, &allocationInfo,
                                    &depthImage, &depthImageAllocation, nullptr));
 
         VkImageViewCreateInfo imageViewInfo = vk_create::imageView(depthImage, depthImageFormat,
                                                                    VK_IMAGE_ASPECT_DEPTH_BIT);
-        checkResult(vkCreateImageView(device, &imageViewInfo, nullptr, &depthImageView));
+        checkResult(vkCreateImageView(context->device, &imageViewInfo, nullptr, &depthImageView));
 
         std::cout << "created depth image" << std::endl;
     }
@@ -356,10 +321,10 @@ namespace engine {
         const VkCommandBuffer &cmd = uploadCommandBuffer;
         const VkFence &fence = uploadFence;
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(context->device);
 
         // upload the image to the read only shader layout
-        checkResult(vkResetCommandPool(device, commandPool, 0));
+        checkResult(vkResetCommandPool(context->device, commandPool, 0));
         VkCommandBufferBeginInfo beginInfo{
                 .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                 .pNext = nullptr,
@@ -376,72 +341,11 @@ namespace engine {
                 .pCommandBuffers = &cmd,
         };
         checkResult(vkEndCommandBuffer(cmd));
-        checkResult(vkQueueSubmit(engine->graphicsQueue, 1, &submitInfo, fence));
+        checkResult(vkQueueSubmit(context->graphicsQueue, 1, &submitInfo, fence));
 
-        vkWaitForFences(engine->device, 1, &fence, true, UINT64_MAX);
-        vkResetFences(engine->device, 1, &fence);
+        vkWaitForFences(context->device, 1, &fence, true, UINT64_MAX);
+        vkResetFences(context->device, 1, &fence);
     }
 
-    void Engine::initializeImgui() {
-        //1: create descriptor pool for IMGUI
-        // the size of the pool is very oversize, but it's copied from imgui demo itself.
-        VkDescriptorPoolSize poolSizes[] = {
-                {VK_DESCRIPTOR_TYPE_SAMPLER,                1000},
-                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-                {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1000},
-                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1000},
-                {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1000},
-                {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1000},
-                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1000},
-                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1000},
-                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-                {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1000}
-        };
 
-        VkDescriptorPoolCreateInfo poolInfo{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                .maxSets = 1000,
-                .poolSizeCount = std::size(poolSizes),
-                .pPoolSizes = poolSizes,
-        };
-
-        checkResult(vkCreateDescriptorPool(device, &poolInfo, nullptr, &imguiDescriptorPool));
-
-        // 2: initialize imgui library
-
-        //this initializes the core structures of imgui
-        ImGui::CreateContext();
-
-        // init Imgui
-        uint32_t imageCount = static_cast<uint32_t>(swapchain->framebuffers.size());
-        ImGui_ImplGlfw_InitForVulkan(configuration.window, true);
-        ImGui_ImplVulkan_InitInfo initInfo{
-                .Instance = instance,
-                .PhysicalDevice = physicalDevice,
-                .Device = device,
-                .Queue = graphicsQueue,
-                .DescriptorPool = imguiDescriptorPool,
-                .MinImageCount = imageCount,
-                .ImageCount = imageCount,
-                .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
-        };
-
-        ImGui_ImplVulkan_Init(&initInfo, renderPass->renderPass);
-        immediateSubmit([&](VkCommandBuffer cmd) {
-            ImGui_ImplVulkan_CreateFontsTexture(cmd);
-        });
-        ImGui_ImplVulkan_DestroyFontUploadObjects();
-
-        std::cout << "initialized imgui" << std::endl;
-    }
-
-    void Engine::destroyImgui() {
-        vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
-
-        ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-    }
 }
