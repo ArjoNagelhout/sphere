@@ -5,7 +5,6 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/install)
 
 set(SPHERE_BUNDLE_DIR ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.app/Contents)
 set(SPHERE_RESOURCES_DIR ${SPHERE_BUNDLE_DIR}/Resources)
-set(SPHERE_FRAMEWORKS_DIR ${SPHERE_BUNDLE_DIR}/Frameworks)
 
 find_package(Vulkan REQUIRED)
 
@@ -67,20 +66,11 @@ add_executable(sphere
         ${SPHERE_ICON_TARGET}
         ${SPHERE_SHADERS_TARGET}
         ${SPHERE_ICD_TARGET}
-        src/main.cpp
-        src/application.h
-        src/commands/undo_stack.h
-        src/commands/command.h
-        src/scene.h
-        src/node.h
-        src/commands/add_nodes_command.h
-        src/selection.h
-        src/commands/select_nodes_command.h
-        src/commands/transform_nodes_command.h
-        src/commands/remove_nodes_command.h)
+        src/main.cpp)
 
 add_subdirectory(external)
 add_subdirectory(libs)
+add_subdirectory(src)
 
 target_link_libraries(sphere PUBLIC glfw glm engine editor)
 
