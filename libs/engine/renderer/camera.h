@@ -1,12 +1,12 @@
 #ifndef SPHERE_CAMERA_H
 #define SPHERE_CAMERA_H
 
-#include "memory.h"
-#include "swapchain.h"
+#include "renderer/buffer.h"
+#include "renderer/swapchain.h"
 
-#include <glm/mat4x4.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include "glm/mat4x4.hpp"
+#include "glm/gtx/quaternion.hpp"
+#include "glm/gtc/quaternion.hpp"
 
 namespace engine {
     struct CameraData {
@@ -20,7 +20,7 @@ namespace engine {
 
         glm::vec3 position;
         glm::quat rotation{0, 0, 0, 1};
-        memory::Buffer cameraDataBuffer;
+        Buffer cameraDataBuffer;
 
         void updateCameraData();
     private:

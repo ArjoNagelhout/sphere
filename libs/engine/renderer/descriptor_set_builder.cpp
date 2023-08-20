@@ -1,4 +1,4 @@
-#include "engine.h"
+#include "vulkan/vulkan_context.h"
 #include "descriptor_set_builder.h"
 
 namespace engine {
@@ -8,7 +8,7 @@ namespace engine {
     }
 
     DescriptorSetBuilder::~DescriptorSetBuilder() {
-        vkDestroyDescriptorPool(engine->device, descriptorPool, nullptr);
+        vkDestroyDescriptorPool(context->device, descriptorPool, nullptr);
     }
 
     /*
@@ -22,7 +22,7 @@ namespace engine {
                 .bindingCount = static_cast<uint32_t>(bindings.size()),
                 .pBindings = bindings.data(),
         };
-        checkResult(vkCreateDescriptorSetLayout(engine->device,
+        checkResult(vkCreateDescriptorSetLayout(context->device,
                                                 &descriptorSetLayoutInfo,
                                                 nullptr, &descriptorSetLayout));
         return descriptorSetLayout;
@@ -65,7 +65,7 @@ namespace engine {
                 .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
                 .pPoolSizes = poolSizes.data(),
         };
-        checkResult(vkCreateDescriptorPool(engine->device, &poolInfo, nullptr, &descriptorPool));
+        checkResult(vkCreateDescriptorPool(context->device, &poolInfo, nullptr, &descriptorPool));
         std::cout << "created descriptor pool" << std::endl;
     }
 
@@ -87,7 +87,7 @@ namespace engine {
                 .descriptorSetCount = static_cast<uint32_t>(amount),
                 .pSetLayouts = layouts.data(),
         };
-        checkResult(vkAllocateDescriptorSets(engine->device, &allocateInfo, descriptorSets.data()));
+        checkResult(vkAllocateDescriptorSets(context->device, &allocateInfo, descriptorSets.data()));
         std::cout << "created descriptor sets" << std::endl;
 
         return descriptorSets;
@@ -112,7 +112,7 @@ namespace engine {
                 .pBufferInfo = nullptr,
                 .pTexelBufferView = nullptr,
         };
-        vkUpdateDescriptorSets(engine->device, 1, &writeInfo, 0, nullptr);
+        vkUpdateDescriptorSets(context->device, 1, &writeInfo, 0, nullptr);
     }
 
     void bindBuffer(VkDescriptorSet &descriptorSet, VkBuffer &buffer, uint32_t dstBinding) {
@@ -134,6 +134,6 @@ namespace engine {
                 .pBufferInfo = &bufferInfo,
                 .pTexelBufferView = nullptr,
         };
-        vkUpdateDescriptorSets(engine->device, 1, &writeInfo, 0, nullptr);
+        vkUpdateDescriptorSets(context->device, 1, &writeInfo, 0, nullptr);
     }
 }

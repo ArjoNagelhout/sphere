@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "object.h"
-#include "texture.h"
+#include "renderer/texture.h"
 
 namespace engine {
 

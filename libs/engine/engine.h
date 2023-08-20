@@ -4,16 +4,15 @@
 #include <string>
 #include <iostream>
 
-#include "vulkan/vulkan_context.h"
-#include "vulkan_create.h"
+#include "renderer/vulkan_context.h"
+#include "renderer/vulkan_create.h"
 #include "types.h"
-#include "utils.h"
-#include "swapchain.h"
-#include "render_pass.h"
-#include "descriptor_set_builder.h"
-#include "pipeline_builder.h"
-#include "memory.h"
-#include "camera.h"
+#include "renderer/utils.h"
+#include "renderer/swapchain.h"
+#include "renderer/render_pass.h"
+#include "renderer/descriptor_set_builder.h"
+#include "renderer/pipeline_builder.h"
+#include "renderer/camera.h"
 #include "scene/scene.h"
 #include "scene/mesh.h"
 #include "scene/object.h"
@@ -70,14 +69,10 @@ namespace engine {
         std::unique_ptr<Scene> scene;
 
         VkCommandPool commandPool;
-        const uint32_t UPLOAD_COMMAND_BUFFERS = 1;
-        VkCommandBuffer uploadCommandBuffer;
         VkFence uploadFence;
         bool framebufferResized = false;
 
-
         void render();
-        void immediateSubmit(std::function<void(VkCommandBuffer)>&& function);
 
     private:
 
@@ -94,17 +89,15 @@ namespace engine {
         VkImageView depthImageView;
         VmaAllocation depthImageAllocation;
 
-        std::unique_ptr<TextRendering> textRendering;
-
         // drawing
-        void createCommandPool();
-        std::vector<VkCommandBuffer> createCommandBuffers();
         void drawFrame();
         void recordCommandBuffer(const FrameData &frameData, const VkFramebuffer &framebuffer);
 
         // to be refactored
         void createDepthImage();
     };
+
+    extern Engine *engine;
 }
 
 #endif //SPHERE_ENGINE_H

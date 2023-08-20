@@ -5,7 +5,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace engine {
+namespace engine::renderer {
 
     // equality operators
     bool operator==(VkExtensionProperties &lhs, VkExtensionProperties &rhs) {

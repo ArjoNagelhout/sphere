@@ -1,14 +1,10 @@
 #ifndef SPHERE_BUFFER_H
 #define SPHERE_BUFFER_H
 
-#define VK_ENABLE_BETA_EXTENSIONS
-
-#include "vulkan/vulkan.h"
 #include "utils.h"
-#include <memory>
 #include <iostream>
 
-namespace engine {
+namespace engine::renderer {
 
     class Buffer {
 

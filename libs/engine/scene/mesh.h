@@ -1,12 +1,9 @@
 #ifndef SPHERE_MESH_H
 #define SPHERE_MESH_H
 
-#include "memory.h"
+#include "includes.h"
 
-#include <vulkan/vulkan.h>
-#include "vk_mem_alloc.h"
-
-#include <vector>
+#include "renderer/buffer.h"
 #include "types.h"
 
 namespace engine {
@@ -27,8 +24,8 @@ namespace engine {
                 0, 1, 2, 2, 3, 0
         };
 
-        std::unique_ptr<memory::Buffer> vertexBuffer;
-        std::unique_ptr<memory::Buffer> indexBuffer;
+        std::unique_ptr<Buffer> vertexBuffer;
+        std::unique_ptr<Buffer> indexBuffer;
 
     private:
         void loadObj(const std::string &filePath);

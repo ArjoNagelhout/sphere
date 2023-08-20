@@ -7,7 +7,7 @@
 
 namespace engine {
 
-    ImguiContext::ImguiContext() {
+    ImguiContext::ImguiContext(VkRenderPass renderPass) {
         //1: create descriptor pool for IMGUI
         // the size of the pool is very oversize, but it's copied from imgui demo itself.
         VkDescriptorPoolSize poolSizes[] = {
@@ -41,7 +41,7 @@ namespace engine {
 
         // init Imgui
         uint32_t imageCount = static_cast<uint32_t>(swapchain->framebuffers.size());
-        ImGui_ImplGlfw_InitForVulkan(configuration.window, true);
+        ImGui_ImplGlfw_InitForVulkan(context->configuration.window, true);
         ImGui_ImplVulkan_InitInfo initInfo{
                 .Instance = context->instance,
                 .PhysicalDevice = context->physicalDevice,
@@ -53,8 +53,8 @@ namespace engine {
                 .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
         };
 
-        ImGui_ImplVulkan_Init(&initInfo, renderPass->renderPass);
-        immediateSubmit([&](VkCommandBuffer cmd) {
+        ImGui_ImplVulkan_Init(&initInfo, renderPass);
+        context->immediateSubmit([&](VkCommandBuffer cmd) {
             ImGui_ImplVulkan_CreateFontsTexture(cmd);
         });
         ImGui_ImplVulkan_DestroyFontUploadObjects();

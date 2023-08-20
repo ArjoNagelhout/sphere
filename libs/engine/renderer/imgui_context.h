@@ -6,7 +6,7 @@ namespace engine {
     class ImguiContext {
 
     public:
-        explicit ImguiContext();
+        explicit ImguiContext(VkRenderPass renderPass);
         ~ImguiContext();
 
         std::function<void()> renderImgui;

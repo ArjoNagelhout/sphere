@@ -1,7 +1,7 @@
-#include "vulkan/vulkan_context.h"
+#include "vulkan_context.h"
 #include "buffer.h"
 
-namespace engine {
+namespace engine::renderer {
 
     Buffer::Buffer(size_t size, VkBufferUsageFlags usage) : size(size), allocator(context->allocator) {
         VkBufferCreateInfo bufferInfo{

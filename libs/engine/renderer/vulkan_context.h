@@ -1,18 +1,7 @@
 #ifndef SPHERE_VULKAN_CONTEXT_H
 #define SPHERE_VULKAN_CONTEXT_H
 
-#define GLFW_INCLUDE_VULKAN
-#define VK_ENABLE_BETA_EXTENSIONS
-
-#include "GLFW/glfw3.h"
-#include <vulkan/vk_enum_string_helper.h>
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnullability-completeness"
-
-#include "vk_mem_alloc.h"
-
-#pragma clang diagnostic pop
+#include "includes.h"
 
 namespace engine {
 
@@ -73,7 +62,13 @@ namespace engine {
         VkSurfaceKHR surface;
         VmaAllocator allocator;
 
+        void immediateSubmit(std::function<void(VkCommandBuffer)>&& function);
+
     private:
+        VkCommandPool immediateSubmitCommandPool;
+        VkCommandBuffer immediateSubmitCommandBuffer;
+        VkFence immediateSubmitFence;
+
         void createInstance(const std::vector<const char *> &requiredExtensions, const std::vector<const char *> &requiredLayers);
         void createDebugMessenger();
         void destroyDebugMessenger();
@@ -81,9 +76,14 @@ namespace engine {
         void pickPhysicalDevice(const std::vector<const char *> &requiredExtensions);
         void createDevice(const std::vector<const char *> &requiredExtensions);
         void createAllocator();
+        void createImmediateSubmitContext();
     };
 
     extern VulkanContext *context;
+
+    VkCommandPool createCommandPool();
+    std::vector<VkCommandBuffer> createCommandBuffers(const VkCommandPool &commandPool, size_t amount, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    VkFence createFence();
 }
 
 #endif //SPHERE_VULKAN_CONTEXT_H

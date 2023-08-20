@@ -1,9 +1,9 @@
 #ifndef SPHERE_UTILS_H
 #define SPHERE_UTILS_H
 
-#include <vulkan/vulkan.h>
+#include "includes.h"
 
-namespace engine {
+namespace engine::renderer {
 
     // equality operators
     bool operator==(VkExtensionProperties &lhs, VkExtensionProperties &rhs);

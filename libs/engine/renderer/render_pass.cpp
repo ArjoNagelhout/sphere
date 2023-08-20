@@ -1,4 +1,4 @@
-#include "engine.h"
+#include "vulkan_context.h"
 #include "render_pass.h"
 
 namespace engine {
@@ -88,11 +88,11 @@ namespace engine {
                 .pDependencies = dependencies.data(),
         };
 
-        checkResult(vkCreateRenderPass(engine->device, &createInfo, nullptr, &renderPass));
+        checkResult(vkCreateRenderPass(context->device, &createInfo, nullptr, &renderPass));
         std::cout << "created render pass" << std::endl;
     }
 
     RenderPass::~RenderPass() {
-        vkDestroyRenderPass(engine->device, renderPass, nullptr);
+        vkDestroyRenderPass(context->device, renderPass, nullptr);
     }
 }

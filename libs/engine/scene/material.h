@@ -2,7 +2,7 @@
 #define SPHERE_MATERIAL_H
 
 #include "shader.h"
-#include "texture.h"
+#include "renderer/texture.h"
 
 #include <vulkan/vulkan.h>
 

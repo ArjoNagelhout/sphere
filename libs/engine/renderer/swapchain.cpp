@@ -1,4 +1,4 @@
-#include "engine.h"
+#include "renderer/vulkan_context.h"
 #include "swapchain.h"
 
 namespace engine {
@@ -53,7 +53,7 @@ namespace engine {
     }
 
     Swapchain::Swapchain(const std::vector<VkSurfaceFormatKHR> &preferredSurfaceFormats) {
-        SurfaceData surfaceData = engine->surfaceData;
+        SurfaceData surfaceData = context->surfaceData;
         surfaceFormat = pickSwapchainSurfaceFormat(surfaceData.surfaceFormats, preferredSurfaceFormats);
         createSwapchain();
         createImageViews();
@@ -64,8 +64,8 @@ namespace engine {
     }
 
     void Swapchain::createSwapchain() {
-        SurfaceData surfaceData = engine->surfaceData;
-        extent = pickSwapchainExtent(engine->configuration.window, surfaceData.surfaceCapabilities);
+        SurfaceData surfaceData = context->surfaceData;
+        extent = pickSwapchainExtent(context->configuration.window, surfaceData.surfaceCapabilities);
 
         // from vulkan-tutorial.com
         // Sticking to this minimum means that we may sometimes have to wait on the driver to complete internal
@@ -82,14 +82,14 @@ namespace engine {
         }
 
         // determine if the graphics queue family and the present queue family share the same index
-        QueueFamiliesData queueFamiliesData = engine->queueFamiliesData;
+        QueueFamiliesData queueFamiliesData = context->queueFamiliesData;
         uint32_t queueFamilyIndices[]{queueFamiliesData.graphicsQueueFamilyData->index,
                                       queueFamiliesData.presentQueueFamilyData->index};
         bool oneFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
         VkSwapchainCreateInfoKHR swapchainCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                .surface = engine->surface,
+                .surface = context->surface,
                 .minImageCount = imageCount,
                 .imageFormat = surfaceFormat.format,
                 .imageColorSpace = surfaceFormat.colorSpace,
@@ -106,15 +106,15 @@ namespace engine {
                 .oldSwapchain = VK_NULL_HANDLE,
         };
 
-        checkResult(vkCreateSwapchainKHR(engine->device, &swapchainCreateInfo, nullptr, &swapchain));
+        checkResult(vkCreateSwapchainKHR(context->device, &swapchainCreateInfo, nullptr, &swapchain));
         // std::cout << "created swapchain" << std::endl;
 
         // get the swapchain images of the created swap chain. This is similar to the VkPhysicalDevice objects, which are "owned" by the VkInstance.
         // in order to perform any rendering operations, create a VkImageView from a VkImage.
         uint32_t swapchainImagesCount;
-        vkGetSwapchainImagesKHR(engine->device, swapchain, &swapchainImagesCount, nullptr);
+        vkGetSwapchainImagesKHR(context->device, swapchain, &swapchainImagesCount, nullptr);
         images.resize(swapchainImagesCount);
-        vkGetSwapchainImagesKHR(engine->device, swapchain, &swapchainImagesCount, images.data());
+        vkGetSwapchainImagesKHR(context->device, swapchain, &swapchainImagesCount, images.data());
     }
 
     void Swapchain::createImageViews() {
@@ -125,31 +125,31 @@ namespace engine {
             // with multiple layers. You could then create multiple image views for each image representing
             // the views for the left and right eyes by accessing different layers.
             VkImageViewCreateInfo viewInfo = vk_create::imageView(images[i], surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT);
-            checkResult(vkCreateImageView(engine->device, &viewInfo, nullptr, &imageViews[i]));
+            checkResult(vkCreateImageView(context->device, &viewInfo, nullptr, &imageViews[i]));
         }
     }
 
     void Swapchain::cleanup() {
         for (auto const &framebuffer: framebuffers) {
-            vkDestroyFramebuffer(engine->device, framebuffer, nullptr);
+            vkDestroyFramebuffer(context->device, framebuffer, nullptr);
         }
 
         for (auto const &imageView: imageViews) {
-            vkDestroyImageView(engine->device, imageView, nullptr);
+            vkDestroyImageView(context->device, imageView, nullptr);
         }
 
-        vkDestroySwapchainKHR(engine->device, swapchain, nullptr);
+        vkDestroySwapchainKHR(context->device, swapchain, nullptr);
     }
 
     void Swapchain::recreate() {
         int width = 0, height = 0;
-        glfwGetFramebufferSize(engine->configuration.window, &width, &height);
+        glfwGetFramebufferSize(context->configuration.window, &width, &height);
         while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(engine->configuration.window, &width, &height);
+            glfwGetFramebufferSize(context->configuration.window, &width, &height);
             glfwWaitEvents();
         }
 
-        vkDeviceWaitIdle(engine->device);
+        vkDeviceWaitIdle(context->device);
         cleanup();
         createSwapchain();
         createImageViews();
@@ -165,7 +165,7 @@ namespace engine {
                     cachedData.depthImageView
             };
             VkFramebufferCreateInfo framebufferInfo = vk_create::framebuffer(cachedData.renderPass, attachments, extent);
-            checkResult(vkCreateFramebuffer(engine->device, &framebufferInfo, nullptr, &framebuffers[i]));
+            checkResult(vkCreateFramebuffer(context->device, &framebufferInfo, nullptr, &framebuffers[i]));
         }
 
         // std::cout << "created frame buffers" << std::endl;

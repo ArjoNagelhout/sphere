@@ -2,6 +2,8 @@
 
 namespace engine {
 
+    Engine *engine;
+
     void FrameData::initialize() {
         // create synchronization primitives
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
@@ -33,6 +35,8 @@ namespace engine {
     }
 
     Engine::Engine(EngineConfiguration &engineConfiguration) {
+        assert((engine == nullptr) && "Only one engine can exist at one time");
+        engine = this;
 
         std::cout << "created engine" << std::endl;
 
@@ -56,7 +60,6 @@ namespace engine {
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
         descriptorSetBuilder = std::make_unique<DescriptorSetBuilder>();
         pipelineBuilder = std::make_unique<PipelineBuilder>();
-        textRendering = std::make_unique<TextRendering>();
 
         glfwSetFramebufferSizeCallback(configuration.window, framebufferResizeCallback);
 
@@ -64,17 +67,7 @@ namespace engine {
         swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
         camera = std::make_unique<Camera>(*swapchain);
 
-        createCommandPool();
-        std::vector<VkCommandBuffer> commandBuffers = createCommandBuffers();
-        uploadCommandBuffer = commandBuffers[MAX_FRAMES_IN_FLIGHT]; // use the command buffer that comes after the frame command buffers
-
-        VkFenceCreateInfo fenceInfo{
-                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0
-        };
-        vkCreateFence(context->device, &fenceInfo, nullptr, &uploadFence);
-
+        std::vector<VkCommandBuffer> commandBuffers = createCommandBuffers(commandPool, MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             FrameData frameData{
                     .commandBuffer = commandBuffers[i],
@@ -93,7 +86,6 @@ namespace engine {
             frameData.destroy();
         }
 
-        vkDestroyFence(context->device, uploadFence, nullptr);
         vkDestroyCommandPool(context->device, commandPool, nullptr);
 
         // destroy depth image
@@ -101,12 +93,11 @@ namespace engine {
         vmaDestroyImage(context->allocator, depthImage, depthImageAllocation);
 
         scene.reset();
-        textRendering.reset();
-
         pipelineBuilder.reset();
         descriptorSetBuilder.reset();
         renderPass.reset();
         swapchain.reset();
+        context.reset();
 
         std::cout << "destroyed engine" << std::endl;
     }
@@ -269,33 +260,6 @@ namespace engine {
         checkResult(vkEndCommandBuffer(cmd));
     }
 
-    void Engine::createCommandPool() {
-        QueueFamiliesData data = context->queueFamiliesData;
-
-        VkCommandPoolCreateInfo info{
-                .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-                .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                .queueFamilyIndex = data.graphicsQueueFamilyData->index,
-        };
-        checkResult(vkCreateCommandPool(context->device, &info, nullptr, &commandPool));
-        std::cout << "created command pool" << std::endl;
-    }
-
-    std::vector<VkCommandBuffer> Engine::createCommandBuffers() {
-        std::vector<VkCommandBuffer> commandBuffers(MAX_FRAMES_IN_FLIGHT + UPLOAD_COMMAND_BUFFERS);
-
-        VkCommandBufferAllocateInfo allocateInfo{
-                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                .commandPool = commandPool,
-                .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                .commandBufferCount = static_cast<uint32_t>(commandBuffers.size()),
-        };
-        checkResult(vkAllocateCommandBuffers(context->device, &allocateInfo, commandBuffers.data()));
-        std::cout << "created command buffers" << std::endl;
-
-        return commandBuffers;
-    }
-
     void Engine::createDepthImage() {
         VkExtent3D extent = toExtent3D(swapchain->extent);
         VkImageCreateInfo imageInfo = vk_create::image(depthImageFormat, extent,
@@ -316,36 +280,4 @@ namespace engine {
 
         std::cout << "created depth image" << std::endl;
     }
-
-    void Engine::immediateSubmit(std::function<void(VkCommandBuffer)> &&function) {
-        const VkCommandBuffer &cmd = uploadCommandBuffer;
-        const VkFence &fence = uploadFence;
-
-        vkDeviceWaitIdle(context->device);
-
-        // upload the image to the read only shader layout
-        checkResult(vkResetCommandPool(context->device, commandPool, 0));
-        VkCommandBufferBeginInfo beginInfo{
-                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                .pNext = nullptr,
-                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        };
-        checkResult(vkBeginCommandBuffer(engine->uploadCommandBuffer, &beginInfo));
-
-        function(cmd);
-
-        VkSubmitInfo submitInfo{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .pNext = nullptr,
-                .commandBufferCount = 1,
-                .pCommandBuffers = &cmd,
-        };
-        checkResult(vkEndCommandBuffer(cmd));
-        checkResult(vkQueueSubmit(context->graphicsQueue, 1, &submitInfo, fence));
-
-        vkWaitForFences(context->device, 1, &fence, true, UINT64_MAX);
-        vkResetFences(context->device, 1, &fence);
-    }
-
-
 }
