@@ -7,7 +7,7 @@
 
 namespace engine {
 
-    Texture::Texture(const std::string &filePath) : allocator(engine->allocator->allocator) {
+    Texture::Texture(const std::string &filePath) {
 
         int x, y, channelAmount;
         data = stbi_load(filePath.data(), &x, &y, &channelAmount, STBI_rgb_alpha);
@@ -65,15 +65,15 @@ namespace engine {
             .usage = VMA_MEMORY_USAGE_CPU_ONLY,
             //.requiredFlags = VK_MEMORY_PROPERTY
         };
-        checkResult(vmaCreateBuffer(allocator, &stagingBufferInfo, &stagingBufferAllocationInfo, &stagingBuffer, &stagingBufferAllocation, nullptr));
+        checkResult(vmaCreateBuffer(memory::allocator, &stagingBufferInfo, &stagingBufferAllocationInfo, &stagingBuffer, &stagingBufferAllocation, nullptr));
 
         std::cout << "created staging buffer" << std::endl;
 
         void *mappedData;
-        vmaMapMemory(allocator, stagingBufferAllocation, &mappedData);
+        vmaMapMemory(memory::allocator, stagingBufferAllocation, &mappedData);
         memcpy(mappedData, data, static_cast<size_t>(sizeInBytes));
         //vmaFlushAllocation(allocator, stagingBufferAllocation, 0, VK_WHOLE_SIZE);
-        vmaUnmapMemory(allocator, stagingBufferAllocation);
+        vmaUnmapMemory(memory::allocator, stagingBufferAllocation);
         stbi_image_free(data);
 
         std::cout << "copied data into staging buffer" << std::endl;
@@ -98,7 +98,7 @@ namespace engine {
                 .usage = VMA_MEMORY_USAGE_GPU_ONLY,
                 .requiredFlags = 0,
         };
-        checkResult(vmaCreateImage(allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr));
+        checkResult(vmaCreateImage(memory::allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr));
 
         engine->immediateSubmit([&](VkCommandBuffer cmd) {
 
@@ -229,7 +229,7 @@ namespace engine {
 
         std::cout << "created sampler" << std::endl;
 
-        vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+        vmaDestroyBuffer(memory::allocator, stagingBuffer, stagingBufferAllocation);
 
         std::cout << "destroyed staging buffer" << std::endl;
 
@@ -239,6 +239,6 @@ namespace engine {
     Texture::~Texture() {
         vkDestroySampler(engine->device, sampler, nullptr);
         vkDestroyImageView(engine->device, imageView, nullptr);
-        vmaDestroyImage(allocator, image, allocation);
+        vmaDestroyImage(memory::allocator, image, allocation);
     }
 }

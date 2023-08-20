@@ -7,7 +7,7 @@ namespace engine {
         // set descriptor sets
         DescriptorSetBuilder &builder = *engine->descriptorSetBuilder;
         descriptorSets = builder.createDescriptorSets(shader.descriptorSetLayout, 1);
-        bindBuffer(descriptorSets[0], engine->camera->cameraDataBuffer, 0);
+        bindBuffer(descriptorSets[0], engine->camera->cameraDataBuffer.buffer, 0);
         bindImage(descriptorSets[0], texture.sampler, texture.imageView, 1);
     }
 

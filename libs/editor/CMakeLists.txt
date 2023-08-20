@@ -1,6 +1,6 @@
 set(SOURCES
         editor.h editor.cpp
-        )
+        panels/project_browser.h panels/project_browser.cpp)
 
 add_library(editor "${SOURCES}")
 

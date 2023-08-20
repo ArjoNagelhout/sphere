@@ -1,7 +1,7 @@
 #ifndef SPHERE_MESH_H
 #define SPHERE_MESH_H
 
-#include "memory_allocator.h"
+#include "memory.h"
 
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
@@ -27,17 +27,11 @@ namespace engine {
                 0, 1, 2, 2, 3, 0
         };
 
-        VkBuffer vertexBuffer;
-        VkBuffer indexBuffer;
+        std::unique_ptr<memory::Buffer> vertexBuffer;
+        std::unique_ptr<memory::Buffer> indexBuffer;
 
     private:
         void loadObj(const std::string &filePath);
-
-        MemoryAllocator &allocator;
-
-        // buffers
-        VmaAllocation vertexBufferAllocation;
-        VmaAllocation indexBufferAllocation;
     };
 }
 

@@ -17,12 +17,12 @@
 #include "render_pass.h"
 #include "descriptor_set_builder.h"
 #include "pipeline_builder.h"
-#include "memory_allocator.h"
+#include "memory.h"
 #include "camera.h"
 #include "scene/scene.h"
 #include "scene/mesh.h"
 #include "scene/object.h"
-#include "text/text_rendering.h"
+#include "ui/text_rendering.h"
 
 namespace engine {
 
@@ -132,7 +132,6 @@ namespace engine {
         bool framebufferResized = false;
 
         std::unique_ptr<Swapchain> swapchain;
-        std::unique_ptr<MemoryAllocator> allocator;
         std::unique_ptr<RenderPass> renderPass;
         std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
         std::unique_ptr<PipelineBuilder> pipelineBuilder;

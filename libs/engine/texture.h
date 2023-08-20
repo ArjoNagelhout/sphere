@@ -61,11 +61,9 @@ namespace engine {
         VkSampler sampler;
 
     private:
-        VmaAllocator &allocator;
         unsigned char *data;
         VmaAllocation allocation;
     };
-
 }
 
 #endif //SPHERE_TEXTURE_H

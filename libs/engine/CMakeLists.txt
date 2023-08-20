@@ -11,7 +11,7 @@ set(SOURCES
 
         swapchain.h swapchain.cpp
         render_pass.h render_pass.cpp
-        memory_allocator.h memory_allocator.cpp
+        memory.h memory.cpp
 
         descriptor_set_builder.h descriptor_set_builder.cpp
         pipeline_builder.h pipeline_builder.cpp
@@ -24,7 +24,7 @@ set(SOURCES
         scene/mesh.h scene/mesh.cpp
         scene/shader.h scene/shader.cpp
 
-        text/text_rendering.h text/text_rendering.cpp)
+        ui/text_rendering.h ui/text_rendering.cpp os/filesystem.h)
 
 add_library(engine "${SOURCES}")
 

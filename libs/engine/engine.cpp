@@ -39,7 +39,6 @@ namespace engine {
     }
 
     Engine::Engine(EngineConfiguration &engineConfiguration) {
-
         assert((engine == nullptr) && "Only one engine can exist at one time");
         engine = this;
 
@@ -79,7 +78,7 @@ namespace engine {
 
         glfwSetFramebufferSizeCallback(configuration.window, framebufferResizeCallback);
 
-        allocator = std::make_unique<MemoryAllocator>();
+        memory::initializeAllocator();
         swapchain = std::make_unique<Swapchain>(preferredSurfaceFormats);
         renderPass = std::make_unique<RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
         descriptorSetBuilder = std::make_unique<DescriptorSetBuilder>();
@@ -88,7 +87,7 @@ namespace engine {
 
         createDepthImage();
         swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
-        camera = std::make_unique<Camera>(*allocator, *swapchain);
+        camera = std::make_unique<Camera>(*swapchain);
 
         createCommandPool();
         std::vector<VkCommandBuffer> commandBuffers = createCommandBuffers();
@@ -128,7 +127,7 @@ namespace engine {
 
         // destroy depth image
         vkDestroyImageView(device, depthImageView, nullptr);
-        vmaDestroyImage(allocator->allocator, depthImage, depthImageAllocation);
+        vmaDestroyImage(memory::allocator, depthImage, depthImageAllocation);
 
         scene.reset();
         textRendering.reset();
@@ -137,7 +136,7 @@ namespace engine {
         descriptorSetBuilder.reset();
         renderPass.reset();
         swapchain.reset();
-        allocator.reset();
+        memory::destroyAllocator();
 
         vkDestroyDevice(device, nullptr);
         vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -293,8 +292,8 @@ namespace engine {
                                VK_SHADER_STAGE_VERTEX_BIT,
                                0, sizeof(transform), &transform);
             VkDeviceSize vertexBufferOffset = 0;
-            vkCmdBindIndexBuffer(cmd, object->mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-            vkCmdBindVertexBuffers(cmd, 0, 1, &(object->mesh.vertexBuffer), &vertexBufferOffset);
+            vkCmdBindIndexBuffer(cmd, object->mesh.indexBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(cmd, 0, 1, &(object->mesh.vertexBuffer->buffer), &vertexBufferOffset);
             vkCmdDrawIndexed(cmd, static_cast<uint32_t>(object->mesh.indices.size()), 1, 0, 0, 0);
         }
 
@@ -342,7 +341,7 @@ namespace engine {
                 .usage = VMA_MEMORY_USAGE_GPU_ONLY,
                 .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         };
-        checkResult(vmaCreateImage(allocator->allocator,
+        checkResult(vmaCreateImage(memory::allocator,
                                    &imageInfo, &allocationInfo,
                                    &depthImage, &depthImageAllocation, nullptr));
 

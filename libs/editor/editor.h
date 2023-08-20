@@ -1,6 +1,8 @@
 #ifndef SPHERE_EDITOR_H
 #define SPHERE_EDITOR_H
 
+#include "panels/project_browser.h"
+
 namespace editor {
 
     class Editor {
@@ -12,6 +14,7 @@ namespace editor {
         void render();
 
     private:
+        ProjectBrowser projectBrowser;
         int selectedObjectIndex = 0;
 
     };

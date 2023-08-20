@@ -6,18 +6,16 @@
 
 namespace engine {
 
-    Camera::Camera(MemoryAllocator &allocator, Swapchain &swapchain) : allocator(allocator), swapchain(swapchain) {
+    Camera::Camera(Swapchain &swapchain) :
+            swapchain(swapchain),
+            cameraDataBuffer(sizeof(cameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
 
-        allocator.createBuffer<CameraData>(cameraDataBuffer,
-                                                  cameraDataBufferAllocation,
-                                                  cameraData,
-                                                  sizeof(cameraData),
-                                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     }
 
     void Camera::updateCameraData() {
         // first calculate the VP matrix
-        glm::mat4 Projection = glm::perspective(glm::radians(60.0f), (float) swapchain.extent.width / (float) swapchain.extent.height,
+        glm::mat4 Projection = glm::perspective(glm::radians(60.0f),
+                                                (float) swapchain.extent.width / (float) swapchain.extent.height,
                                                 0.1f, 1000.0f);
 
         glm::mat4 translationMatrix = glm::translate(position);
@@ -36,8 +34,6 @@ namespace engine {
         cameraData.VP = vp;
 
         // then update the buffer
-        allocator.updateBuffer<CameraData>(cameraDataBuffer,
-                                           cameraData,
-                                           sizeof(cameraData));
+        cameraDataBuffer.update(&cameraData);
     }
 }

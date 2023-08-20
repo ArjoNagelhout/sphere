@@ -1,7 +1,7 @@
 #ifndef SPHERE_CAMERA_H
 #define SPHERE_CAMERA_H
 
-#include "memory_allocator.h"
+#include "memory.h"
 #include "swapchain.h"
 
 #include <glm/mat4x4.hpp>
@@ -16,20 +16,17 @@ namespace engine {
     class Camera {
 
     public:
-        explicit Camera(MemoryAllocator &allocator, Swapchain &swapchain);
+        explicit Camera(Swapchain &swapchain);
 
         glm::vec3 position;
         glm::quat rotation{0, 0, 0, 1};
-
-        VkBuffer cameraDataBuffer;
+        memory::Buffer cameraDataBuffer;
 
         void updateCameraData();
     private:
-        MemoryAllocator &allocator;
         Swapchain &swapchain;
 
         CameraData cameraData{};
-        VmaAllocation cameraDataBufferAllocation;
     };
 }
 

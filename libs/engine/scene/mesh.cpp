@@ -9,23 +9,17 @@
 
 namespace engine {
 
-    Mesh::Mesh(const std::string &filePath) : allocator(*engine->allocator) {
+    Mesh::Mesh(const std::string &filePath) {
         loadObj(filePath);
-        allocator.createBuffer<VertexAttributes>(vertexBuffer,
-                                                  vertexBufferAllocation,
-                                                  *vertices.data(),
-                                                  vertices.size() * sizeof(vertices[0]),
-                                                  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        allocator.createBuffer<uint32_t>(indexBuffer,
-                                          indexBufferAllocation,
-                                          *indices.data(),
-                                          indices.size() * sizeof(indices[0]),
-                                          VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+        vertexBuffer = std::make_unique<memory::Buffer>(vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        indexBuffer = std::make_unique<memory::Buffer>(indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+        vertexBuffer->update(vertices.data());
+        indexBuffer->update(indices.data());
     }
 
     Mesh::~Mesh() {
-        allocator.destroyBuffer(vertexBuffer);
-        allocator.destroyBuffer(indexBuffer);
+        vertexBuffer.reset();
+        indexBuffer.reset();
     }
 
     /*
