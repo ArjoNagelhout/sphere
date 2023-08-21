@@ -1,12 +1,12 @@
 #ifndef SPHERE_MESH_H
 #define SPHERE_MESH_H
 
-#include "core/includes.h"
+#include "includes.h"
 
-#include "renderer/buffer.h"
-#include "core/types.h"
+#include "buffer.h"
+#include "types.h"
 
-namespace engine {
+namespace engine::renderer {
 
     class Mesh{
 

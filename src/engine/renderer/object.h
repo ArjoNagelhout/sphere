@@ -8,7 +8,7 @@
 #include "glm/mat4x4.hpp"
 #include"glm/gtx/quaternion.hpp"
 
-namespace engine {
+namespace engine::renderer {
 
     /*
      * An object contains a mesh and a material that is used to render that mesh

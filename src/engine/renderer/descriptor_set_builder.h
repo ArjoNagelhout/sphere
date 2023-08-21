@@ -73,6 +73,8 @@ namespace engine::renderer {
     VkDescriptorSetLayout createDescriptorSetLayout();
     void bindBuffer(VkDescriptorSet &descriptorSet, VkBuffer &buffer, uint32_t dstBinding);
     void bindImage(VkDescriptorSet &descriptorSet, VkSampler &sampler, VkImageView &imageView, uint32_t dstBinding);
+
+    extern DescriptorSetBuilder *descriptorSetBuilder;
 }
 
 #endif //SPHERE_DESCRIPTOR_SET_BUILDER_H

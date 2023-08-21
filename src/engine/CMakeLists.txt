@@ -7,4 +7,4 @@ set(SOURCES
 
 add_library(engine ${SOURCES})
 target_include_directories(engine PUBLIC .)
-target_link_libraries(engine core renderer scene ui)
+target_link_libraries(engine core renderer)

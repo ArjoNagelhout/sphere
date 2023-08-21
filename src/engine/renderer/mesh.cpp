@@ -1,5 +1,5 @@
+#include "vulkan_context.h"
 #include "mesh.h"
-#include "engine.h"
 
 #include <iostream>
 
@@ -7,12 +7,12 @@
 
 #include <tiny_obj_loader.h>
 
-namespace engine {
+namespace engine::renderer {
 
     Mesh::Mesh(const std::string &filePath) {
         loadObj(filePath);
-        vertexBuffer = std::make_unique<memory::Buffer>(vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        indexBuffer = std::make_unique<memory::Buffer>(indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+        vertexBuffer = std::make_unique<Buffer>(vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        indexBuffer = std::make_unique<Buffer>(indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         vertexBuffer->update(vertices.data());
         indexBuffer->update(indices.data());
     }

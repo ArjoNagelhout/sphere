@@ -4,6 +4,8 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
+#include "swapchain.h"
+
 namespace engine::renderer {
 
     struct PipelineData {
@@ -35,7 +37,7 @@ namespace engine::renderer {
     class PipelineBuilder {
 
     public:
-        explicit PipelineBuilder();
+        explicit PipelineBuilder(Swapchain &swapchain);
         ~PipelineBuilder();
 
         // should be destroyed
@@ -45,10 +47,13 @@ namespace engine::renderer {
                             const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
 
     private:
+        Swapchain &swapchain;
         VkPipelineCache pipelineCache;
 
         static VkShaderModule createShaderModule(const std::vector<char> &code);
     };
+
+    extern PipelineBuilder *pipelineBuilder;
 }
 
 #endif //SPHERE_PIPELINE_BUILDER_H

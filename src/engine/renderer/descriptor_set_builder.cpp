@@ -3,7 +3,12 @@
 
 namespace engine::renderer {
 
+    DescriptorSetBuilder *descriptorSetBuilder;
+
     DescriptorSetBuilder::DescriptorSetBuilder() {
+        assert((descriptorSetBuilder == nullptr) && "Only one descriptor set builder can exist at one time");
+        descriptorSetBuilder = this;
+
         createDescriptorPool();
     }
 

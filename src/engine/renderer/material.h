@@ -6,7 +6,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace engine {
+namespace engine::renderer {
 
     /*
      * A material contains a reference to a shader and contains the properties such as
@@ -15,13 +15,13 @@ namespace engine {
     class Material {
 
     public:
-        explicit Material(const Shader &shader, renderer::Texture &texture);
+        explicit Material(const Shader &shader, Texture &texture);
         ~Material();
 
         const Shader &shader;
         renderer::Texture &texture;
 
-        std::vector<VkDescriptorSet> descriptorSets;
+        VkDescriptorSet descriptorSet;
 
     private:
 

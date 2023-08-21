@@ -2,7 +2,7 @@
 
 #include"glm/gtx/transform.hpp"
 
-namespace engine {
+namespace engine::renderer {
 
     Object::Object(const std::string &name, Mesh &mesh, Material &material) : name(name), mesh(mesh), material(material) {
 

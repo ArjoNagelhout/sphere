@@ -1,8 +1,8 @@
 #include "scene.h"
 
-namespace engine {
+namespace engine::renderer {
 
-    Scene::Scene() {
+    Scene::Scene(VkRenderPass renderPass) : renderPass(renderPass) {
         // load meshes
         std::vector<std::string> meshNames{
                 "/Users/arjonagelhout/Documents/ShapeReality/2023-06-18_bgfx_test/bgfx/examples/assets/meshes/orb.obj",
@@ -46,7 +46,7 @@ namespace engine {
         };
 
         for (const auto &shaderData: shadersData) {
-            shaders.emplace_back(std::make_unique<Shader>(shaderData.vertexShaderPath, shaderData.fragmentShaderPath));
+            shaders.emplace_back(std::make_unique<Shader>(shaderData.vertexShaderPath, shaderData.fragmentShaderPath, renderPass)); // todo: stupid, remove renderpass argument
         }
 
         // create scene with objects

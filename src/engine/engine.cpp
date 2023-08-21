@@ -59,7 +59,7 @@ namespace engine {
         swapchain = std::make_unique<renderer::Swapchain>(renderer::preferredSurfaceFormats);
         renderPass = std::make_unique<renderer::RenderPass>(swapchain->surfaceFormat.format, depthImageFormat);
         descriptorSetBuilder = std::make_unique<renderer::DescriptorSetBuilder>();
-        pipelineBuilder = std::make_unique<renderer::PipelineBuilder>();
+        pipelineBuilder = std::make_unique<renderer::PipelineBuilder>(*swapchain);
 
         glfwSetFramebufferSizeCallback(configuration.window, framebufferResizeCallback);
 
@@ -76,7 +76,11 @@ namespace engine {
             frames.push_back(frameData);
         }
 
-        scene = std::make_unique<Scene>();
+        scene = std::make_unique<renderer::Scene>(renderPass->renderPass);
+        // bind the camera buffer with the materials
+        for (auto const &material : scene->materials) {
+            renderer::bindBuffer(material->descriptorSet, camera->cameraDataBuffer.buffer, 0);
+        }
     }
 
     Engine::~Engine() {
@@ -103,14 +107,14 @@ namespace engine {
     }
 
     void Engine::render() {
-        // render imgui
-        {
-            ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-            renderImgui(); // std::function call
-            ImGui::Render();
-        }
+//        // render imgui
+//        {
+//            ImGui_ImplVulkan_NewFrame();
+//            ImGui_ImplGlfw_NewFrame();
+//            ImGui::NewFrame();
+//            renderImgui(); // std::function call
+//            ImGui::Render();
+//        }
         camera->updateCameraData();
         scene->update();
         drawFrame();
@@ -235,8 +239,8 @@ namespace engine {
                                     VK_PIPELINE_BIND_POINT_GRAPHICS,
                                     pipelineData->pipelineLayout,
                                     0,
-                                    static_cast<uint32_t>(object->material.descriptorSets.size()),
-                                    object->material.descriptorSets.data(),
+                                    1,//static_cast<uint32_t>(object->material.descriptorSets.size()),
+                                    &object->material.descriptorSet,//object->material.descriptorSets.data(),
                                     0,
                                     nullptr);
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData->pipeline);
@@ -254,7 +258,7 @@ namespace engine {
         }
 
         // imgui
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+//        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 
         vkCmdEndRenderPass(cmd);
         renderer::checkResult(vkEndCommandBuffer(cmd));

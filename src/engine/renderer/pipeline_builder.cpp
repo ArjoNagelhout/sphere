@@ -1,7 +1,9 @@
-#include "engine.h"
+#include "vulkan_context.h"
 #include "pipeline_builder.h"
 
+#include <types.h>
 #include <fstream>
+#include <glm/glm.hpp>
 
 namespace engine::renderer {
 
@@ -11,7 +13,11 @@ namespace engine::renderer {
 
     }
 
-    PipelineBuilder::PipelineBuilder() {
+    PipelineBuilder *pipelineBuilder;
+
+    PipelineBuilder::PipelineBuilder(Swapchain &swapchain) : swapchain(swapchain) {
+        assert((pipelineBuilder == nullptr) && "Only one pipeline builder can exist at one time");
+        pipelineBuilder = this;
 //
 //        VkPipelineCacheCreateInfo pipelineCacheInfo{};
 //        pipelineCacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -22,8 +28,8 @@ namespace engine::renderer {
 
     PipelineBuilder::~PipelineBuilder() {
         for (const auto &pipeline: pipelines) {
-            vkDestroyPipeline(engine->device, pipeline->pipeline, nullptr);
-            vkDestroyPipelineLayout(engine->device, pipeline->pipelineLayout, nullptr);
+            vkDestroyPipeline(context->device, pipeline->pipeline, nullptr);
+            vkDestroyPipelineLayout(context->device, pipeline->pipelineLayout, nullptr);
         }
     }
 
@@ -56,7 +62,7 @@ namespace engine::renderer {
         };
 
         VkShaderModule shaderModule;
-        checkResult(vkCreateShaderModule(engine->device, &createInfo, nullptr, &shaderModule));
+        checkResult(vkCreateShaderModule(context->device, &createInfo, nullptr, &shaderModule));
 
         std::cout << "created shader module" << std::endl;
         return shaderModule;
@@ -149,7 +155,7 @@ namespace engine::renderer {
         // tesselationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
         // tesselationState.patchControlPoints
 
-        VkExtent2D extent = engine->swapchain->extent;
+        VkExtent2D extent = swapchain.extent;
 
         VkViewport viewport{
                 .x = 0.0f,
@@ -261,7 +267,7 @@ namespace engine::renderer {
         };
 
         checkResult(
-                vkCreatePipelineLayout(engine->device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+                vkCreatePipelineLayout(context->device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
         VkGraphicsPipelineCreateInfo createInfo{
                 .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -283,13 +289,13 @@ namespace engine::renderer {
                 .basePipelineIndex = -1
         };
 
-        checkResult(vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &createInfo, nullptr,
+        checkResult(vkCreateGraphicsPipelines(context->device, VK_NULL_HANDLE, 1, &createInfo, nullptr,
                                               &pipeline));
 
         std::cout << "created pipeline" << std::endl;
 
-        vkDestroyShaderModule(engine->device, vertexShaderModule, nullptr);
-        vkDestroyShaderModule(engine->device, fragmentShaderModule, nullptr);
+        vkDestroyShaderModule(context->device, vertexShaderModule, nullptr);
+        vkDestroyShaderModule(context->device, fragmentShaderModule, nullptr);
 
         pipelines.emplace_back(std::make_unique<PipelineData>(pipeline, pipelineLayout));
         return *pipelines.back();

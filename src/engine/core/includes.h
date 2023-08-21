@@ -14,5 +14,6 @@
 
 #include <vector>
 #include <iostream>
+#include <cassert>
 
 #endif //SPHERE_INCLUDES_H

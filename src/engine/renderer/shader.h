@@ -4,7 +4,7 @@
 #include <string>
 #include "pipeline_builder.h"
 
-namespace engine {
+namespace engine::renderer {
 
     /*
      * A shader is a template from which materials can be built.
@@ -15,16 +15,18 @@ namespace engine {
      *
      * These properties get set using descriptor sets
      */
-    class Shader{
+    class Shader {
 
     public:
-        explicit Shader(const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
+        explicit Shader(const std::string &vertexShaderPath, const std::string &fragmentShaderPath, VkRenderPass renderPass);
+
         ~Shader();
 
         PipelineData *pipelineData; // (unowned pointer)
         VkDescriptorSetLayout descriptorSetLayout;
 
     private:
+        VkRenderPass renderPass;
     };
 }
 

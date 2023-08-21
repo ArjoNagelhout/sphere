@@ -1,21 +1,25 @@
 #include "vulkan_context.h"
 #include "shader.h"
+#include "descriptor_set_builder.h"
 
-namespace engine {
+namespace engine::renderer {
 
-    Shader::Shader(const std::string &vertexShaderPath, const std::string &fragmentShaderPath) {
+    Shader::Shader(const std::string &vertexShaderPath,
+                   const std::string &fragmentShaderPath,
+                   VkRenderPass renderPass) : renderPass(renderPass) {
 
-        descriptorSetLayout = renderer::createDescriptorSetLayout();
+        descriptorSetLayout = createDescriptorSetLayout();
 
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts{
                 descriptorSetLayout
         };
 
-        PipelineData &data = engine->pipelineBuilder->createPipeline(engine->renderPass->renderPass, descriptorSetLayouts, vertexShaderPath, fragmentShaderPath);
+        PipelineData &data = pipelineBuilder->createPipeline(renderPass, descriptorSetLayouts, vertexShaderPath,
+                                                            fragmentShaderPath);
         pipelineData = &data; // get pointer to pipeline data (unowned pointer)
     }
 
     Shader::~Shader() {
-        vkDestroyDescriptorSetLayout(engine->device, descriptorSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(context->device, descriptorSetLayout, nullptr);
     }
 }

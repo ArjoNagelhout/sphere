@@ -37,7 +37,7 @@ namespace editor {
             ImGui::EndMainMenuBar();
         }
 
-        engine::Scene &scene = *engine::engine->scene;
+        engine::renderer::Scene &scene = *engine::engine->scene;
 
         // very crude scene inspector that allows viewing all objects
         if (ImGui::Begin("Scene Inspector")) {
@@ -56,7 +56,7 @@ namespace editor {
         // now it's hardcoded, but it should be
 
         if (ImGui::Begin("Object inspector")) {
-            engine::Object &selectedObject = *scene.objects[selectedObjectIndex];
+            engine::renderer::Object &selectedObject = *scene.objects[selectedObjectIndex];
             ImGui::LabelText("Name", "%s", selectedObject.name.data());
             ImGui::InputFloat3("Position", glm::value_ptr(selectedObject.localPosition));
             ImGui::InputFloat4("Rotation", glm::value_ptr(selectedObject.localRotation)); // change to represent euler values instead of quaternion

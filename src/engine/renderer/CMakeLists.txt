@@ -6,6 +6,12 @@ set(SOURCES
         camera.h camera.cpp
         texture.h texture.cpp
 
+        scene.h scene.cpp
+        mesh.h mesh.cpp
+        object.h object.cpp
+        shader.h shader.cpp
+        material.h material.cpp
+
         descriptor_set_builder.h descriptor_set_builder.cpp
         pipeline_builder.h pipeline_builder.cpp
 
@@ -17,4 +23,4 @@ set(SOURCES
 
 add_library(renderer ${SOURCES})
 target_include_directories(renderer PUBLIC .)
-target_link_libraries(renderer core stb imgui)
+target_link_libraries(renderer core stb imgui tinyobj)

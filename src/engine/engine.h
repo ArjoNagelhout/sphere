@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 
-#include <core/types.h>
+#include "renderer/types.h"
 #include <renderer/vulkan_context.h>
 
 #include <renderer/utils.h>
@@ -56,12 +56,12 @@ namespace engine {
         ~Engine();
 
         std::unique_ptr<renderer::VulkanContext> context;
-        std::unique_ptr<Swapchain> swapchain;
-        std::unique_ptr<RenderPass> renderPass;
-        std::unique_ptr<DescriptorSetBuilder> descriptorSetBuilder;
-        std::unique_ptr<PipelineBuilder> pipelineBuilder;
-        std::unique_ptr<Camera> camera;
-        std::unique_ptr<Scene> scene;
+        std::unique_ptr<renderer::Swapchain> swapchain;
+        std::unique_ptr<renderer::RenderPass> renderPass;
+        std::unique_ptr<renderer::DescriptorSetBuilder> descriptorSetBuilder;
+        std::unique_ptr<renderer::PipelineBuilder> pipelineBuilder;
+        std::unique_ptr<renderer::Camera> camera;
+        std::unique_ptr<renderer::Scene> scene;
 
         VkCommandPool commandPool;
         bool framebufferResized = false;

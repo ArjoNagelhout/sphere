@@ -1,6 +1,6 @@
 set(SOURCES
-        includes.h includes.cpp
-        types.h
+        includes.h
+        ../renderer/types.h
         window.h window.cpp
         )
 
