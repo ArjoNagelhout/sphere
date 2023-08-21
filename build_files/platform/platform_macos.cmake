@@ -43,26 +43,49 @@ set(MACOSX_BUNDLE_ICON_FILE ${SPHERE_ICON_NAME})
 # -------------------- add plist file ---------------------------
 set_target_properties(sphere PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/data/Info.plist
-        MACOSX_BUNDLE TRUE
-        RESOURCE "${BLABLA})
+        MACOSX_BUNDLE TRUE)
+
+# -------------------- function for copying to Resources in app bundle ----------------------
+# from https://stackoverflow.com/questions/41121000/cmake-os-x-bundle-recursively-copy-directory-to-resources
+
+function(resource VAR SOURCE_PATH DESTINATION PATTERN)
+    file(GLOB_RECURSE _LIST CONFIGURE_DEPENDS ${SOURCE_PATH}/${PATTERN})
+    foreach (RESOURCE ${_LIST})
+        get_filename_component(_PARENT ${RESOURCE} DIRECTORY)
+        if (${_PARENT} STREQUAL ${SOURCE_PATH})
+            set(_DESTINATION ${DESTINATION})
+        else ()
+            file(RELATIVE_PATH _DESTINATION ${SOURCE_PATH} ${_PARENT})
+            set(_DESTINATION ${DESTINATION}/${_DESTINATION})
+        endif ()
+        set_property(SOURCE ${RESOURCE} PROPERTY MACOSX_PACKAGE_LOCATION ${_DESTINATION})
+    endforeach (RESOURCE)
+    set(${VAR} ${_LIST} PARENT_SCOPE)
+endfunction()
 
 # --------------------- add custom target dependencies to sphere ----------------------------
-message(STATUS "Wat de fuck")
-add_dependencies(sphere shaders icd icon)
+# https://gitlab.kitware.com/cmake/cmake/-/issues/21768
+
+add_dependencies(sphere icd icon shaders)
 
 set_source_files_properties("${SPHERE_ICON_TARGET}" PROPERTIES
-        MACOSX_PACKAGE_LOCATION "Resources"
-        GENERATED TRUE)
+        MACOSX_PACKAGE_LOCATION "Resources")
 
 set_source_files_properties("${SPHERE_ICD_TARGET}" PROPERTIES
-        MACOSX_PACKAGE_LOCATION "Resources/vulkan/icd.d"
-        GENERATED TRUE)
+        MACOSX_PACKAGE_LOCATION "Resources/vulkan/icd.d")
 
-set_source_files_properties("${SPHERE_SHADERS_TARGET}" PROPERTIES
-        MACOSX_PACKAGE_LOCATION "Resources"
-        GENERATED TRUE)
+set(SPHERE_SOURCES
+        "${SPHERE_ICD_TARGET}"
+        "${SPHERE_ICON_TARGET}"
+        "${SPHERE_SHADERS_TARGET}")
+target_sources(sphere PUBLIC "${SPHERE_SOURCES}")
 
-target_sources(sphere PUBLIC ${SPHERE_SHADERS_TARGET} ${SPHERE_ICD_TARGET} ${SPHERE_ICON_TARGET})
+# ---------------- shaders don't get copied ffs ---------------
+
+add_custom_command(TARGET sphere POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${SPHERE_SHADERS_TARGET}" "${SPHERE_BUNDLE_DIR}/Resources/shaders"
+        DEPENDS shaders
+        )
 
 # ---------------- fix bundle --------------------
 

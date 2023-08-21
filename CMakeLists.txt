@@ -28,15 +28,18 @@ add_custom_target(shaders ALL
         DEPENDS "${SPHERE_SHADERS_SOURCE}"
         BYPRODUCTS "${SPHERE_SHADERS_TARGET}"
         )
+target_sources(shaders PRIVATE "${SPHERE_SHADERS_TARGET}")
+
+# ---------- add subdirectories -------------
 
 add_subdirectory(external)
 add_subdirectory(libs)
 add_subdirectory(src)
 
 # ---------- include build files -----------
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build_files/platform")
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build_files/platform")
 
-# ---------- plaform specific --------------
+# ---------- platform specific -------------
 if (APPLE)
     include(build_files/platform/platform_macos.cmake)
 endif ()
