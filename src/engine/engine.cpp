@@ -67,6 +67,8 @@ namespace engine {
         swapchain->createFramebuffers(renderPass->renderPass, depthImageView);
         camera = std::make_unique<renderer::Camera>(*swapchain);
 
+        commandPool = renderer::createCommandPool();
+
         std::vector<VkCommandBuffer> commandBuffers = renderer::createCommandBuffers(commandPool, MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             FrameData frameData{

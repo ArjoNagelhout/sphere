@@ -9,7 +9,7 @@ namespace engine::renderer {
 
     VulkanContext *context;
 
-    VulkanContext::VulkanContext(VulkanConfiguration configuration) {
+    VulkanContext::VulkanContext(VulkanConfiguration configuration) : configuration(configuration) {
 
         // this can be refactored in the future to allow multiple devices, but since we're
         // writing an application meant to be run on mobile platforms, this is not required.
