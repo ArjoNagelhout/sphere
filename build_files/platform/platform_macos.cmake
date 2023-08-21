@@ -45,24 +45,6 @@ set_target_properties(sphere PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/data/Info.plist
         MACOSX_BUNDLE TRUE)
 
-# -------------------- function for copying to Resources in app bundle ----------------------
-# from https://stackoverflow.com/questions/41121000/cmake-os-x-bundle-recursively-copy-directory-to-resources
-
-function(resource VAR SOURCE_PATH DESTINATION PATTERN)
-    file(GLOB_RECURSE _LIST CONFIGURE_DEPENDS ${SOURCE_PATH}/${PATTERN})
-    foreach (RESOURCE ${_LIST})
-        get_filename_component(_PARENT ${RESOURCE} DIRECTORY)
-        if (${_PARENT} STREQUAL ${SOURCE_PATH})
-            set(_DESTINATION ${DESTINATION})
-        else ()
-            file(RELATIVE_PATH _DESTINATION ${SOURCE_PATH} ${_PARENT})
-            set(_DESTINATION ${DESTINATION}/${_DESTINATION})
-        endif ()
-        set_property(SOURCE ${RESOURCE} PROPERTY MACOSX_PACKAGE_LOCATION ${_DESTINATION})
-    endforeach (RESOURCE)
-    set(${VAR} ${_LIST} PARENT_SCOPE)
-endfunction()
-
 # --------------------- add custom target dependencies to sphere ----------------------------
 # https://gitlab.kitware.com/cmake/cmake/-/issues/21768
 
@@ -80,7 +62,16 @@ set(SPHERE_SOURCES
         "${SPHERE_SHADERS_TARGET}")
 target_sources(sphere PUBLIC "${SPHERE_SOURCES}")
 
-# ---------------- shaders don't get copied ffs ---------------
+# ---------------- copy compiled shaders into bundle ---------------
+# 
+# we couldn't use set_source_file_properties because the shaders are compiled at build time
+# and you can't use the command on a directory
+#
+# we could use file(GLOB_RECURSE ...) to get a list of the generated files, but this is a command that gets run on
+# configure time. That means you'd have to run the build twice.
+#
+# Simply copying the directory to the bundle is the easiest implementation I've been able to come up with,
+# but this might be considered hacky in modern Cmake.
 
 add_custom_command(TARGET sphere POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${SPHERE_SHADERS_TARGET}" "${SPHERE_BUNDLE_DIR}/Resources/shaders"
