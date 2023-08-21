@@ -2,7 +2,7 @@
 #define SPHERE_SHADER_H
 
 #include <string>
-#include "renderer/pipeline_builder.h"
+#include "pipeline_builder.h"
 
 namespace engine {
 

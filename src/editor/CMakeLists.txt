@@ -3,7 +3,5 @@ set(SOURCES
         panels/project_browser.h panels/project_browser.cpp)
 
 add_library(editor "${SOURCES}")
-
 target_link_libraries(editor imgui engine glm)
-
-target_include_directories(editor PUBLIC ".")
+target_include_directories(editor PUBLIC .)

@@ -1,7 +1,6 @@
 #ifndef SPHERE_APPLICATION_H
 #define SPHERE_APPLICATION_H
 
-#include "core/window.h"
 #include <engine.h>
 #include <editor.h>
 

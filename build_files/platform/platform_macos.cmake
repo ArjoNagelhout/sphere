@@ -63,7 +63,7 @@ set(SPHERE_SOURCES
 target_sources(sphere PUBLIC "${SPHERE_SOURCES}")
 
 # ---------------- copy compiled shaders into bundle ---------------
-# 
+#
 # we couldn't use set_source_file_properties because the shaders are compiled at build time
 # and you can't use the command on a directory
 #
