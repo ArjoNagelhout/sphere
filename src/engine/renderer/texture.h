@@ -1,8 +1,10 @@
 #ifndef SPHERE_TEXTURE_H
 #define SPHERE_TEXTURE_H
 
-#include <vulkan/vulkan.h>
-#include "vk_mem_alloc.h"
+#include "vulkan.h"
+#include "vma.h"
+
+#include <string>
 
 namespace engine::renderer {
 

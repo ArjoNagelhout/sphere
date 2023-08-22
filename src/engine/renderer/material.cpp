@@ -1,6 +1,6 @@
 #include "vulkan_context.h"
 #include "material.h"
-#include "descriptor_set_builder.h"
+#include "descriptor_sets.h"
 
 namespace engine::renderer {
     Material::Material(const Shader &shader, Texture &texture) : shader(shader), texture(texture) {

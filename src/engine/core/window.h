@@ -1,7 +1,8 @@
 #ifndef SPHERE_WINDOW_H
 #define SPHERE_WINDOW_H
 
-#include "includes.h"
+#include "glfw.h"
+#include <string>
 
 namespace engine {
 

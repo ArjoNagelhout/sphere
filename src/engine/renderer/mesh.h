@@ -1,8 +1,6 @@
 #ifndef SPHERE_MESH_H
 #define SPHERE_MESH_H
 
-#include "includes.h"
-
 #include "buffer.h"
 #include "types.h"
 

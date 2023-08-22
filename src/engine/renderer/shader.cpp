@@ -1,6 +1,6 @@
 #include "vulkan_context.h"
 #include "shader.h"
-#include "descriptor_set_builder.h"
+#include "descriptor_sets.h"
 
 namespace engine::renderer {
 

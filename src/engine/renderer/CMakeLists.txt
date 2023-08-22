@@ -12,7 +12,7 @@ set(SOURCES
         shader.h shader.cpp
         material.h material.cpp
 
-        descriptor_set_builder.h descriptor_set_builder.cpp
+        descriptor_sets.h descriptor_sets.cpp
         pipeline_builder.h pipeline_builder.cpp
 
         render_pass.h render_pass.cpp

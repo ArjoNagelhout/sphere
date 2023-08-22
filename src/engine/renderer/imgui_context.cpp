@@ -5,6 +5,9 @@
 #include <imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
 
+#include <string>
+#include <iostream>
+
 namespace engine::renderer {
 
     ImguiContext::ImguiContext(VkRenderPass renderPass, const Swapchain &swapchain) {

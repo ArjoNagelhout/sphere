@@ -1,6 +1,8 @@
 #include "vulkan_context.h"
 #include "render_pass.h"
 
+#include <iostream>
+
 namespace engine::renderer {
 
     RenderPass::RenderPass(const VkFormat &format, const VkFormat &depthFormat) {

@@ -1,9 +1,11 @@
-#include "vulkan_context.h"
 #include "texture.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-
 #include "stb_image.h"
+
+#include "vulkan_context.h"
+#include <iostream>
+#include <vulkan/vk_enum_string_helper.h>
 
 namespace engine::renderer {
 

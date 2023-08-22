@@ -10,7 +10,7 @@
 #include <renderer/utils.h>
 #include <renderer/swapchain.h>
 #include <renderer/render_pass.h>
-#include <renderer/descriptor_set_builder.h>
+#include <renderer/descriptor_sets.h>
 #include <renderer/pipeline_builder.h>
 #include <renderer/camera.h>
 #include "renderer/scene.h"

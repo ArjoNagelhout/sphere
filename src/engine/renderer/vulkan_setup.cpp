@@ -4,6 +4,7 @@
 
 #include <map>
 #include <iostream>
+#include <vulkan/vk_enum_string_helper.h>
 
 namespace engine::renderer {
 

@@ -1,7 +1,8 @@
 #ifndef SPHERE_SWAPCHAIN_H
 #define SPHERE_SWAPCHAIN_H
 
-#include <vulkan/vulkan.h>
+#include "vulkan.h"
+
 #include <vector>
 
 namespace engine::renderer {

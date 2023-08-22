@@ -1,5 +1,5 @@
-#ifndef SPHERE_DESCRIPTOR_SET_BUILDER_H
-#define SPHERE_DESCRIPTOR_SET_BUILDER_H
+#ifndef SPHERE_DESCRIPTOR_SETS_H
+#define SPHERE_DESCRIPTOR_SETS_H
 
 #include <vulkan/vulkan.h>
 #include <vector>
@@ -77,4 +77,4 @@ namespace engine::renderer {
     extern DescriptorSetBuilder *descriptorSetBuilder;
 }
 
-#endif //SPHERE_DESCRIPTOR_SET_BUILDER_H
+#endif //SPHERE_DESCRIPTOR_SETS_H

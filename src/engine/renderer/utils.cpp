@@ -53,4 +53,17 @@ namespace engine::renderer {
             .depth = 1
         };
     }
+
+    void DestroyQueue::push(std::function<void()> function) {
+        queue.emplace_back(std::move(function));
+    }
+
+    void DestroyQueue::flush() {
+        // rbegin and rend = reverse
+        for (auto iterator = queue.rbegin(); iterator != queue.rend(); iterator++) {
+            (*iterator)();
+        }
+
+        queue.clear();
+    }
 }

@@ -1,7 +1,7 @@
 #ifndef SPHERE_UTILS_H
 #define SPHERE_UTILS_H
 
-#include "includes.h"
+#include "vulkan.h"
 
 #include <deque>
 
@@ -26,18 +26,9 @@ namespace engine::renderer {
     struct DestroyQueue {
         std::deque<std::function<void()>> queue;
 
-        void push(const std::function<void()> &function) {
-            queue.push_back(function);
-        }
+        void push(std::function<void()> function);
 
-        void flush() {
-            // rbegin and rend = reverse
-            for (auto iterator = queue.rbegin(); iterator != queue.rend(); iterator++) {
-                (*iterator)();
-            }
-
-            queue.clear();
-        }
+        void flush();
     };
 }
 

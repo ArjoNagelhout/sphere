@@ -1,10 +1,12 @@
 #ifndef SPHERE_VULKAN_CONTEXT_H
 #define SPHERE_VULKAN_CONTEXT_H
 
-#include "includes.h"
+#include "vulkan.h"
+#include "glfw.h"
+#include "vma.h"
 #include "utils.h"
-
 #include <stack>
+#include <string>
 
 namespace engine::renderer {
 
