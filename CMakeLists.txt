@@ -24,23 +24,11 @@ add_custom_command(OUTPUT "${SPHERE_SHADERS_TARGET}"
         VERBATIM
         DEPENDS "${SPHERE_SHADERS_SOURCE}")
 
-#add_custom_target(shaders #ALL
-#        COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/compile-shaders.sh "${SPHERE_SHADERS_SOURCE}" "${SPHERE_SHADERS_TARGET}"
-#        VERBATIM
-#        DEPENDS resources
-#        DEPENDS "${SPHERE_SHADERS_SOURCE}"
-#        BYPRODUCTS "${SPHERE_SHADERS_TARGET}"
-#        )
-#target_sources(shaders PRIVATE "${SPHERE_SHADERS_TARGET}")
-
 # ---------- add subdirectories -------------
 
 add_subdirectory(external)
 add_subdirectory(libs)
 add_subdirectory(src)
-
-# ---------- include build files -----------
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build_files/platform")
 
 # ---------- platform specific -------------
 if (APPLE)
