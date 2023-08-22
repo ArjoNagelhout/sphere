@@ -1,12 +1,7 @@
 #ifndef SPHERE_TYPES_H
 #define SPHERE_TYPES_H
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-volatile"
-
-#include "glm/glm.hpp"
-
-#pragma clang diagnostic pop
+#include "glm.h"
 
 namespace engine {
 
