@@ -1,7 +1,7 @@
 #ifndef SPHERE_APPLICATION_H
 #define SPHERE_APPLICATION_H
 
-#include "window.h"
+#include <window.h>
 #include <engine.h>
 #include <editor.h>
 
@@ -30,9 +30,9 @@ namespace sphere {
             engine = std::make_unique<engine::Engine>(configuration);
             editor = std::make_unique<editor::Editor>();
 
-            engine->renderImgui = [&]() {
-                editor->render();
-            };
+//            engine->renderImgui = [&]() {
+//                editor->render();
+//            };
 
             glfwSetWindowUserPointer(window->glfwWindow, this);
             glfwSetKeyCallback(window->glfwWindow, keyCallback);

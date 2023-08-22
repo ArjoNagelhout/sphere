@@ -1,5 +1,7 @@
 #include "application.h"
 
+#include <iostream>
+
 int main()
 {
     sphere::Application application("Sphere");
@@ -12,4 +14,6 @@ int main()
     }
 
     return EXIT_SUCCESS;
+
+    return 0;
 }
