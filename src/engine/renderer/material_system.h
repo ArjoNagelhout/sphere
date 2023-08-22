@@ -1,10 +1,10 @@
-#ifndef SPHERE_PIPELINE_BUILDER_H
-#define SPHERE_PIPELINE_BUILDER_H
+#ifndef SPHERE_MATERIAL_SYSTEM_H
+#define SPHERE_MATERIAL_SYSTEM_H
+
+#include "texture.h"
+#include "pipeline_builder.h"
 
 #include <vulkan/vulkan.h>
-#include <vector>
-
-#include "swapchain.h"
 
 namespace engine::renderer {
 
@@ -44,7 +44,7 @@ namespace engine::renderer {
         std::vector<std::unique_ptr<PipelineData>> pipelines;
 
         PipelineData &createPipeline(const VkRenderPass &renderPass, const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
-                            const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
+                                     const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
 
     private:
         Swapchain &swapchain;
@@ -54,6 +54,49 @@ namespace engine::renderer {
     };
 
     extern PipelineBuilder *pipelineBuilder;
+
+    /*
+     * A shader is a template from which materials can be built.
+     * A shader defines all possible properties and allows the DescriptorSetBuilder and the PipelineBuilder to
+     * construct the proper representations in Vulkan objects.
+     *
+     * Properties can be: matrices, textures, floats, vectors
+     *
+     * These properties get set using descriptor sets
+     */
+    class Shader {
+
+    public:
+        explicit Shader(const std::string &vertexShaderPath, const std::string &fragmentShaderPath, VkRenderPass renderPass);
+
+        ~Shader();
+
+        PipelineData *pipelineData; // (unowned pointer)
+        VkDescriptorSetLayout descriptorSetLayout;
+
+    private:
+        VkRenderPass renderPass;
+    };
+    /*
+     * A material contains a reference to a shader and contains the properties such as
+     * a texture.
+     */
+    class Material {
+
+    public:
+        explicit Material(const Shader &shader, Texture &texture);
+        ~Material();
+
+        const Shader &shader;
+        renderer::Texture &texture;
+
+        VkDescriptorSet descriptorSet;
+
+    private:
+
+    };
+
+
 }
 
-#endif //SPHERE_PIPELINE_BUILDER_H
+#endif //SPHERE_MATERIAL_SYSTEM_H

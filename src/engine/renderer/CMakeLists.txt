@@ -8,9 +8,7 @@ set(SOURCES
 
         scene.h scene.cpp
         mesh.h mesh.cpp
-        object.h object.cpp
-        shader.h shader.cpp
-        material.h material.cpp
+        material_system.h material_system.cpp
 
         descriptor_sets.h descriptor_sets.cpp
         pipeline_builder.h pipeline_builder.cpp

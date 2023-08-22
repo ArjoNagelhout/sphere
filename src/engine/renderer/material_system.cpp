@@ -1,12 +1,41 @@
-#include "pipeline_builder.h"
+#include "material_system.h"
 
 #include "vulkan_context.h"
+#include "descriptor_sets.h"
 #include "types.h"
 
+#include <cassert>
 #include <fstream>
 #include <iostream>
 
 namespace engine::renderer {
+    Material::Material(const Shader &shader, Texture &texture) : shader(shader), texture(texture) {
+
+        // set descriptor sets
+        descriptorSet = descriptorSetBuilder->createDescriptorSets(shader.descriptorSetLayout, 1)[0];
+        bindImage(descriptorSet, texture.sampler, texture.imageView, 1);
+    }
+
+    Material::~Material() = default;
+
+    Shader::Shader(const std::string &vertexShaderPath,
+                   const std::string &fragmentShaderPath,
+                   VkRenderPass renderPass) : renderPass(renderPass) {
+
+        descriptorSetLayout = createDescriptorSetLayout();
+
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{
+                descriptorSetLayout
+        };
+
+        PipelineData &data = pipelineBuilder->createPipeline(renderPass, descriptorSetLayouts, vertexShaderPath,
+                                                             fragmentShaderPath);
+        pipelineData = &data; // get pointer to pipeline data (unowned pointer)
+    }
+
+    Shader::~Shader() {
+        vkDestroyDescriptorSetLayout(context->device, descriptorSetLayout, nullptr);
+    }
 
     PipelineData::PipelineData(const VkPipeline &pipeline, const VkPipelineLayout &pipelineLayout) : pipeline(pipeline),
                                                                                                      pipelineLayout(

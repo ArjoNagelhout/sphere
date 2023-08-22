@@ -2,7 +2,6 @@
 #define SPHERE_BUFFER_H
 
 #include "utils.h"
-
 #include "vma.h"
 
 #include <iostream>

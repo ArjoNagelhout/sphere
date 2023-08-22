@@ -1,5 +1,9 @@
 #include "scene.h"
 
+#include "glm/mat4x4.hpp"
+#include "glm/gtx/quaternion.hpp"
+#include "glm/gtx/transform.hpp"
+
 namespace engine::renderer {
 
     Scene::Scene(VkRenderPass renderPass) : renderPass(renderPass) {
@@ -112,5 +116,21 @@ namespace engine::renderer {
                     glm::angleAxis(0.05f * (-1.0f + 2.0f * static_cast<float>(i % 2)),
                                    glm::vec3(0, 1, 0));
         }
+    }
+
+    Object::Object(const std::string &name, Mesh &mesh, Material &material) : name(name), mesh(mesh), material(material) {
+
+    }
+
+    Object::~Object() = default;
+
+    glm::mat4x4 Object::getTransform() {
+        // calculates the transform from the position, rotation and scale
+
+        glm::mat4x4 translateMatrix{glm::translate(localPosition)};
+        glm::mat4x4 rotateMatrix{glm::toMat4(localRotation)};
+        glm::mat4x4 scaleMatrix{glm::scale(localScale)};
+
+        return translateMatrix * rotateMatrix * scaleMatrix;
     }
 }
