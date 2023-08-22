@@ -20,6 +20,8 @@ namespace engine::renderer {
     Mesh::~Mesh() {
         vertexBuffer.reset();
         indexBuffer.reset();
+
+//        std::cout << "destroyed vertex and index buffer" << std::endl;
     }
 
     /*

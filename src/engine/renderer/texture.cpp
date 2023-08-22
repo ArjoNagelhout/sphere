@@ -10,33 +10,14 @@
 namespace engine::renderer {
 
     Texture::Texture(const std::string &filePath) {
-
         int x, y, channelAmount;
-        data = stbi_load(filePath.data(), &x, &y, &channelAmount, STBI_rgb_alpha);
-        // ... process data if not NULL ...
-        // ... x = width, y = height, n = # 8-bit components per pixel ...
-        // ... replace '0' with '1'..'4' to force that many components per pixel
-        // ... but 'n' will always be the number that it would have been if you said 0
-
-        //       N=#comp     components
-        //       1           grey
-        //       2           grey, alpha
-        //       3           red, green, blue
-        //       4           red, green, blue, alpha
+        data = stbi_load(filePath.data(), &x, &y, &channelAmount, STBI_rgb_alpha); // forces 4 8-bit components per pixel
+        // channelAmount will be the original value if it was not forced.
 
         if (data == NULL) {
             const char *reason = stbi_failure_reason();
             std::cout << reason << std::endl;
         }
-
-//        std::unordered_map<int, VkFormat> formats{
-//                {1, VK_FORMAT_R8_SRGB},
-//                {2, VK_FORMAT_R8G8_SRGB},
-//                {3, VK_FORMAT_R8G8B8_SRGB},
-//                {4, VK_FORMAT_R8G8B8A8_SRGB},
-//        };
-//
-//        VkFormat format = formats[channelAmount];
 
         VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 
@@ -242,5 +223,7 @@ namespace engine::renderer {
         vkDestroySampler(context->device, sampler, nullptr);
         vkDestroyImageView(context->device, imageView, nullptr);
         vmaDestroyImage(context->allocator, image, allocation);
+
+//        std::cout << "destroyed texture" << std::endl;
     }
 }

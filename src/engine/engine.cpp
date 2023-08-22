@@ -25,7 +25,7 @@ namespace engine {
         vkDestroySemaphore(renderer::context->device, renderFinishedSemaphore, nullptr);
         vkDestroyFence(renderer::context->device, inFlightFence, nullptr);
 
-        std::cout << "destroyed frame data" << std::endl;
+//        std::cout << "destroyed frame data" << std::endl;
     }
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height) {
@@ -97,6 +97,8 @@ namespace engine {
         // destroy depth image
         vkDestroyImageView(context->device, depthImageView, nullptr);
         vmaDestroyImage(context->allocator, depthImage, depthImageAllocation);
+
+        camera.reset();
 
         scene.reset();
         pipelineBuilder.reset();

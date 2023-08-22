@@ -55,7 +55,9 @@ namespace engine::renderer {
         };
 
         checkResult(vmaCreateAllocator(&allocatorInfo, &allocator));
-        destroyQueue.push([&]() { vmaDestroyAllocator(allocator); });
+        destroyQueue.push([&]() {
+            vmaDestroyAllocator(allocator);
+        });
 
         std::cout << "created memory allocator" << std::endl;
     }
@@ -69,6 +71,8 @@ namespace engine::renderer {
     UploadContext::~UploadContext() {
         vkDestroyFence(context->device, fence, nullptr);
         vkDestroyCommandPool(context->device, commandPool, nullptr);
+
+//        std::cout << "destroyed upload context" << std::endl;
     }
 
     void UploadContext::submit(std::function<void(VkCommandBuffer)> &&function) {

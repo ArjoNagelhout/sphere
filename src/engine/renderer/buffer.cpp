@@ -23,6 +23,7 @@ namespace engine::renderer {
     }
 
     Buffer::~Buffer() {
+//        std::cout << "destroyed buffer" << std::endl;
         vmaDestroyBuffer(allocator, buffer, allocation);
     }
 
