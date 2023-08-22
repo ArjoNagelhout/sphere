@@ -11,24 +11,27 @@ set(SOURCES
 
 add_executable(sphere ${SOURCES})
 
-# --------- create resources directory that should be included in the app bundle --------------
+# --------- create resources directory for resources that should be included in the app bundle -----------
 set(SPHERE_RESOURCES_DIR ${CMAKE_BINARY_DIR}/resources)
-add_custom_target(resources ALL
-        COMMAND mkdir -p ${SPHERE_RESOURCES_DIR}
-        VERBATIM)
+file(MAKE_DIRECTORY ${SPHERE_RESOURCES_DIR})
 
 # ---------- compile shaders ---------------
 set(SPHERE_SHADERS_SOURCE ${CMAKE_SOURCE_DIR}/data/shaders)
 set(SPHERE_SHADERS_TARGET ${SPHERE_RESOURCES_DIR}/shaders)
 
-add_custom_target(shaders ALL
+add_custom_command(OUTPUT "${SPHERE_SHADERS_TARGET}"
         COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/compile-shaders.sh "${SPHERE_SHADERS_SOURCE}" "${SPHERE_SHADERS_TARGET}"
         VERBATIM
-        DEPENDS resources
-        DEPENDS "${SPHERE_SHADERS_SOURCE}"
-        BYPRODUCTS "${SPHERE_SHADERS_TARGET}"
-        )
-target_sources(shaders PRIVATE "${SPHERE_SHADERS_TARGET}")
+        DEPENDS "${SPHERE_SHADERS_SOURCE}")
+
+#add_custom_target(shaders #ALL
+#        COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/compile-shaders.sh "${SPHERE_SHADERS_SOURCE}" "${SPHERE_SHADERS_TARGET}"
+#        VERBATIM
+#        DEPENDS resources
+#        DEPENDS "${SPHERE_SHADERS_SOURCE}"
+#        BYPRODUCTS "${SPHERE_SHADERS_TARGET}"
+#        )
+#target_sources(shaders PRIVATE "${SPHERE_SHADERS_TARGET}")
 
 # ---------- add subdirectories -------------
 
