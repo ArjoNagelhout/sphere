@@ -2,9 +2,9 @@
 #define SPHERE_MATERIAL_SYSTEM_H
 
 #include "texture.h"
-#include "pipeline_builder.h"
 
-#include <vulkan/vulkan.h>
+#include "vulkan.h"
+#include "swapchain.h"
 
 namespace engine::renderer {
 

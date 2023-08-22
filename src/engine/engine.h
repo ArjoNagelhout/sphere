@@ -11,11 +11,10 @@
 #include <renderer/swapchain.h>
 #include <renderer/render_pass.h>
 #include <renderer/descriptor_sets.h>
-#include <renderer/pipeline_builder.h>
 #include <renderer/camera.h>
 #include "renderer/scene.h"
 #include "renderer/mesh.h"
-#include "renderer/object.h"
+#include "renderer/material_system.h"
 
 namespace engine {
 

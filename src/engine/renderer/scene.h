@@ -3,6 +3,9 @@
 
 #include <vector>
 
+#include "glm/mat4x4.hpp"
+#include "glm/gtx/quaternion.hpp"
+
 #include "material_system.h"
 #include "texture.h"
 #include "mesh.h"
