@@ -125,6 +125,7 @@ namespace engine::renderer {
         };
 
         checkResult(vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
+        destroyQueue.push([&]() { vkDestroyInstance(instance, nullptr); });
         std::cout << "created instance" << std::endl;
     }
 
@@ -187,14 +188,12 @@ namespace engine::renderer {
         createInfo.pfnUserCallback = debugCallback;
 
         checkResult(createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger));
-        std::cout << "created debug messenger" << std::endl;
-    }
 
-    void VulkanContext::destroyDebugMessenger() {
-        if (debugMessenger == nullptr) {
-            return;
-        }
-        destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        destroyQueue.push([&](){
+            destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        });
+
+        std::cout << "created debug messenger" << std::endl;
     }
 
     /////////////////////////////////////////// DEVICE //////////////////////////////////////
@@ -495,6 +494,8 @@ namespace engine::renderer {
         vkGetDeviceQueue(device, queueFamiliesData.graphicsQueueFamilyData->index, 0, &graphicsQueue);
         vkGetDeviceQueue(device, queueFamiliesData.presentQueueFamilyData->index, 0, &presentQueue);
 
+        destroyQueue.push([&]() { vkDestroyDevice(device, nullptr); });
+
         std::cout << "created logical device" << std::endl;
     }
 
@@ -508,6 +509,8 @@ namespace engine::renderer {
      */
     void VulkanContext::createSurface() {
         checkResult(glfwCreateWindowSurface(instance, configuration.window, nullptr, &surface));
+        destroyQueue.push([&]() { vkDestroySurfaceKHR(instance, surface, nullptr); });
+
         std::cout << "created surface" << std::endl;
     }
 

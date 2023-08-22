@@ -48,7 +48,7 @@ namespace engine::renderer {
                 .depth = 1
         };
 
-        VkDeviceSize sizeInBytes = x * y * channelAmount;
+        VkDeviceSize sizeInBytes = x * y * 4;//channelAmount; channelAmount is still the original amount instead of the forced 4 channels.
 
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
@@ -100,7 +100,7 @@ namespace engine::renderer {
         };
         checkResult(vmaCreateImage(context->allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr));
 
-        context->immediateSubmit([&](VkCommandBuffer cmd) {
+        context->uploadContext->submit([&](VkCommandBuffer cmd) {
 
             // set image layout to "transfer destination optimal"
             uint32_t queueFamilyIndex = context->queueFamiliesData.graphicsQueueFamilyData->index;

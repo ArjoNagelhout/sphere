@@ -54,7 +54,7 @@ namespace engine::renderer {
         };
 
         ImGui_ImplVulkan_Init(&initInfo, renderPass);
-        context->immediateSubmit([&](VkCommandBuffer cmd) {
+        context->uploadContext->submit([&](VkCommandBuffer cmd) {
             ImGui_ImplVulkan_CreateFontsTexture(cmd);
         });
         ImGui_ImplVulkan_DestroyFontUploadObjects();

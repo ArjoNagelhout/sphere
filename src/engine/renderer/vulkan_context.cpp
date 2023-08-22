@@ -1,4 +1,5 @@
 #define VMA_IMPLEMENTATION
+
 #include "vulkan_context.h"
 #include "utils.h"
 
@@ -32,16 +33,12 @@ namespace engine::renderer {
         pickPhysicalDevice(configuration.requiredDeviceExtensions);
         createDevice(configuration.requiredDeviceExtensions);
         createAllocator();
-        createImmediateSubmitContext();
+        uploadContext = std::make_unique<UploadContext>();
+        destroyQueue.push([&]() { uploadContext.reset(); });
     }
 
     VulkanContext::~VulkanContext() {
-
-        vkDestroyDevice(device, nullptr);
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        destroyDebugMessenger();
-        vkDestroyInstance(instance, nullptr);
-
+        destroyQueue.flush();
         context = nullptr;
     }
 
@@ -56,24 +53,31 @@ namespace engine::renderer {
                 .pVulkanFunctions = nullptr,
                 .instance = instance,
         };
+
         checkResult(vmaCreateAllocator(&allocatorInfo, &allocator));
+        destroyQueue.push([&]() { vmaDestroyAllocator(allocator); });
+
         std::cout << "created memory allocator" << std::endl;
     }
 
-    void VulkanContext::createImmediateSubmitContext() {
-        immediateSubmitCommandPool = createCommandPool();
-        immediateSubmitCommandBuffer = createCommandBuffers(immediateSubmitCommandPool, 1)[0];
-        immediateSubmitFence = createFence();
+    UploadContext::UploadContext() {
+        commandPool = createCommandPool();
+        commandBuffer = createCommandBuffers(commandPool, 1)[0];
+        fence = createFence();
     }
 
-    void VulkanContext::immediateSubmit(std::function<void(VkCommandBuffer)> &&function) {
-        const VkCommandBuffer &cmd = immediateSubmitCommandBuffer;
-        const VkFence &fence = immediateSubmitFence;
+    UploadContext::~UploadContext() {
+        vkDestroyFence(context->device, fence, nullptr);
+        vkDestroyCommandPool(context->device, commandPool, nullptr);
+    }
 
-        vkDeviceWaitIdle(device);
+    void UploadContext::submit(std::function<void(VkCommandBuffer)> &&function) {
+        const VkCommandBuffer &cmd = commandBuffer;
+
+        vkDeviceWaitIdle(context->device);
 
         // upload the image to the read only shader layout
-        checkResult(vkResetCommandPool(device, immediateSubmitCommandPool, 0));
+        checkResult(vkResetCommandPool(context->device, commandPool, 0));
         VkCommandBufferBeginInfo beginInfo{
                 .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                 .pNext = nullptr,
@@ -90,10 +94,10 @@ namespace engine::renderer {
                 .pCommandBuffers = &cmd,
         };
         checkResult(vkEndCommandBuffer(cmd));
-        checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence));
+        checkResult(vkQueueSubmit(context->graphicsQueue, 1, &submitInfo, fence));
 
-        vkWaitForFences(device, 1, &fence, true, UINT64_MAX);
-        vkResetFences(device, 1, &fence);
+        vkWaitForFences(context->device, 1, &fence, true, UINT64_MAX);
+        vkResetFences(context->device, 1, &fence);
     }
 
     VkCommandPool createCommandPool() {
@@ -109,7 +113,8 @@ namespace engine::renderer {
         return commandPool;
     }
 
-    std::vector<VkCommandBuffer> createCommandBuffers(const VkCommandPool &commandPool, size_t amount, VkCommandBufferLevel level) {
+    std::vector<VkCommandBuffer>
+    createCommandBuffers(const VkCommandPool &commandPool, size_t amount, VkCommandBufferLevel level) {
         std::vector<VkCommandBuffer> commandBuffers(amount);
 
         VkCommandBufferAllocateInfo allocateInfo{

@@ -3,6 +3,8 @@
 
 #include "includes.h"
 
+#include <deque>
+
 namespace engine::renderer {
 
     // equality operators
@@ -20,6 +22,23 @@ namespace engine::renderer {
     void checkResult(VkResult result);
 
     VkExtent3D toExtent3D(const VkExtent2D &extent2D);
+
+    struct DestroyQueue {
+        std::deque<std::function<void()>> queue;
+
+        void push(const std::function<void()> &function) {
+            queue.push_back(function);
+        }
+
+        void flush() {
+            // rbegin and rend = reverse
+            for (auto iterator = queue.rbegin(); iterator != queue.rend(); iterator++) {
+                (*iterator)();
+            }
+
+            queue.clear();
+        }
+    };
 }
 
 #endif //SPHERE_UTILS_H

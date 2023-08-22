@@ -4,6 +4,8 @@
 #include "includes.h"
 #include "utils.h"
 
+#include <stack>
+
 namespace engine::renderer {
 
     struct VulkanConfiguration {
@@ -45,6 +47,19 @@ namespace engine::renderer {
         std::vector<VkSurfaceFormatKHR> surfaceFormats;
     };
 
+    class UploadContext {
+    public:
+        explicit UploadContext();
+        ~UploadContext();
+
+        void submit(std::function<void(VkCommandBuffer)> &&function);
+
+    private:
+        VkCommandPool commandPool;
+        VkCommandBuffer commandBuffer;
+        VkFence fence;
+    };
+
     class VulkanContext {
 
     public:
@@ -62,22 +77,17 @@ namespace engine::renderer {
         VkQueue presentQueue;
         VkSurfaceKHR surface;
         VmaAllocator allocator;
-
-        void immediateSubmit(std::function<void(VkCommandBuffer)>&& function);
+        std::unique_ptr<UploadContext> uploadContext;
 
     private:
-        VkCommandPool immediateSubmitCommandPool;
-        VkCommandBuffer immediateSubmitCommandBuffer;
-        VkFence immediateSubmitFence;
+        DestroyQueue destroyQueue;
 
         void createInstance(const std::vector<const char *> &requiredExtensions, const std::vector<const char *> &requiredLayers);
         void createDebugMessenger();
-        void destroyDebugMessenger();
         void createSurface();
         void pickPhysicalDevice(const std::vector<const char *> &requiredExtensions);
         void createDevice(const std::vector<const char *> &requiredExtensions);
         void createAllocator();
-        void createImmediateSubmitContext();
     };
 
     extern VulkanContext *context;
