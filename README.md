@@ -1,5 +1,9 @@
 # sphere
 
+## ARCHIVED:
+
+Note that this repository is archived and not actively maintained. It serves purely as reference material for how to write a simple hello world rendering experiment using Vulkan, using MoltenVK to enable Vulkan development on macOS and Metal. I never got around to implementing the design goals that are listed below. 
+
 ![img](https://github.com/ShapeReality/sphere/assets/16051555/41679e91-c7b0-4f1e-8aad-0cbea2e4adf4)
 
 Sphere is an experimental 3D game engine for creating and authoring AR / VR experiences.
